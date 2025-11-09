@@ -5,8 +5,6 @@
 /node_modules
 /.pnp
 .pnp.js
-/.claude
-/.github
 
 # testing
 /coverage
@@ -30,6 +28,12 @@ dist/
 
 # plasmo
 .plasmo
+.prettierrc.mjs
 
 # typescript
 .tsbuildinfo
+
+#other
+/.claude
+/.github
+README.md
