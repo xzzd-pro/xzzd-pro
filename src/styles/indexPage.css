@@ -1,0 +1,317 @@
+/* styles/index-page.css */
+
+.xzzdpro-root {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  grid-template-columns: 320px; 
+  grid-template-rows: 100px;
+  height: 100vh;
+}
+
+/* --- header style --- */
+.xzzdpro-header {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--card-border-color);
+  background-color: var(--header-bg);
+  border: 1px solid #000000;
+}
+
+.xzzdpro-header .right-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.xzzdpro-header .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xzzdpro-header .user-avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #ccc;
+  border-radius: 50%;
+}
+
+/* --- icon style --- */
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  font-size: 20px;
+}
+
+.icon-btn:hover {
+  background-color: var(--background-color);
+  transform: scale(1.1);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-icon {
+  display: block;
+  line-height: 1;
+}
+
+
+/* --- sidebar style --- */
+.xzzdpro-sidebar {
+  grid-area: sidebar;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  margin: 20px;
+  padding: 24px 15px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid #000000;
+  transition: box-shadow 0.3s ease;
+}
+
+.xzzdpro-sidebar:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xzzdpro-sidebar li a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  border-radius: 8px;
+}
+
+.xzzdpro-sidebar li.active a {
+  background-color: var(--primary-accent-color);
+  color: white;
+}
+
+.xzzdpro-sidebar li:not(.active) a:hover {
+  background-color: var(--background-color);
+}
+
+
+/* --- main-area style --- */
+.xzzdpro-main {
+  grid-area: main;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;  
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 30fr;
+  grid-template-areas:
+    "welcome welcome"
+    "today todo";
+  gap: 24px;
+}
+
+/* scrollbar */
+.xzzdpro-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.xzzdpro-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xzzdpro-main::-webkit-scrollbar-thumb {
+  background: var(--primary-accent-color);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+/* --- 卡片基础样式 --- */
+.widget-card {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+  border: 1px solid #000000;  /* 黑色边框 */
+}
+
+.widget-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* --- 各个卡片的网格位置 --- */
+.welcome-card {
+  grid-area: welcome;
+}
+
+.today-courses-card {
+  grid-area: today;
+}
+
+.todo-card {
+  grid-area: todo;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;  /* 防止内容溢出 */
+  min-height: 0;  /* 确保flex子项可以正确收缩 */
+}
+
+/* --- widget-card style --- */
+.widget-card h2,
+.widget-card h3 {
+  margin: 0 0 24px 0;
+  color: var(--text-primary-color, #1a1a1a);
+  font-weight: 600;
+}
+
+.widget-card h2 {
+  color: (--text-primary-color);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.widget-card h3 {
+  color: (--text-primary-color);
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* --- welcome-card style --- */
+
+.welcome-card {
+  display: flex;
+  flex-direction:column;
+  align-items: center;
+}
+
+.welcome-card h2 {
+  font-size: 32px;
+}
+
+.welcome-card p {
+  color: (--text-primary-color);
+  margin: 8px 0 0 0;
+  opacity: 0.9;
+  font-size: 24px;
+}
+
+/* --- todo-list style --- */
+
+.todo-card h3{
+  font-size: 32px;
+}
+
+.todo-list-container {
+  flex: 1;
+  overflow-y: auto; 
+  overflow-x: hidden;  
+  margin-top: 8px;
+  padding-right: 4px;  
+  min-height: 0;  
+}
+
+.todo-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.todo-list-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.todo-list-container::-webkit-scrollbar-thumb {
+  background: var(--primary-accent-color);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+/* --- todo-item style --- */
+.todo-item {
+  background-color: (--card-background);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--primary-accent-color, #4f46e5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.todo-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.todo-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.todo-title {
+  font-weight: 500;
+  color: var(--text-primary-color, #1a1a1a);
+  font-size: 20px;
+}
+
+.todo-type-badge {
+  background-color: var(--primary-accent-color, #4f46e5);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.todo-item-footer {
+  display: flex;
+  align-items: center;
+}
+
+.todo-deadline {
+  color: var(--text-secondary-color, #6b7280);
+  font-size: 18px;
+}
+
+.no-todos-message {
+  text-align: center;
+  color: var(--text-secondary-color, #6b7280);
+  padding: 32px 0;
+  font-size: 14px;
+}
+
+/* --- today-courses-card style --- */
+.today-courses-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.today-courses-card h3 {
+  font-size: 32px;
+}
+
+.today-courses-card .date {
+  color: (--text-secondary-color);
+  font-size: 24px;
+  font-weight: 400;
+}
