@@ -1,3 +1,1 @@
-export ANTHROPIC_AUTH_TOKEN=sk-Csl3wOlP8XPDAH3qmWd6eDm2amiyqy58AkatLZLCFrEiNWJL 
-export ANTHROPIC_BASE_URL=https://anyrouter.top
-claude
+xzzdpro
