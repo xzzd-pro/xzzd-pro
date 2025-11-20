@@ -5,19 +5,18 @@ import { createThemeToggle } from "./components/ThemeToggle"
 
 // TypeScript 类型定义
 interface ApiTodoData {
-  $$hashKey?: string;
   course_code: string;
   course_id: number;
   course_name: string;
   course_type: number;
-  end_time: string; 
+  end_time: string;
   id: number;
   is_locked: boolean;
   is_student: boolean;
   order: string;
   prerequisites: any[];
   title: string;
-  type: string; 
+  type: string;
   url: string;
 }
 
@@ -27,6 +26,27 @@ interface ProcessedTodo {
   courseName: string;
   deadline: string;
   daysLeft: number | null;
+  link: string;
+}
+
+interface ApiCourseData {
+  id: number;
+  name: string;
+  display_name: string;
+  academic_year_id: number;
+  course_attributes: {
+    teaching_class_name: string;
+  };
+  instructors: Array<{
+    id: number;
+    name: string;
+  }>;
+  url: string;
+}
+
+interface ProcessedCourse {
+  name: string;
+  instructors: string;
   link: string;
 }
 
@@ -58,11 +78,11 @@ async function fetchTodosFromApi(): Promise<ApiTodoData[]> {
     }
 
     const data = await response.json();
-    
+
     if (data.todo_list && Array.isArray(data.todo_list)) {
       return data.todo_list;
     }
-    
+
     if (Array.isArray(data)) return data;
 
     console.warn('XZZDPRO: 未找到预期的数据结构', data);
@@ -71,6 +91,71 @@ async function fetchTodosFromApi(): Promise<ApiTodoData[]> {
     console.error('XZZDPRO: 网络请求出错', error);
     return [];
   }
+}
+
+/* get courses api */
+async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
+  try {
+    const payload = {
+        "conditions": {
+          "semester_id": [
+            "78"
+          ],
+          "status": [
+            "ongoing",
+            "notStarted",
+            "closed"
+          ],
+          "keyword": "",
+          "classify_type": "recently_started",
+          "display_studio_list": false
+        },
+        "showScorePassedStatus": false
+    }
+
+    const response = await fetch('https://courses.zju.edu.cn/api/my-courses', {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify(payload) 
+    });
+
+    if (!response.ok) {
+      console.error('XZZDPRO: 课程API请求失败', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+
+    if (data.courses && Array.isArray(data.courses)) {
+      return data.courses;
+    }
+
+    console.warn('XZZDPRO: 未找到预期的课程数据结构', data);
+    return [];
+  } catch (error) {
+    console.error('XZZDPRO: 课程网络请求出错', error);
+    return [];
+  }
+}
+
+// indentify if course is today
+function isCourseToday(teachingClassName: string, today: Date): boolean {
+  if (!teachingClassName) return false;
+
+  const weekdayMap: Record<number, string> = {
+    0: '周日',
+    1: '周一',
+    2: '周二',
+    3: '周三',
+    4: '周四',
+    5: '周五',
+    6: '周六'
+  };
+
+  const todayWeekday = weekdayMap[today.getDay()];
+  return teachingClassName.includes(todayWeekday);
 }
 
 // main function
@@ -87,6 +172,14 @@ export async function indexPageBeautifier(): Promise<void> {
     console.log(`XZZDPRO: 成功获取 ${rawTodos.length} 条待办`);
   } catch (e) {
     console.warn('XZZDPRO: 获取数据流程异常', e);
+  }
+
+  let rawCourses: ApiCourseData[] = [];
+  try {
+    rawCourses = await fetchCoursesFromApi();
+    console.log(`XZZDPRO: 成功获取 ${rawCourses.length} 门课程`);
+  } catch (e) {
+    console.warn('XZZDPRO: 获取课程数据流程异常', e);
   }
 
   const today = new Date();
@@ -127,8 +220,6 @@ export async function indexPageBeautifier(): Promise<void> {
       link: linkUrl
     };
   }).sort((a, b) => {
-    // 按截止日期排序，最近的排在前面
-    // 没有截止日期的排在最后
     if (a.daysLeft === null && b.daysLeft === null) return 0;
     if (a.daysLeft === null) return 1;
     if (b.daysLeft === null) return -1;
@@ -183,6 +274,28 @@ export async function indexPageBeautifier(): Promise<void> {
         }
       }).join('')
     : `<p class="no-todos-message">太棒了，没有待办事项！</p>`;
+
+  // find courses for today
+
+  const todayCourses: ProcessedCourse[] = rawCourses
+    .filter(course => {
+      const teachingClassName = course.course_attributes?.teaching_class_name || '';
+      return isCourseToday(teachingClassName, today);
+    })
+    .map(course => ({
+      name: course.display_name || course.name,
+      instructors: course.instructors.map(i => i.name).join('、'),
+      link: course.url
+    }));
+
+  const todayCoursesHtml = todayCourses.length > 0
+    ? todayCourses.map(course => `
+        <a href="${course.link}" class="course-item">
+          <div class="course-name">${course.name}</div>
+          <div class="course-instructor">任课老师：${course.instructors}</div>
+        </a>
+      `).join('')
+    : `<p class="no-courses-message">今天没有课程安排</p>`;
 
   // clear body
   document.body.innerHTML = '';
@@ -241,7 +354,9 @@ export async function indexPageBeautifier(): Promise<void> {
       </div>
       <div class="widget-card today-courses-card">
         <h3>今日课程 <span class="date">${todayDate}</span></h3>
-        <p>当天课程</p>
+        <div class="courses-list-container">
+          ${todayCoursesHtml}
+        </div>
       </div>
       <div class="widget-card todo-card">
         <h3>待办事项</h3>
