@@ -3,7 +3,7 @@ import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useRef } from "react"
 
 import { indexPageBeautifier } from "../lib/indexPageBeautifier"
-import { waitForElement } from "../lib/waitForElement"
+import { coursePageBeautifier } from "../lib/coursePageBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/*"],
@@ -38,21 +38,11 @@ const ThemeInjector = () => {
       isBeautifying.current = true;
       console.log('XZZDPRO: starting beautification...');
 
-      waitForElement('#userCurrentName', 10000)
-        .then(() => {
-          return waitForElement('.todo-list-list', 3000).catch(() => {
-            console.log('XZZDPRO: unable to find .todo-list-list, skipping...');
-            return null;
-          });
-        })
-        .then(() => {
-          indexPageBeautifier();
-        })
-        .catch((error) => {
-          console.error('XZZDPRO: failed to wait for elements:', error);
-          console.log('XZZDPRO: trying to beautify anyway...');
-          indexPageBeautifier();
-        });
+      indexPageBeautifier();
+    }
+
+    else if (pathname.startsWith('/user/courses')){
+
     }
   }, [theme])
 

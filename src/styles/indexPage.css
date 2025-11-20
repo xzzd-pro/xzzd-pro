@@ -10,108 +10,6 @@
   height: 100vh;
 }
 
-/* --- header style --- */
-.xzzdpro-header {
-  grid-area: header;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--card-border-color);
-  background-color: var(--header-bg);
-  border: 1px solid #000000;
-}
-
-.xzzdpro-header .right-section {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.xzzdpro-header .user-profile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.xzzdpro-header .user-avatar {
-  width: 32px;
-  height: 32px;
-  background-color: #ccc;
-  border-radius: 50%;
-}
-
-/* --- icon style --- */
-.icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.2s ease, transform 0.2s ease;
-  font-size: 20px;
-}
-
-.icon-btn:hover {
-  background-color: var(--background-color);
-  transform: scale(1.1);
-}
-
-.icon-btn:active {
-  transform: scale(0.95);
-}
-
-.theme-icon {
-  display: block;
-  line-height: 1;
-}
-
-
-/* --- sidebar style --- */
-.xzzdpro-sidebar {
-  grid-area: sidebar;
-  background-color: var(--card-background);
-  border-radius: 12px;
-  margin: 20px;
-  padding: 24px 15px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #000000;
-  transition: box-shadow 0.3s ease;
-}
-
-.xzzdpro-sidebar:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.xzzdpro-sidebar li a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 15px;
-  font-weight: 500;
-  transition: background-color 0.2s, color 0.2s;
-  border-radius: 8px;
-}
-
-.xzzdpro-sidebar li.active a {
-  background-color: var(--primary-accent-color);
-  color: white;
-}
-
-.xzzdpro-sidebar li:not(.active) a:hover {
-  background-color: var(--background-color);
-}
-
-
 /* --- main-area style --- */
 .xzzdpro-main {
   grid-area: main;
@@ -148,15 +46,14 @@
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
-  border: 1px solid #000000;  /* 黑色边框 */
+  transition: box-shadow 0.3s ease; 
 }
 
 .widget-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* --- 各个卡片的网格位置 --- */
+/* --- card position --- */
 .welcome-card {
   grid-area: welcome;
 }
@@ -169,8 +66,8 @@
   grid-area: todo;
   display: flex;
   flex-direction: column;
-  overflow: hidden;  /* 防止内容溢出 */
-  min-height: 0;  /* 确保flex子项可以正确收缩 */
+  overflow: hidden;  
+  min-height: 0;  
 }
 
 /* --- widget-card style --- */
@@ -261,6 +158,19 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* 可点击的 todo 项样式 */
+.todo-item-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.todo-item-link:hover {
+  transform: translateX(6px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
 .todo-item-header {
   display: flex;
   align-items: center;
@@ -283,14 +193,73 @@
   font-weight: 500;
 }
 
+.todo-course-name {
+  color: var(--text-secondary-color, #6b7280);
+  font-size: 14px;
+  margin-bottom: 8px;
+  font-weight: 400;
+  opacity: 0.9;
+}
+
 .todo-item-footer {
   display: flex;
   align-items: center;
+  gap: 12px;
+  justify-content: space-between;
 }
 
 .todo-deadline {
   color: var(--text-secondary-color, #6b7280);
   font-size: 18px;
+}
+
+/* days - left */
+.todo-days-left {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.days-left-overdue {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+[data-theme="dark"] .days-left-overdue {
+  background-color: #7f1d1d;
+  color: #fca5a5;
+}
+
+.days-left-urgent {
+  background-color: #fed7aa;
+  color: #ea580c;
+}
+
+[data-theme="dark"] .days-left-urgent {
+  background-color: #7c2d12;
+  color: #fdba74;
+}
+
+.days-left-soon {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+[data-theme="dark"] .days-left-soon {
+  background-color: #78350f;
+  color: #fcd34d;
+}
+
+.days-left-normal {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+[data-theme="dark"] .days-left-normal {
+  background-color: #064e3b;
+  color: #6ee7b7;
 }
 
 .no-todos-message {

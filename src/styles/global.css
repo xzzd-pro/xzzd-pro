@@ -31,3 +31,126 @@ html.xzzdpro[data-theme='dark'] {
   margin: 0;
   padding: 0;
 }
+
+/* specific components */
+
+/* sidebar style */
+.xzzdpro-sidebar {
+  grid-area: sidebar;
+  background-color: var(--card-background);
+  border-radius: 12px;
+  margin: 20px;
+  padding: 24px 15px 24px 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.xzzdpro-sidebar:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.xzzdpro-sidebar li a {
+  display: flex;
+  align-items: center;
+  color: var(--text-primary-color);
+  gap: 12px;
+  padding: 12px 15px;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  border-radius: 8px;
+}
+
+.xzzdpro-sidebar li.active a {
+  background-color: var(--primary-accent-color);
+  color: white;
+}
+
+.xzzdpro-sidebar li:not(.active) a:hover {
+  background-color: var(--background-color);
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  background-color: var(--background-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.xzzdpro-sidebar li.active .nav-icon {
+  background-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.xzzdpro-sidebar li:not(.active) a:hover .nav-icon {
+  background-color: var(--primary-accent-color);
+  transform: scale(1.1);
+}
+
+/* --- icon style --- */
+.icon-btn {
+  background-color: var(--background-color);
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  font-size: 20px;
+}
+
+.icon-btn:hover {
+  background-color: var(--background-color);
+  transform: scale(1.1);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.theme-icon {
+  display: block;
+  line-height: 1;
+}
+
+/* --- header style --- */
+.xzzdpro-header {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--card-border-color);
+  background-color: var(--header-bg);
+}
+
+.xzzdpro-header .right-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.xzzdpro-header .user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xzzdpro-header .user-avatar {
+  width: 32px;
+  height: 32px;
+  background-color: #ccc;
+  border-radius: 50%;
+}
