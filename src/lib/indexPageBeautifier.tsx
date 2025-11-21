@@ -1,54 +1,15 @@
 // lib/indexPageBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { createThemeToggle } from "./components/ThemeToggle"
+import { createThemeToggle } from "./components/themeToggle"
 
 // TypeScript 类型定义
-interface ApiTodoData {
-  course_code: string;
-  course_id: number;
-  course_name: string;
-  course_type: number;
-  end_time: string;
-  id: number;
-  is_locked: boolean;
-  is_student: boolean;
-  order: string;
-  prerequisites: any[];
-  title: string;
-  type: string;
-  url: string;
-}
-
-interface ProcessedTodo {
-  title: string;
-  type: string;
-  courseName: string;
-  deadline: string;
-  daysLeft: number | null;
-  link: string;
-}
-
-interface ApiCourseData {
-  id: number;
-  name: string;
-  display_name: string;
-  academic_year_id: number;
-  course_attributes: {
-    teaching_class_name: string;
-  };
-  instructors: Array<{
-    id: number;
-    name: string;
-  }>;
-  url: string;
-}
-
-interface ProcessedCourse {
-  name: string;
-  instructors: string;
-  link: string;
-}
+import type{
+  ApiTodoData,
+  ProcessedTodo,
+  ApiCourseData,
+  ProcessedCourse
+} from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
 const $$ = (selector: string): NodeListOf<HTMLElement> => document.querySelectorAll(selector);
@@ -140,7 +101,6 @@ async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
   }
 }
 
-// indentify if course is today
 function isCourseToday(teachingClassName: string, today: Date): boolean {
   if (!teachingClassName) return false;
 
@@ -158,45 +118,69 @@ function isCourseToday(teachingClassName: string, today: Date): boolean {
   return teachingClassName.includes(todayWeekday);
 }
 
-// main function
-export async function indexPageBeautifier(): Promise<void> {
-  console.log('XZZDPRO: 准备接管主页...');
+function getLoadingHtml(text: string = '加载中...'): string {
+  return `
+    <div class="xzzd-loading-state" style="padding: 20px; text-align: center; color: #888;">
+      <span class="spinner">Checking...</span> ${text}
+    </div>
+  `;
+}
 
-  const usernameElement = $('#userCurrentName');
-  const username = usernameElement ? usernameElement.textContent.trim() : 'None';
-  const logoSrc = '';
-
-  let rawTodos: ApiTodoData[] = [];
-  try {
-    rawTodos = await fetchTodosFromApi();
-    console.log(`XZZDPRO: 成功获取 ${rawTodos.length} 条待办`);
-  } catch (e) {
-    console.warn('XZZDPRO: 获取数据流程异常', e);
-  }
+async function loadAndRenderCourses() {
+  const container = $('.courses-list-container');
+  if (!container) return;
 
   let rawCourses: ApiCourseData[] = [];
   try {
     rawCourses = await fetchCoursesFromApi();
-    console.log(`XZZDPRO: 成功获取 ${rawCourses.length} 门课程`);
   } catch (e) {
-    console.warn('XZZDPRO: 获取课程数据流程异常', e);
+    console.warn('XZZDPRO: 获取课程异常', e);
   }
 
   const today = new Date();
-  const todayDate = formatDate(today);
+  
+  // data processing
+  const todayCourses: ProcessedCourse[] = rawCourses
+    .filter(course => {
+      const teachingClassName = course.course_attributes?.teaching_class_name || '';
+      return isCourseToday(teachingClassName, today);
+    })
+    .map(course => ({
+      name: course.display_name || course.name,
+      instructors: course.instructors.map(i => i.name).join('、'),
+      link: course.url
+    }));
 
-  const themeToggle = createThemeToggle();
+  // HTML 
+  const todayCoursesHtml = todayCourses.length > 0
+    ? todayCourses.map(course => `
+        <a href="${course.link}" class="course-item">
+          <div class="course-name">${course.name}</div>
+          <div class="course-instructor">任课老师：${course.instructors}</div>
+        </a>
+      `).join('')
+    : `<p class="no-courses-message">今天没有课程安排</p>`;
 
+  container.innerHTML = todayCoursesHtml;
+}
+
+async function loadAndRenderTodos() {
+  const container = $('.todo-list-container');
+  if (!container) return;
+
+  let rawTodos: ApiTodoData[] = [];
+  try {
+    rawTodos = await fetchTodosFromApi();
+  } catch (e) {
+    console.warn('XZZDPRO: 获取待办异常', e);
+  }
+
+  const today = new Date();
+  
+  // data processing
   const todos: ProcessedTodo[] = rawTodos.map(item => {
     const title = item.title || '未知任务';
-
-    const typeMap: Record<string, string> = {
-      'homework': '作业',
-      'exam': '考试',
-      'evaluation': '评教',
-      'questionnaire': '问卷',
-      'vote': '投票'
-    };
+    const typeMap: Record<string, string> = { 'homework': '作业', 'exam': '考试', 'evaluation': '评教', 'questionnaire': '问卷', 'vote': '投票' };
     const typeName = typeMap[item.type] || item.type;
     const courseName = item.course_name || '';
     const linkUrl = generateActivityUrl(item);
@@ -211,14 +195,7 @@ export async function indexPageBeautifier(): Promise<void> {
         daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       }
     }
-    return {
-      title,
-      type: typeName,
-      courseName,
-      deadline: deadlineText,
-      daysLeft,
-      link: linkUrl
-    };
+    return { title, type: typeName, courseName, deadline: deadlineText, daysLeft, link: linkUrl };
   }).sort((a, b) => {
     if (a.daysLeft === null && b.daysLeft === null) return 0;
     if (a.daysLeft === null) return 1;
@@ -226,25 +203,16 @@ export async function indexPageBeautifier(): Promise<void> {
     return a.daysLeft - b.daysLeft;
   });
 
+  // HTML 
   const todoListHtml = todos.length > 0
     ? todos.map(todo => {
         let daysLeftClass = '';
         let daysLeftText = '';
-
         if (todo.daysLeft !== null) {
-          if (todo.daysLeft <= 0) {
-            daysLeftClass = 'days-left-overdue';
-            daysLeftText = '已过期';
-          } else if (todo.daysLeft <= 3) {
-            daysLeftClass = 'days-left-urgent';
-            daysLeftText = `剩余 ${todo.daysLeft} 天`;
-          } else if (todo.daysLeft <= 7) {
-            daysLeftClass = 'days-left-soon';
-            daysLeftText = `剩余 ${todo.daysLeft} 天`;
-          } else {
-            daysLeftClass = 'days-left-normal';
-            daysLeftText = `剩余 ${todo.daysLeft} 天`;
-          }
+          if (todo.daysLeft <= 0) { daysLeftClass = 'days-left-overdue'; daysLeftText = '已过期'; }
+          else if (todo.daysLeft <= 3) { daysLeftClass = 'days-left-urgent'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
+          else if (todo.daysLeft <= 7) { daysLeftClass = 'days-left-soon'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
+          else { daysLeftClass = 'days-left-normal'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
         }
 
         const itemContent = `
@@ -258,51 +226,32 @@ export async function indexPageBeautifier(): Promise<void> {
             ${daysLeftText ? `<span class="todo-days-left ${daysLeftClass}">${daysLeftText}</span>` : ''}
           </div>
         `;
-
-        if (todo.link) {
-          return `
-            <a href="${todo.link}" class="todo-item todo-item-link">
-              ${itemContent}
-            </a>
-          `;
-        } else {
-          return `
-            <div class="todo-item">
-              ${itemContent}
-            </div>
-          `;
-        }
+        return todo.link 
+          ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>` 
+          : `<div class="todo-item">${itemContent}</div>`;
       }).join('')
     : `<p class="no-todos-message">太棒了，没有待办事项！</p>`;
 
-  // find courses for today
+  container.innerHTML = todoListHtml;
+}
 
-  const todayCourses: ProcessedCourse[] = rawCourses
-    .filter(course => {
-      const teachingClassName = course.course_attributes?.teaching_class_name || '';
-      return isCourseToday(teachingClassName, today);
-    })
-    .map(course => ({
-      name: course.display_name || course.name,
-      instructors: course.instructors.map(i => i.name).join('、'),
-      link: course.url
-    }));
+// main function
+export async function indexPageBeautifier(): Promise<void> {
+  console.log('XZZDPRO: 准备接管主页...');
 
-  const todayCoursesHtml = todayCourses.length > 0
-    ? todayCourses.map(course => `
-        <a href="${course.link}" class="course-item">
-          <div class="course-name">${course.name}</div>
-          <div class="course-instructor">任课老师：${course.instructors}</div>
-        </a>
-      `).join('')
-    : `<p class="no-courses-message">今天没有课程安排</p>`;
+    const usernameElement = $('#userCurrentName');
+  const username = usernameElement ? usernameElement.textContent.trim() : '同学';
+  const logoSrc = ''; // 可以设置默认 Logo
+  
+  const today = new Date();
+  const todayDate = formatDate(today);
+  const themeToggle = createThemeToggle();
 
-  // clear body
+  // 2. 立即渲染页面骨架 (Skeleton)
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root';
 
-  // new structure
   root.innerHTML = `
     <header class="xzzdpro-header">
       <div class="logo-area">
@@ -322,27 +271,19 @@ export async function indexPageBeautifier(): Promise<void> {
       <ul class="sidebar-nav">
         <li class="nav-item active">
           <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-text">主页</span>
+            <span class="nav-icon">🏠</span><span class="nav-text">主页</span>
           </a>
         </li>
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/user/course#/" class="nav-link">
-            <span class="nav-icon">📊</span>
-            <span class="nav-text">课程</span>
+            <span class="nav-icon">📊</span><span class="nav-text">课程</span>
           </a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
-            <span class="nav-icon">📢</span>
-            <span class="nav-text">公告</span>
-          </a>
+           <a href="#" class="nav-link"><span class="nav-icon">📢</span><span class="nav-text">公告</span></a>
         </li>
         <li class="nav-item">
-          <a href="#" class="nav-link">
-            <span class="nav-icon">🤖</span>
-            <span class="nav-text">学习助理</span>
-          </a>
+           <a href="#" class="nav-link"><span class="nav-icon">🤖</span><span class="nav-text">学习助理</span></a>
         </li>
       </ul>
     </nav>
@@ -355,13 +296,15 @@ export async function indexPageBeautifier(): Promise<void> {
       <div class="widget-card today-courses-card">
         <h3>今日课程 <span class="date">${todayDate}</span></h3>
         <div class="courses-list-container">
-          ${todayCoursesHtml}
+          <!-- 这里先放加载动画 -->
+          ${getLoadingHtml('正在查询课表...')}
         </div>
       </div>
       <div class="widget-card todo-card">
         <h3>待办事项</h3>
         <div class="todo-list-container">
-          ${todoListHtml}
+          <!-- 这里先放加载动画 -->
+          ${getLoadingHtml('正在同步DDL...')}
         </div>
       </div>
     </main>
@@ -370,8 +313,10 @@ export async function indexPageBeautifier(): Promise<void> {
   document.body.appendChild(root);
   document.body.classList.add('xzzdpro-body');
 
-  console.log('XZZDPRO: 主页接管完成！');
-
-  // 设置主题切换功能
   themeToggle.setup();
+
+  console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');
+
+  loadAndRenderCourses();
+  loadAndRenderTodos();
 }
