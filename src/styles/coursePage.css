@@ -222,7 +222,10 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  height: fit-content;
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  overflow: hidden;
 }
 
 .course-card:hover {

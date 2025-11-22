@@ -172,6 +172,10 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  height: 120px;
+  min-height: 120px;
+  max-height: 120px;
+  overflow: hidden;
 }
 
 .notification-item:hover {
@@ -222,11 +226,24 @@
 
 /* Score badge styles - similar to days-left */
 .notification-score {
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 12px;
-  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.score-number {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.score-unit {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 /* Excellent score: 90-100 (green) */

@@ -86,3 +86,80 @@ export interface ProcessedNotification {
   read: boolean;
   score?: string;
 }
+
+// Activity material types
+export interface MaterialUpload {
+  allow_aliyun_office_view: boolean;
+  allow_download: boolean;
+  allow_private_wps_office_view: boolean;
+  created_at: string;
+  created_by_id: number;
+  deleted: boolean;
+  id: number;
+  key: string;
+  name: string;
+  size: number;
+  type: string;
+  updated_at: string;
+}
+
+export interface MaterialReference {
+  deleted: boolean;
+  id: number;
+  name: string;
+  org_id: number;
+  parent_id: number;
+  parent_type: string;
+  upload: MaterialUpload;
+  upload_id: number;
+}
+
+export interface MaterialApiResponse {
+  references: MaterialReference[];
+}
+
+export interface ProcessedMaterial {
+  id: number;
+  name: string;
+  size: number;
+  sizeText: string;
+  type: string;
+  uploadId: number;
+  downloadUrl: string;
+  canDownload: boolean;
+}
+
+// Homework types
+export interface HomeworkActivity {
+  id: number;
+  title: string;
+  score: string;
+  submitted: boolean;
+  is_closed: boolean;
+  end_time: string;
+  start_time: string;
+  deadline: string;
+  score_published: boolean;
+  type: string;
+  module_id: number;
+  teaching_unit_id: number;
+  user_submit_count: number;
+  is_in_progress: boolean;
+}
+
+export interface HomeworkApiResponse {
+  end: number;
+  homework_activities: HomeworkActivity[];
+}
+
+export interface ProcessedHomework {
+  id: number;
+  title: string;
+  score: string;
+  submitted: boolean;
+  isClosed: boolean;
+  endTime: string;
+  deadline: Date;
+  scorePublished: boolean;
+  link: string;
+}

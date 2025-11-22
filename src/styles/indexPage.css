@@ -146,11 +146,14 @@
 /* --- todo-item style --- */
 .todo-item {
   background-color: (--card-background);
-  border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 12px;
   border-left: 3px solid var(--primary-accent-color, #4f46e5);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100px;
+  min-height: 120px;
+  max-height: 120px;
+  overflow: hidden;
 }
 
 .todo-item:hover {
@@ -158,7 +161,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* 可点击的 todo 项样式 */
 .todo-item-link {
   display: block;
   text-decoration: none;
@@ -182,6 +184,9 @@
   font-weight: 500;
   color: var(--text-primary-color, #1a1a1a);
   font-size: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-type-badge {
@@ -199,6 +204,9 @@
   margin-bottom: 8px;
   font-weight: 400;
   opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-item-footer {
@@ -321,6 +329,10 @@
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  height: 80px;
+  min-height: 80px;
+  max-height: 80px;
+  overflow: hidden;
 }
 
 .course-item:hover {

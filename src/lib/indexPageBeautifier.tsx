@@ -25,6 +25,10 @@ function generateActivityUrl(item: ApiTodoData): string {
   if (!item.course_id || !item.id) {
     return '#';
   }
+  // Exam type uses different URL format
+  if (item.type === 'exam') {
+    return `https://courses.zju.edu.cn/course/${item.course_id}/learning-activity#/exam/${item.id}`;
+  }
   return `https://courses.zju.edu.cn/course/${item.course_id}/learning-activity#/${item.id}`;
 }
 
@@ -158,7 +162,7 @@ async function loadAndRenderCourses() {
       link: generateCourseUrl(course)
     }));
 
-  // HTML 
+  // HTML
   const todayCoursesHtml = todayCourses.length > 0
     ? todayCourses.map(course => `
         <a href="${course.link}" class="course-item">
@@ -210,7 +214,7 @@ async function loadAndRenderTodos() {
     return a.daysLeft - b.daysLeft;
   });
 
-  // HTML 
+  // HTML
   const todoListHtml = todos.length > 0
     ? todos.map(todo => {
         let daysLeftClass = '';
@@ -233,8 +237,8 @@ async function loadAndRenderTodos() {
             ${daysLeftText ? `<span class="todo-days-left ${daysLeftClass}">${daysLeftText}</span>` : ''}
           </div>
         `;
-        return todo.link 
-          ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>` 
+        return todo.link
+          ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>`
           : `<div class="todo-item">${itemContent}</div>`;
       }).join('')
     : `<p class="no-todos-message">太棒了，没有待办事项！</p>`;

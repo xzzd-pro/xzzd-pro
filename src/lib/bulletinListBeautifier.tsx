@@ -153,7 +153,8 @@ function generateNotificationLink(notification: ApiNotificationData): string {
   } else if (payload.homework_id && payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.homework_id}`;
   } else if (payload.exam_id && payload.course_id) {
-    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.exam_id}`;
+    // Exam type uses different URL format
+    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/exam/${payload.exam_id}`;
   } else if (payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}`;
   }
@@ -223,15 +224,16 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
 
     // Determine score class based on score value
     let scoreClass = '';
-    let scoreText = '';
+    let scoreHtml = '';
     if (notification.score !== undefined && notification.score !== null) {
       const score = parseFloat(notification.score);
       if (!isNaN(score)) {
-        if (score >= 90) { scoreClass = 'score-excellent'; scoreText = `${notification.score} 分`; }
-        else if (score >= 80) { scoreClass = 'score-good'; scoreText = `${notification.score} 分`; }
-        else if (score >= 70) { scoreClass = 'score-medium'; scoreText = `${notification.score} 分`; }
-        else if (score >= 60) { scoreClass = 'score-pass'; scoreText = `${notification.score} 分`; }
-        else { scoreClass = 'score-fail'; scoreText = `${notification.score} 分`; }
+        if (score >= 90) { scoreClass = 'score-excellent'; }
+        else if (score >= 80) { scoreClass = 'score-good'; }
+        else if (score >= 70) { scoreClass = 'score-medium'; }
+        else if (score >= 60) { scoreClass = 'score-pass'; }
+        else { scoreClass = 'score-fail'; }
+        scoreHtml = `<span class="score-number">${notification.score}</span><span class="score-unit">分</span>`;
       }
     }
 
@@ -244,7 +246,7 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
         <div class="notification-title">${notification.title}</div>
         <div class="notification-footer">
           <span class="notification-course">${notification.courseName}</span>
-          ${scoreText ? `<span class="notification-score ${scoreClass}">${scoreText}</span>` : ''}
+          ${scoreHtml ? `<span class="notification-score ${scoreClass}">${scoreHtml}</span>` : ''}
         </div>
       </a>
     `;
