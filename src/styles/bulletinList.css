@@ -1,0 +1,229 @@
+/* styles/bulletinList.css */
+
+/* --- root layout --- */
+.xzzdpro-root {
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: 100px 1fr;
+  height: 100vh;
+}
+
+/* --- main area layout --- */
+.xzzdpro-main {
+  grid-area: main;
+  padding: 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* scrollbar */
+.xzzdpro-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.xzzdpro-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xzzdpro-main::-webkit-scrollbar-thumb {
+  background: var(--primary-accent-color);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+/* --- notifications card --- */
+.notifications-card {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+
+.notifications-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.notifications-card h3 {
+  margin: 0 0 20px 0;
+  color: var(--text-primary-color);
+  font-weight: 600;
+  font-size: 24px;
+}
+
+/* --- filter tabs --- */
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--card-border-color);
+  background-color: var(--background-color);
+  color: var(--text-primary-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  background-color: var(--primary-accent-color);
+  color: white;
+  border-color: var(--primary-accent-color);
+}
+
+.filter-btn.active {
+  background-color: var(--primary-accent-color);
+  color: white;
+  border-color: var(--primary-accent-color);
+}
+
+/* --- notifications container --- */
+.notifications-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notifications-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notifications-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.notifications-container::-webkit-scrollbar-thumb {
+  background: var(--primary-accent-color);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+/* --- notification item --- */
+.notification-item {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-color);
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid var(--primary-accent-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+.notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.notification-type-badge {
+  background-color: var(--primary-accent-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.notification-time {
+  color: var(--text-secondary-color);
+  font-size: 12px;
+}
+
+.notification-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary-color);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.notification-course {
+  color: var(--text-secondary-color);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.notification-score {
+  color: var(--primary-accent-color);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* loading and empty states */
+.xzzd-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary-color);
+  font-size: 14px;
+}
+
+.xzzd-loading-state .spinner {
+  margin-right: 8px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.no-notifications-message {
+  text-align: center;
+  color: var(--text-secondary-color);
+  padding: 40px;
+  font-size: 14px;
+}
+
+/* responsive design */
+@media (max-width: 1200px) {
+  .xzzdpro-main {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-tabs {
+    gap: 6px;
+  }
+
+  .filter-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

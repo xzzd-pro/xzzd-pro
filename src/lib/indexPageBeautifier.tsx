@@ -3,7 +3,6 @@
 import { Storage } from "@plasmohq/storage"
 import { createThemeToggle } from "./components/themeToggle"
 
-// TypeScript 类型定义
 import type{
   ApiTodoData,
   ProcessedTodo,
@@ -126,6 +125,13 @@ function getLoadingHtml(text: string = '加载中...'): string {
   `;
 }
 
+function generateCourseUrl(item: ApiCourseData): string {
+  if (!item.id) {
+    return '#';
+  }
+  return `https://courses.zju.edu.cn/course/${item.id}/content#/`;
+}
+
 async function loadAndRenderCourses() {
   const container = $('.courses-list-container');
   if (!container) return;
@@ -148,7 +154,7 @@ async function loadAndRenderCourses() {
     .map(course => ({
       name: course.display_name || course.name,
       instructors: course.instructors.map(i => i.name).join('、'),
-      link: course.url
+      link: generateCourseUrl(course)
     }));
 
   // HTML 
@@ -239,15 +245,14 @@ async function loadAndRenderTodos() {
 export async function indexPageBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管主页...');
 
-    const usernameElement = $('#userCurrentName');
+  const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = ''; // 可以设置默认 Logo
+  const logoSrc = ''; 
   
   const today = new Date();
   const todayDate = formatDate(today);
   const themeToggle = createThemeToggle();
 
-  // 2. 立即渲染页面骨架 (Skeleton)
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root';
@@ -275,12 +280,14 @@ export async function indexPageBeautifier(): Promise<void> {
           </a>
         </li>
         <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/user/course#/" class="nav-link">
+          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
             <span class="nav-icon">📊</span><span class="nav-text">课程</span>
           </a>
         </li>
         <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">📢</span><span class="nav-text">公告</span></a>
+          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
+           <span class="nav-icon">📢</span><span class="nav-text">公告</span>
+          </a>
         </li>
         <li class="nav-item">
            <a href="#" class="nav-link"><span class="nav-icon">🤖</span><span class="nav-text">学习助理</span></a>
