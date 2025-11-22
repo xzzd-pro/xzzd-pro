@@ -40,7 +40,7 @@
 /* --- search card --- */
 .search-card {
   background-color: var(--card-background);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease;
@@ -164,7 +164,7 @@
 /* --- courses card --- */
 .courses-card {
   background-color: var(--card-background);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease;
@@ -215,7 +215,7 @@
   display: flex;
   flex-direction: column;
   background-color: var(--background-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 20px;
   border-left: 4px solid var(--primary-accent-color);
   transition: transform 0.2s ease, box-shadow 0.2s ease;

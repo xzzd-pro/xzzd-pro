@@ -1,4 +1,5 @@
 import { Storage } from "@plasmohq/storage";
+import { themeIcons } from "./themeIcons";
 
 export class ThemeToggle {
   private storage: Storage;
@@ -14,7 +15,7 @@ export class ThemeToggle {
   renderHTML(className: string = 'icon-btn', title: string = '切换主题'): string {
     return `
       <button id="${this.buttonId}" class="${className}" title="${title}">
-        <span class="${this.iconClass}">🌙</span>
+        <span class="${this.iconClass}">${themeIcons.moon}</span>
       </button>
     `;
   }
@@ -22,7 +23,7 @@ export class ThemeToggle {
   private updateThemeIcon(theme: string): void {
     const themeIcon = document.querySelector(`.${this.iconClass}`) as HTMLElement;
     if (themeIcon) {
-      themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      themeIcon.innerHTML = theme === 'dark' ? themeIcons.sun : themeIcons.moon;
     }
   }
 

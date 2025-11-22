@@ -2,6 +2,7 @@
 
 import { Storage } from "@plasmohq/storage"
 import { createThemeToggle } from "./components/themeToggle"
+import { navIcons } from "./components/navIcons"
 import type { ApiCourseData } from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -145,7 +146,7 @@ export function coursePageBeautifier(): void {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = '';
+  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
 
   const themeToggle = createThemeToggle();
 
@@ -160,7 +161,6 @@ export function coursePageBeautifier(): void {
       </div>
       <div class="right-section">
         ${themeToggle.renderHTML()}
-        <span class="icon">🔔</span>
         <div class="user-profile">
           <span class="user-avatar"></span>
           <span class="username">${username}</span>
@@ -172,28 +172,28 @@ export function coursePageBeautifier(): void {
       <ul class="sidebar-nav">
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">🏠</span><span class="nav-text">主页</span>
-          </a>
-        </li>
-        <li class="nav-item active">
-          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">📊</span><span class="nav-text">课程</span>
+            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
           </a>
         </li>
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">📢</span><span class="nav-text">公告</span>
+           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
           </a>
         </li>
         <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">🤖</span><span class="nav-text">学习助理</span></a>
+          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
+            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
+          </a>
+        </li>
+        <li class="nav-item">
+           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
         </li>
       </ul>
     </nav>
 
     <main class="xzzdpro-main">
       <div class="widget-card search-card">
-        <h3>🔍 搜索课程</h3>
+        <h3>搜索课程</h3>
         <div class="search-form">
           <div class="form-row">
             <div class="form-group">

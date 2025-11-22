@@ -40,7 +40,7 @@
 /* --- notifications card --- */
 .notifications-card {
   background-color: var(--card-background);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease;
@@ -78,6 +78,10 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .filter-btn:hover {
@@ -90,6 +94,44 @@
   background-color: var(--primary-accent-color);
   color: white;
   border-color: var(--primary-accent-color);
+}
+
+/* Badge notification count */
+.filter-btn .badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: #ef4444;
+  color: white;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+.filter-btn.active .badge {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--primary-accent-color);
+}
+
+.filter-btn:hover .badge {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: var(--primary-accent-color);
+}
+
+/* Dark theme badge */
+[data-theme="dark"] .filter-btn .badge {
+  background-color: #dc2626;
+}
+
+[data-theme="dark"] .filter-btn.active .badge,
+[data-theme="dark"] .filter-btn:hover .badge {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--primary-accent-color);
 }
 
 /* --- notifications container --- */
@@ -166,17 +208,80 @@
   line-height: 1.4;
 }
 
+.notification-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+
 .notification-course {
   color: var(--text-secondary-color);
   font-size: 14px;
-  margin-bottom: 4px;
 }
 
+/* Score badge styles - similar to days-left */
 .notification-score {
-  color: var(--primary-accent-color);
+  padding: 4px 12px;
+  border-radius: 12px;
   font-size: 14px;
-  font-weight: 500;
-  margin-top: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Excellent score: 90-100 (green) */
+.score-excellent {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+[data-theme="dark"] .score-excellent {
+  background-color: #064e3b;
+  color: #6ee7b7;
+}
+
+/* Good score: 80-89 (yellow-green) */
+.score-good {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+[data-theme="dark"] .score-good {
+  background-color: #78350f;
+  color: #fcd34d;
+}
+
+/* Medium score: 70-79 (orange) */
+.score-medium {
+  background-color: #fed7aa;
+  color: #ea580c;
+}
+
+[data-theme="dark"] .score-medium {
+  background-color: #7c2d12;
+  color: #fdba74;
+}
+
+/* Pass score: 60-69 (light orange) */
+.score-pass {
+  background-color: #ffedd5;
+  color: #f97316;
+}
+
+[data-theme="dark"] .score-pass {
+  background-color: #9a3412;
+  color: #fed7aa;
+}
+
+/* Fail score: <60 (red) */
+.score-fail {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+[data-theme="dark"] .score-fail {
+  background-color: #7f1d1d;
+  color: #fca5a5;
 }
 
 /* loading and empty states */

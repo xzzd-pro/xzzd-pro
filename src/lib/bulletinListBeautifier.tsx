@@ -2,6 +2,7 @@
 
 import { Storage } from "@plasmohq/storage"
 import { createThemeToggle } from "./components/themeToggle"
+import { navIcons } from "./components/navIcons"
 import type { ApiNotificationData, NotificationType, ProcessedNotification } from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -220,6 +221,20 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
   const notificationsHtml = filtered.map(notification => {
     const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || notification.type;
 
+    // Determine score class based on score value
+    let scoreClass = '';
+    let scoreText = '';
+    if (notification.score !== undefined && notification.score !== null) {
+      const score = parseFloat(notification.score);
+      if (!isNaN(score)) {
+        if (score >= 90) { scoreClass = 'score-excellent'; scoreText = `${notification.score} 分`; }
+        else if (score >= 80) { scoreClass = 'score-good'; scoreText = `${notification.score} 分`; }
+        else if (score >= 70) { scoreClass = 'score-medium'; scoreText = `${notification.score} 分`; }
+        else if (score >= 60) { scoreClass = 'score-pass'; scoreText = `${notification.score} 分`; }
+        else { scoreClass = 'score-fail'; scoreText = `${notification.score} 分`; }
+      }
+    }
+
     return `
       <a href="${notification.link}" class="notification-item">
         <div class="notification-header">
@@ -227,8 +242,10 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
           <span class="notification-time">${notification.time}</span>
         </div>
         <div class="notification-title">${notification.title}</div>
-        <div class="notification-course">${notification.courseName}</div>
-        ${notification.score ? `<div class="notification-score">得分: ${notification.score}</div>` : ''}
+        <div class="notification-footer">
+          <span class="notification-course">${notification.courseName}</span>
+          ${scoreText ? `<span class="notification-score ${scoreClass}">${scoreText}</span>` : ''}
+        </div>
       </a>
     `;
   }).join('');
@@ -272,6 +289,50 @@ function setupFilterHandlers() {
   });
 }
 
+function updateNotificationCounts() {
+  // Count unread notifications by type
+  const unreadNotifications = allNotifications.filter(n => !n.read);
+  const readNotifications = allNotifications.filter(n => n.read);
+
+  const unreadCounts = {
+    all: unreadNotifications.length,
+    activity_opened: unreadNotifications.filter(n => n.type === 'activity_opened').length,
+    homework_opened_for_submission: unreadNotifications.filter(n => n.type === 'homework_opened_for_submission').length,
+    homework_score_updated: unreadNotifications.filter(n => n.type === 'homework_score_updated').length,
+    exam_will_start: unreadNotifications.filter(n => n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
+  };
+
+  const readCounts = {
+    all: readNotifications.length,
+    activity_opened: readNotifications.filter(n => n.type === 'activity_opened').length,
+    homework_opened_for_submission: readNotifications.filter(n => n.type === 'homework_opened_for_submission').length,
+    homework_score_updated: readNotifications.filter(n => n.type === 'homework_score_updated').length,
+    exam_will_start: readNotifications.filter(n => n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
+  };
+
+  // Update unread badges
+  $$('.unread-filter-btn').forEach(btn => {
+    const type = btn.getAttribute('data-type') || 'all';
+    const badge = btn.querySelector('.badge') as HTMLElement | null;
+    if (badge) {
+      const count = unreadCounts[type as keyof typeof unreadCounts] || 0;
+      badge.textContent = String(count);
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  });
+
+  // Update read badges
+  $$('.read-filter-btn').forEach(btn => {
+    const type = btn.getAttribute('data-type') || 'all';
+    const badge = btn.querySelector('.badge') as HTMLElement | null;
+    if (badge) {
+      const count = readCounts[type as keyof typeof readCounts] || 0;
+      badge.textContent = String(count);
+      badge.style.display = count > 0 ? 'flex' : 'none';
+    }
+  });
+}
+
 async function loadAndRenderNotifications() {
   const userId = await getUserId();
   if (!userId) {
@@ -302,6 +363,9 @@ async function loadAndRenderNotifications() {
 
   renderNotifications(unreadNotifications, 'unread-notifications-container', currentUnreadFilter);
   renderNotifications(readNotifications, 'read-notifications-container', currentReadFilter);
+
+  // Update notification counts on badges
+  updateNotificationCounts();
 }
 
 export function bulletinListBeautifier(): void {
@@ -309,7 +373,7 @@ export function bulletinListBeautifier(): void {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = '';
+  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
 
   const themeToggle = createThemeToggle();
 
@@ -324,7 +388,6 @@ export function bulletinListBeautifier(): void {
       </div>
       <div class="right-section">
         ${themeToggle.renderHTML()}
-        <span class="icon">🔔</span>
         <div class="user-profile">
           <span class="user-avatar"></span>
           <span class="username">${username}</span>
@@ -336,34 +399,49 @@ export function bulletinListBeautifier(): void {
       <ul class="sidebar-nav">
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">🏠</span><span class="nav-text">主页</span>
+            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
+           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
           </a>
         </li>
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">📊</span><span class="nav-text">课程</span>
-          </a>
-        </li>
-        <li class="nav-item active">
-          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">📢</span><span class="nav-text">公告</span>
+            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
           </a>
         </li>
         <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">🤖</span><span class="nav-text">学习助理</span></a>
+           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
         </li>
       </ul>
     </nav>
 
     <main class="xzzdpro-main">
       <div class="widget-card notifications-card">
-        <h3>📬 未读公告</h3>
+        <h3>未读公告</h3>
         <div class="filter-tabs">
-          <button class="filter-btn unread-filter-btn active" data-type="all">全部</button>
-          <button class="filter-btn unread-filter-btn" data-type="activity_opened">新文件</button>
-          <button class="filter-btn unread-filter-btn" data-type="homework_opened_for_submission">新作业</button>
-          <button class="filter-btn unread-filter-btn" data-type="homework_score_updated">作业成绩</button>
-          <button class="filter-btn unread-filter-btn" data-type="exam_will_start">测验开始</button>
+          <button class="filter-btn unread-filter-btn active" data-type="all">
+            全部
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn unread-filter-btn" data-type="activity_opened">
+            新文件
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn unread-filter-btn" data-type="homework_opened_for_submission">
+            新作业
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn unread-filter-btn" data-type="homework_score_updated">
+            作业成绩
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn unread-filter-btn" data-type="exam_will_start">
+            测验开始
+            <span class="badge">0</span>
+          </button>
         </div>
         <div class="notifications-container" id="unread-notifications-container">
           ${getLoadingHtml('正在加载未读公告...')}
@@ -371,13 +449,28 @@ export function bulletinListBeautifier(): void {
       </div>
 
       <div class="widget-card notifications-card">
-        <h3>📭 已读公告</h3>
+        <h3>已读公告</h3>
         <div class="filter-tabs">
-          <button class="filter-btn read-filter-btn active" data-type="all">全部</button>
-          <button class="filter-btn read-filter-btn" data-type="activity_opened">新文件</button>
-          <button class="filter-btn read-filter-btn" data-type="homework_opened_for_submission">新作业</button>
-          <button class="filter-btn read-filter-btn" data-type="homework_score_updated">作业成绩</button>
-          <button class="filter-btn read-filter-btn" data-type="exam_will_start">测验开始</button>
+          <button class="filter-btn read-filter-btn active" data-type="all">
+            全部
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn read-filter-btn" data-type="activity_opened">
+            新文件
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn read-filter-btn" data-type="homework_opened_for_submission">
+            新作业
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn read-filter-btn" data-type="homework_score_updated">
+            作业成绩
+            <span class="badge">0</span>
+          </button>
+          <button class="filter-btn read-filter-btn" data-type="exam_will_start">
+            测验开始
+            <span class="badge">0</span>
+          </button>
         </div>
         <div class="notifications-container" id="read-notifications-container">
           ${getLoadingHtml('正在加载已读公告...')}

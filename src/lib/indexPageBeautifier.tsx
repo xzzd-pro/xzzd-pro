@@ -2,6 +2,7 @@
 
 import { Storage } from "@plasmohq/storage"
 import { createThemeToggle } from "./components/themeToggle"
+import { navIcons } from "./components/navIcons"
 
 import type{
   ApiTodoData,
@@ -247,7 +248,7 @@ export async function indexPageBeautifier(): Promise<void> {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = ''; 
+  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272'; 
   
   const today = new Date();
   const todayDate = formatDate(today);
@@ -264,7 +265,6 @@ export async function indexPageBeautifier(): Promise<void> {
       </div>
       <div class="right-section">
         ${themeToggle.renderHTML()}
-        <span class="icon">🔔</span>
         <div class="user-profile">
           <span class="user-avatar"></span>
           <span class="username">${username}</span>
@@ -276,34 +276,33 @@ export async function indexPageBeautifier(): Promise<void> {
       <ul class="sidebar-nav">
         <li class="nav-item active">
           <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">🏠</span><span class="nav-text">主页</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">📊</span><span class="nav-text">课程</span>
+            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
           </a>
         </li>
         <li class="nav-item">
           <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">📢</span><span class="nav-text">公告</span>
+           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
           </a>
         </li>
         <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">🤖</span><span class="nav-text">学习助理</span></a>
+          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
+            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
+          </a>
+        </li>
+        <li class="nav-item">
+           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
         </li>
       </ul>
     </nav>
 
     <main class="xzzdpro-main">
       <div class="widget-card welcome-card">
-        <h2>欢迎回来, ${username}</h2>
+        <h2>欢迎回来</h2>
         <p>今天也要元气满满！</p>
       </div>
       <div class="widget-card today-courses-card">
         <h3>今日课程 <span class="date">${todayDate}</span></h3>
         <div class="courses-list-container">
-          <!-- 这里先放加载动画 -->
           ${getLoadingHtml('正在查询课表...')}
         </div>
       </div>
