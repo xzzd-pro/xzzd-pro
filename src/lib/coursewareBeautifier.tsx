@@ -128,7 +128,7 @@ export async function coursewareBeautifier(activityId?: string): Promise<void> {
     courseId,
     courseName,
     'materials',
-    '📚 课件下载',
+    '课件下载',
     contentHtml
   );
 

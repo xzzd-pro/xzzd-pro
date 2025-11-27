@@ -5,24 +5,32 @@
   grid-template-areas:
     "header header"
     "sidebar main";
-  grid-template-columns: 320px; 
-  grid-template-rows: 100px;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto 1fr;
   height: 100vh;
 }
 
 /* --- main-area style --- */
 .xzzdpro-main {
   grid-area: main;
-  padding: 24px;
-  overflow-y: auto;
-  overflow-x: hidden;  
+  overflow: hidden; 
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 30fr;
-  grid-template-areas:
-    "welcome welcome"
-    "today todo";
-  gap: 24px;
+  grid-template-columns: 24px 1fr 24px;
+  grid-template-rows: 1fr;
+  gap: 0;
+  height: 100%;
+}
+
+.main-content-wrapper {
+  grid-column: 2;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 12px 1fr;
+  grid-template-rows: auto 12px 1fr;
+  gap: 0;
+  height: 100%; 
+  box-sizing: border-box;
+  overflow: hidden; 
 }
 
 /* scrollbar */
@@ -40,7 +48,7 @@
   transition: background 0.2s ease;
 }
 
-/* --- 卡片基础样式 --- */
+/* --- card style --- */
 .widget-card {
   background-color: var(--card-background);
   border-radius: 0;
@@ -54,20 +62,31 @@
 }
 
 /* --- card position --- */
-.welcome-card {
-  grid-area: welcome;
+.main-content-wrapper .welcome-card {
+  grid-column: 1 / 4;
+  grid-row: 1;
+  margin-bottom: 0;
 }
 
-.today-courses-card {
-  grid-area: today;
-}
-
-.todo-card {
-  grid-area: todo;
+.main-content-wrapper .today-courses-card {
+  grid-column: 1;
+  grid-row: 3;
+  margin-right: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;  
-  min-height: 0;  
+  overflow: hidden;
+  min-height: 0;
+}
+
+.main-content-wrapper .todo-card {
+  grid-column: 3;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  height: 100%; 
+  margin-right: 0;
 }
 
 /* --- widget-card style --- */
@@ -121,11 +140,12 @@
 
 .todo-list-container {
   flex: 1;
-  overflow-y: auto; 
-  overflow-x: hidden;  
+  overflow-y: auto;
+  overflow-x: hidden;
   margin-top: 8px;
-  padding-right: 4px;  
-  min-height: 0;  
+  padding-right: 8px;
+  min-height: 0;
+  max-height: 100%;
 }
 
 .todo-list-container::-webkit-scrollbar {
@@ -298,8 +318,9 @@
   overflow-y: auto;
   overflow-x: hidden;
   margin-top: 8px;
-  padding-right: 4px;
+  padding-right: 8px;
   min-height: 0;
+  height: 100%;
 }
 
 .courses-list-container::-webkit-scrollbar {
@@ -308,12 +329,10 @@
 
 .courses-list-container::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 3px;
 }
 
 .courses-list-container::-webkit-scrollbar-thumb {
   background: var(--primary-accent-color);
-  border-radius: 3px;
   transition: background 0.2s ease;
 }
 

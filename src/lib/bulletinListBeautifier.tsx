@@ -1,8 +1,7 @@
 // lib/bulletinListBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { createThemeToggle } from "./components/themeToggle"
-import { navIcons } from "./components/navIcons"
+import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
 import type { ApiNotificationData, NotificationType, ProcessedNotification } from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -375,50 +374,15 @@ export function bulletinListBeautifier(): void {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
-
-  const themeToggle = createThemeToggle();
 
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root';
 
   root.innerHTML = `
-    <header class="xzzdpro-header">
-      <div class="logo-area">
-        ${logoSrc ? `<img src="${logoSrc}" alt="Logo">` : 'Logo 区域'}
-      </div>
-      <div class="right-section">
-        ${themeToggle.renderHTML()}
-        <div class="user-profile">
-          <span class="user-avatar"></span>
-          <span class="username">${username}</span>
-        </div>
-      </div>
-    </header>
+    ${renderHeader({ username, showUsername: true })}
 
-    <nav class="xzzdpro-sidebar">
-      <ul class="sidebar-nav">
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
-          </a>
-        </li>
-        <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
-        </li>
-      </ul>
-    </nav>
+    ${renderSidebar({ currentPage: 'notification' })}
 
     <main class="xzzdpro-main">
       <div class="widget-card notifications-card">
@@ -484,7 +448,7 @@ export function bulletinListBeautifier(): void {
   document.body.appendChild(root);
   document.body.classList.add('xzzdpro-body');
 
-  themeToggle.setup();
+  setupThemeToggle();
   setupFilterHandlers();
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');

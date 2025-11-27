@@ -1,8 +1,7 @@
 // lib/indexPageBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { createThemeToggle } from "./components/themeToggle"
-import { navIcons } from "./components/navIcons"
+import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
 
 import type{
   ApiTodoData,
@@ -252,78 +251,50 @@ export async function indexPageBeautifier(): Promise<void> {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272'; 
-  
+
   const today = new Date();
   const todayDate = formatDate(today);
-  const themeToggle = createThemeToggle();
 
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root';
 
   root.innerHTML = `
-    <header class="xzzdpro-header">
-      <div class="logo-area">
-        ${logoSrc ? `<img src="${logoSrc}" alt="Logo">` : 'Logo 区域'}
-      </div>
-      <div class="right-section">
-        ${themeToggle.renderHTML()}
-        <div class="user-profile">
-          <span class="user-avatar"></span>
-          <span class="username">${username}</span>
-        </div>
-      </div>
-    </header>
+    ${renderHeader({ username, showUsername: true })}
 
-    <nav class="xzzdpro-sidebar">
-      <ul class="sidebar-nav">
-        <li class="nav-item active">
-          <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
-          </a>
-        </li>
-        <li class="nav-item">
-           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
-        </li>
-      </ul>
-    </nav>
+    ${renderSidebar({ currentPage: 'home' })}
 
-    <main class="xzzdpro-main">
-      <div class="widget-card welcome-card">
-        <h2>欢迎回来</h2>
-        <p>今天也要元气满满！</p>
-      </div>
-      <div class="widget-card today-courses-card">
-        <h3>今日课程 <span class="date">${todayDate}</span></h3>
-        <div class="courses-list-container">
-          ${getLoadingHtml('正在查询课表...')}
+    <main class="xzzdpro-main" id="main-grid">
+      <div class="resize-handle resize-handle-left" data-direction="left"></div>
+      <div class="main-content-wrapper">
+        <div class="widget-card welcome-card">
+          <h2>欢迎回来</h2>
+          <p>今天也要元气满满！</p>
+        </div>
+        <div class="resize-handle resize-handle-horizontal" data-direction="horizontal"></div>
+        <div class="widget-card today-courses-card">
+          <h3>今日课程 <span class="date">${todayDate}</span></h3>
+          <div class="courses-list-container">
+            ${getLoadingHtml('正在查询课表...')}
+          </div>
+        </div>
+        <div class="resize-handle resize-handle-vertical" data-direction="vertical"></div>
+        <div class="widget-card todo-card">
+          <h3>待办事项</h3>
+          <div class="todo-list-container">
+            <!-- 这里先放加载动画 -->
+            ${getLoadingHtml('正在同步DDL...')}
+          </div>
         </div>
       </div>
-      <div class="widget-card todo-card">
-        <h3>待办事项</h3>
-        <div class="todo-list-container">
-          <!-- 这里先放加载动画 -->
-          ${getLoadingHtml('正在同步DDL...')}
-        </div>
-      </div>
+      <div class="resize-handle resize-handle-right" data-direction="right"></div>
     </main>
   `;
 
   document.body.appendChild(root);
   document.body.classList.add('xzzdpro-body');
 
-  themeToggle.setup();
+  setupThemeToggle();
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');
 

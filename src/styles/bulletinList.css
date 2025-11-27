@@ -7,7 +7,6 @@
     "header header"
     "sidebar main";
   grid-template-columns: 320px 1fr;
-  grid-template-rows: 100px 1fr;
   height: 100vh;
 }
 
@@ -165,7 +164,6 @@
   display: flex;
   flex-direction: column;
   background-color: var(--background-color);
-  border-radius: 8px;
   padding: 16px;
   border-left: 4px solid var(--primary-accent-color);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
