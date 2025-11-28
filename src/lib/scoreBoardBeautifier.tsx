@@ -25,7 +25,7 @@ export async function scoreBoardBeautifier(): Promise<void> {
     courseId,
     courseName,
     'grades',
-    '📊 成绩',
+    '成绩',
     contentHtml
   );
 

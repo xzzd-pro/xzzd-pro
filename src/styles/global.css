@@ -61,7 +61,6 @@ html.xzzdpro[data-theme='dark'] {
 .widget-card h4 {
   font-family: "LXGW WenKai Screen", sans-serif !important;
   margin: 0 0 24px 0;
-  color: var(--text-primary-color, #1a1a1a);
   font-weight: 600;
 }
 
@@ -81,7 +80,28 @@ html.xzzdpro[data-theme='dark'] {
   justify-content: space-between;
 }
 
+.widget-card h4 {
+  color: var(--text-primary-color);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.widget-card span{
+  font-size: 16px;
+}
+
 /* sidebar style */
+
+.xzzdpro-sidebar h2,
+.xzzdpro-sidebar h3,
+.xzzdpro-sidebar h4 {
+  font-family: "LXGW WenKai Screen", sans-serif !important;
+  color: var(--text-primary-color);
+  font-weight: 600;
+}
+
 .xzzdpro-sidebar {
   grid-area: sidebar;
   background-color: var(--card-background);

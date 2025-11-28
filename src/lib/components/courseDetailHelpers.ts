@@ -25,7 +25,7 @@ export async function getCourseName(): Promise<string> {
     const courseId = getCourseIdFromUrl();
     if (!courseId) return '课程';
 
-    const response = await fetch(`https://courses.zju.edu.cn/api/courses/${courseId}/outline`);
+    const response = await fetch(`https://courses.zju.edu.cn/api/courses/${courseId}`);
     if (!response.ok) return '课程';
 
     const data = await response.json();

@@ -129,6 +129,51 @@ export interface ProcessedMaterial {
   canDownload: boolean;
 }
 
+// Courseware types (new API)
+export interface CoursewareUpload {
+  allow_download: boolean;
+  created_at: string;
+  created_by_id: number;
+  id: number;
+  name: string;
+  size: number;
+}
+
+export interface CoursewareActivity {
+  completion_criterion: string;
+  course_id: number;
+  created_at: string;
+  id: number;
+  is_closed: boolean;
+  is_in_progress: boolean;
+  is_started: boolean;
+  title: string;
+  updated_at: string;
+  uploads: CoursewareUpload[];
+}
+
+export interface CoursewareApiResponse {
+  activities: CoursewareActivity[];
+}
+
+export interface ProcessedCoursewareSection {
+  id: number;
+  title: string;
+  isStarted: boolean;
+  isClosed: boolean;
+  completionCriterion: string;
+  files: ProcessedCoursewareFile[];
+}
+
+export interface ProcessedCoursewareFile {
+  id: number;
+  name: string;
+  size: number;
+  sizeText: string;
+  canDownload: boolean;
+  downloadUrl: string;
+}
+
 // Homework types
 export interface HomeworkActivity {
   id: number;

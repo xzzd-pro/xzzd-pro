@@ -31,14 +31,6 @@
   margin-bottom: 16px;
 }
 
-.course-title h3 {
-  margin: 0;
-  color: var(--text-primary-color);
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
 /* --- sidebar footer --- */
 .sidebar-footer {
   padding: 16px 15px;
@@ -81,7 +73,7 @@
   grid-area: main;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 150px 1fr 150px;
+  grid-template-columns: 0.5fr 1000px 0.5fr;
   grid-template-rows: 1fr;
   gap: 0;
   height: 100%;
@@ -99,7 +91,6 @@
 
 .resize-handle-left,
 .resize-handle-right {
-  width: 150px;
   background-color: transparent;
   position: relative;
 }
@@ -130,14 +121,6 @@
 
 .title-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.title-card h2 {
-  margin: 0;
-  color: var(--text-primary-color);
-  font-weight: 700;
-  font-size: 28px;
-  text-align: center;
 }
 
 /* --- content card --- */
@@ -173,15 +156,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.content-section h2 {
-  margin: 0 0 24px 0;
-  color: var(--text-primary-color);
-  font-weight: 700;
-  font-size: 32px;
-  border-bottom: 3px solid var(--primary-accent-color);
-  padding-bottom: 12px;
 }
 
 .loading-message {
@@ -298,6 +272,227 @@
   color: var(--text-secondary-color);
   padding: 60px 20px;
   font-size: 16px;
+}
+
+/* --- courseware sections styles --- */
+.courseware-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.courseware-section {
+  background-color: var(--background-color);
+  border-radius: 8px;
+  overflow: hidden;
+  border-left: 4px solid var(--primary-accent-color);
+  transition: box-shadow 0.2s ease;
+}
+
+.courseware-section:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.courseware-section.closed {
+  border-left-color: var(--text-secondary-color);
+  opacity: 0.85;
+}
+
+.courseware-section.not-started {
+  border-left-color: #ffc107;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.section-header:hover {
+  background-color: var(--card-border-color);
+}
+
+.section-expand-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.section-expand-icon svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary-color);
+}
+
+.courseware-section.expanded .section-expand-icon {
+  transform: rotate(90deg);
+}
+
+.section-title-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.section-title {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary-color);
+  line-height: 1.4;
+}
+
+.section-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.section-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+  background-color: var(--primary-accent-color);
+  color: white;
+}
+
+.section-status.closed {
+  background-color: var(--text-secondary-color);
+}
+
+.section-status.not-started {
+  background-color: #ffc107;
+  color: #333;
+}
+
+.section-criterion {
+  color: var(--text-secondary-color);
+  display: flex;
+  align-items: center;
+}
+
+.section-file-count {
+  color: var(--text-secondary-color);
+  display: flex;
+  align-items: center;
+}
+
+.section-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.courseware-section.expanded .section-content {
+  max-height: 2000px;
+}
+
+.section-files {
+  padding: 0 20px 20px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-files-message {
+  color: var(--text-secondary-color);
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+/* --- courseware file item styles --- */
+.courseware-file {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.courseware-file:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.file-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-accent-color);
+}
+
+.file-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary-color);
+  margin-bottom: 4px;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.file-size {
+  font-size: 13px;
+  color: var(--text-secondary-color);
+}
+
+.file-actions {
+  flex-shrink: 0;
+}
+
+.file-actions .download-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: var(--primary-accent-color);
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.file-actions .download-btn:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.download-icon-svg {
+  width: 16px;
+  height: 16px;
+}
+
+.file-actions .download-disabled {
+  padding: 8px 16px;
+  background-color: var(--card-border-color);
+  color: var(--text-secondary-color);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 /* --- homework list styles --- */

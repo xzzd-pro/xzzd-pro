@@ -125,7 +125,7 @@ function isCourseToday(teachingClassName: string, today: Date): boolean {
 function getLoadingHtml(text: string = '加载中...'): string {
   return `
     <div class="xzzd-loading-state" style="padding: 20px; text-align: center; color: #888;">
-      <span class="spinner">Checking...</span> ${text}
+      <span class="spinner"><h4>Checking...${text}</h4></span> 
     </div>
   `;
 }

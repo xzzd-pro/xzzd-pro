@@ -54,7 +54,7 @@ const LearningActivityPageInjector = () => {
       console.log('XZZDPRO: 检测到活动类型:', activityType)
 
       if (activityType === 'courseware') {
-        void coursewareBeautifier(activityId)
+        void coursewareBeautifier()
       } else if (activityType === 'homework') {
         void homeworkBeautifier()
       } else {
