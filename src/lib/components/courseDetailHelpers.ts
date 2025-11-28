@@ -1,6 +1,7 @@
 // lib/courseDetailHelpers.ts - Shared helpers for all course detail pages
 
 import { createThemeToggle } from "./themeToggle"
+import { courseDetailIcons } from "./courseDetailIcons"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
 
@@ -122,37 +123,37 @@ export function renderCourseDetailPage(
     <nav class="xzzdpro-sidebar">
       <div class="sidebar-content">
         <div class="course-title">
-          <h3>${courseName}</h3>
+          <h3> 课程详情 </h3>
         </div>
         <ul class="sidebar-nav">
           <li class="nav-item ${currentPage === 'overview' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/content#/" class="nav-link">
-              <span class="nav-icon">📋</span><span class="nav-text">课程概览</span>
+              <span class="nav-icon">${courseDetailIcons.overview}</span><span class="nav-text">课程概览</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === 'materials' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/courseware#/" class="nav-link">
-              <span class="nav-icon">📚</span><span class="nav-text">课件下载</span>
+              <span class="nav-icon">${courseDetailIcons.courseware}</span><span class="nav-text">课件下载</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === 'homework' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/homework#/" class="nav-link">
-              <span class="nav-icon">✍️</span><span class="nav-text">作业提交</span>
+              <span class="nav-icon">${courseDetailIcons.homework}</span><span class="nav-text">作业提交</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === 'quiz' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/exam" class="nav-link">
-              <span class="nav-icon">📝</span><span class="nav-text">小测</span>
+              <span class="nav-icon">${courseDetailIcons.quiz}</span><span class="nav-text">小测</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === 'discussion' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/forum#/" class="nav-link">
-              <span class="nav-icon">💬</span><span class="nav-text">讨论区</span>
+              <span class="nav-icon">${courseDetailIcons.discussion}</span><span class="nav-text">讨论区</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === 'grades' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/score#/" class="nav-link">
-              <span class="nav-icon">📊</span><span class="nav-text">成绩</span>
+              <span class="nav-icon">${courseDetailIcons.grades}</span><span class="nav-text">成绩</span>
             </a>
           </li>
         </ul>
@@ -165,13 +166,20 @@ export function renderCourseDetailPage(
       </div>
     </nav>
 
-    <main class="xzzdpro-main">
-      <div class="widget-card content-card">
-        <div class="content-section active">
-          <h2>${pageTitle}</h2>
-          ${contentHtml}
+    <main class="xzzdpro-main" id="main-grid">
+      <div class="resize-handle resize-handle-left"></div>
+      <div class="main-content-wrapper">
+        <div class="widget-card title-card">
+          <h2>${courseName}</h2>
+        </div>
+        <div class="widget-card content-card">
+          <div class="content-section active">
+            <h2>${pageTitle}</h2>
+            ${contentHtml}
+          </div>
         </div>
       </div>
+      <div class="resize-handle resize-handle-right"></div>
     </main>
   `;
 }

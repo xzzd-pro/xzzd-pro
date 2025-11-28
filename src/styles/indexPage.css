@@ -8,14 +8,16 @@
   grid-template-columns: 320px 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 /* --- main-area style --- */
 .xzzdpro-main {
   grid-area: main;
-  overflow: hidden; 
+  overflow: hidden;
   display: grid;
-  grid-template-columns: 24px 1fr 24px;
+  grid-template-columns: 100px 1fr 100px;
   grid-template-rows: 1fr;
   gap: 0;
   height: 100%;
@@ -33,6 +35,97 @@
   overflow: hidden; 
 }
 
+.resize-handle-left,.resize-handle-right {
+  width: 100px;
+  cursor: ew-resize;
+  background-color: transparent;
+  position: relative;
+}
+
+.resize-handle-left::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--primary-accent-color);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle-left:hover::after {
+  opacity: 0.5;
+}
+
+.resize-handle-right::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--primary-accent-color);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle-right:hover::before {
+  opacity: 0.5;
+}
+
+.resize-handle-horizontal {
+  grid-column: 1 / 4;
+  grid-row: 2;
+  height: 12px;
+  cursor: ns-resize;
+  background-color: transparent;
+  position: relative;
+}
+
+.resize-handle-horizontal::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  background-color: var(--primary-accent-color);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle-horizontal:hover::after {
+  opacity: 0.5;
+}
+
+.resize-handle-vertical {
+  grid-column: 2;
+  grid-row: 3;
+  width: 12px;
+  cursor: ew-resize;
+  background-color: transparent;
+  position: relative;
+}
+
+.resize-handle-vertical::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  background-color: var(--primary-accent-color);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle-vertical:hover::after {
+  opacity: 0.5;
+}
+
 /* scrollbar */
 .xzzdpro-main::-webkit-scrollbar {
   width: 8px;
@@ -46,19 +139,6 @@
   background: var(--primary-accent-color);
   border-radius: 4px;
   transition: background 0.2s ease;
-}
-
-/* --- card style --- */
-.widget-card {
-  background-color: var(--card-background);
-  border-radius: 0;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
-}
-
-.widget-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* --- card position --- */
@@ -89,54 +169,23 @@
   margin-right: 0;
 }
 
-/* --- widget-card style --- */
-.widget-card h2,
-.widget-card h3 {
-  margin: 0 0 24px 0;
-  color: var(--text-primary-color, #1a1a1a);
-  font-weight: 600;
-}
-
-.widget-card h2 {
-  color: (--text-primary-color);
-  font-size: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.widget-card h3 {
-  color: (--text-primary-color);
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 /* --- welcome-card style --- */
 
 .welcome-card {
   display: flex;
+  overflow: hidden;
   flex-direction:column;
   align-items: center;
 }
 
-.welcome-card h2 {
-  font-size: 32px;
-}
-
 .welcome-card p {
-  color: (--text-primary-color);
+  color: var(--text-primary-color);
   margin: 8px 0 0 0;
   opacity: 0.9;
   font-size: 24px;
 }
 
 /* --- todo-list style --- */
-
-.todo-card h3{
-  font-size: 32px;
-}
 
 .todo-list-container {
   flex: 1;
@@ -165,7 +214,7 @@
 
 /* --- todo-item style --- */
 .todo-item {
-  background-color: (--card-background);
+  background-color: var(--card-background);
   padding: 12px 16px;
   margin-bottom: 12px;
   border-left: 3px solid var(--primary-accent-color, #4f46e5);
@@ -201,7 +250,6 @@
 }
 
 .todo-title {
-  font-weight: 500;
   color: var(--text-primary-color, #1a1a1a);
   font-size: 20px;
   overflow: hidden;
@@ -215,14 +263,12 @@
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 12px;
-  font-weight: 500;
 }
 
 .todo-course-name {
   color: var(--text-secondary-color, #6b7280);
   font-size: 14px;
   margin-bottom: 8px;
-  font-weight: 400;
   opacity: 0.9;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -246,7 +292,6 @@
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 14px;
-  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -303,14 +348,9 @@
   flex-direction: column;
 }
 
-.today-courses-card h3 {
-  font-size: 32px;
-}
-
 .today-courses-card .date {
-  color: (--text-secondary-color);
+  color: var(--text-secondary-color);
   font-size: 24px;
-  font-weight: 400;
 }
 
 .courses-list-container {
@@ -339,8 +379,7 @@
 /* course item styles */
 .course-item {
   display: block;
-  background-color: (--card-background);
-  border-radius: 8px;
+  background-color: var(--card-background);
   padding: 12px 16px;
   margin-bottom: 12px;
   border-left: 3px solid var(--primary-accent-color, #4f46e5);

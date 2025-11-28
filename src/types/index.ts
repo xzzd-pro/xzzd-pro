@@ -163,3 +163,13 @@ export interface ProcessedHomework {
   scorePublished: boolean;
   link: string;
 }
+
+// Layout state for index page
+export interface LayoutState {
+  leftHandleWidth: number;
+  rightHandleWidth: number;
+  welcomeCardHeight: number;
+  coursesCardFlex: number;
+  todoCardFlex: number;
+  sidebarCollapsed: boolean;
+}

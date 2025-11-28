@@ -9,6 +9,8 @@
   grid-template-columns: 320px 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 /* --- main area layout --- */

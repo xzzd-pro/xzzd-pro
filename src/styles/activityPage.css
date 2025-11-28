@@ -11,6 +11,14 @@
   width: 100vw;
 }
 
+/* sides */
+.resize-handle-left,.resize-handle-right {
+  width: 100px;
+  cursor: ew-resize;
+  background-color: transparent;
+  position: relative;
+}
+
 /* --- main area layout --- */
 .xzzdpro-main {
   grid-area: main;

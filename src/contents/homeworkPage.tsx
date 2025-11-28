@@ -33,7 +33,7 @@ const HomeworkPageInjector = () => {
     isBeautifying.current = true
     console.log('XZZDPRO: starting homework page beautification...')
 
-    void homeworkBeautifier()
+    homeworkBeautifier()
   }, [theme])
 
   return null

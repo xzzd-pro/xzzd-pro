@@ -2,6 +2,7 @@
 
 import { Storage } from "@plasmohq/storage"
 import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
+import { setupResizeHandlers, applySavedLayout } from "./resizeHandlers"
 
 import type{
   ApiTodoData,
@@ -273,14 +274,14 @@ export async function indexPageBeautifier(): Promise<void> {
         </div>
         <div class="resize-handle resize-handle-horizontal" data-direction="horizontal"></div>
         <div class="widget-card today-courses-card">
-          <h3>今日课程 <span class="date">${todayDate}</span></h3>
+          <h2>今日课程 <span class="date">${todayDate}</span></h2>
           <div class="courses-list-container">
             ${getLoadingHtml('正在查询课表...')}
           </div>
         </div>
         <div class="resize-handle resize-handle-vertical" data-direction="vertical"></div>
         <div class="widget-card todo-card">
-          <h3>待办事项</h3>
+          <h2>待办事项</h2>
           <div class="todo-list-container">
             <!-- 这里先放加载动画 -->
             ${getLoadingHtml('正在同步DDL...')}
@@ -300,4 +301,9 @@ export async function indexPageBeautifier(): Promise<void> {
 
   loadAndRenderCourses();
   loadAndRenderTodos();
+
+  // Apply saved layout state and setup resize handlers
+  await applySavedLayout();
+  setupResizeHandlers();
+  console.log('XZZDPRO: 拖拽功能已初始化');
 }

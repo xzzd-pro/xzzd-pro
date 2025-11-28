@@ -6,7 +6,7 @@ import { scoreBoardBeautifier } from "../lib/scoreBoardBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/score*"],
-  css: ["../styles/global.css", "../styles/courseDetail.css"],
+  css: ["../styles/courseDetail.css"],
   run_at: "document_end"
 }
 

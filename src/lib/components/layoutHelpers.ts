@@ -49,6 +49,9 @@ export function renderSidebar(options: SidebarOptions = {}): string {
 
   return `
     <nav class="xzzdpro-sidebar">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
+        <span class="toggle-icon">&lt;&lt;</span>
+      </button>
       <ul class="sidebar-nav">
         <li class="nav-item ${currentPage === 'home' ? 'active' : ''}">
           <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">

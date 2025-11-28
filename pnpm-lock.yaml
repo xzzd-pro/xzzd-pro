@@ -27,6 +27,12 @@ importers:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: 4.1.1
         version: 4.1.1(@vue/compiler-sfc@3.3.4)(prettier@3.2.4)
+      '@parcel/optimizer-data-url':
+        specifier: 2.9.3
+        version: 2.9.3(@parcel/core@2.9.3)
+      '@parcel/transformer-inline-string':
+        specifier: 2.9.3
+        version: 2.9.3(@parcel/core@2.9.3)
       '@types/chrome':
         specifier: 0.0.258
         version: 0.0.258

@@ -5,6 +5,10 @@ import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeTo
 export async function forumBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管讨论区页...');
 
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'xzzdpro-root';
+
   const courseId = getCourseIdFromUrl();
   if (!courseId) {
     console.error('XZZDPRO: 无法提取课程ID');
@@ -16,10 +20,6 @@ export async function forumBeautifier(): Promise<void> {
   const contentHtml = `
     <p class="loading-message">正在加载讨论区...</p>
   `;
-
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root';
 
   root.innerHTML = renderCourseDetailPage(
     courseId,

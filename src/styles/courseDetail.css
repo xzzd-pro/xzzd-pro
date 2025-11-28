@@ -7,8 +7,10 @@
     "header header"
     "sidebar main";
   grid-template-columns: 320px 1fr;
-  grid-template-rows: 100px 1fr;
+  grid-template-rows: auto 1fr;
   height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 /* --- sidebar specific styles --- */
@@ -77,24 +79,65 @@
 /* --- main area layout --- */
 .xzzdpro-main {
   grid-area: main;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 150px 1fr 150px;
+  grid-template-rows: 1fr;
+  gap: 0;
+  height: 100%;
+}
+
+.main-content-wrapper {
+  grid-column: 2;
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
+.resize-handle-left,
+.resize-handle-right {
+  width: 150px;
+  background-color: transparent;
+  position: relative;
+}
+
 /* scrollbar */
-.xzzdpro-main::-webkit-scrollbar {
+.main-content-wrapper::-webkit-scrollbar {
   width: 8px;
 }
 
-.xzzdpro-main::-webkit-scrollbar-track {
+.main-content-wrapper::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.xzzdpro-main::-webkit-scrollbar-thumb {
+.main-content-wrapper::-webkit-scrollbar-thumb {
   background: var(--primary-accent-color);
   border-radius: 4px;
   transition: background 0.2s ease;
+}
+
+/* --- title card --- */
+.title-card {
+  background-color: var(--card-background);
+  border-radius: 0;
+  padding: 24px 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.title-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.title-card h2 {
+  margin: 0;
+  color: var(--text-primary-color);
+  font-weight: 700;
+  font-size: 28px;
+  text-align: center;
 }
 
 /* --- content card --- */
@@ -104,7 +147,7 @@
   padding: 32px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease;
-  min-height: calc(100vh - 148px);
+  flex: 1;
 }
 
 .content-card:hover {

@@ -132,6 +132,10 @@ async function loadAndRenderHomework(courseId: string, activityId?: string) {
 export async function homeworkBeautifier(activityId?: string): Promise<void> {
   console.log('XZZDPRO: 准备接管作业页...', activityId ? `活动ID: ${activityId}` : '');
 
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'xzzdpro-root';
+
   const courseId = getCourseIdFromUrl();
   if (!courseId) {
     console.error('XZZDPRO: 无法提取课程ID');
@@ -145,10 +149,6 @@ export async function homeworkBeautifier(activityId?: string): Promise<void> {
       <p class="loading-message">正在加载作业信息...</p>
     </div>
   `;
-
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root';
 
   root.innerHTML = renderCourseDetailPage(
     courseId,

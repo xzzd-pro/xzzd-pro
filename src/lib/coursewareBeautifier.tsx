@@ -106,6 +106,10 @@ async function loadAndRenderMaterials(activityId: string) {
 export async function coursewareBeautifier(activityId?: string): Promise<void> {
   console.log('XZZDPRO: 准备接管课件下载页...');
 
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'xzzdpro-root';
+
   const courseId = getCourseIdFromUrl();
   if (!courseId) {
     console.error('XZZDPRO: 无法提取课程ID');
@@ -119,10 +123,6 @@ export async function coursewareBeautifier(activityId?: string): Promise<void> {
       <p class="loading-message">正在加载课件列表...</p>
     </div>
   `;
-
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root';
 
   root.innerHTML = renderCourseDetailPage(
     courseId,

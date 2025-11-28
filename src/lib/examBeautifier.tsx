@@ -5,6 +5,10 @@ import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeTo
 export async function examBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管小测页...');
 
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'xzzdpro-root';
+
   const courseId = getCourseIdFromUrl();
   if (!courseId) {
     console.error('XZZDPRO: 无法提取课程ID');
@@ -12,20 +16,14 @@ export async function examBeautifier(): Promise<void> {
   }
 
   const courseName = await getCourseName();
-  const username = getUsername();
 
   const contentHtml = `
     <p class="loading-message">正在加载小测列表...</p>
   `;
 
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root';
-
   root.innerHTML = renderCourseDetailPage(
     courseId,
     courseName,
-    username,
     'quiz',
     '📝 小测',
     contentHtml
