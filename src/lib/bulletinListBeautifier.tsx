@@ -2,7 +2,10 @@
 
 import { Storage } from "@plasmohq/storage"
 import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
-import type { ApiNotificationData, NotificationType, ProcessedNotification } from "../types"
+import type { ApiNotificationData, NotificationType, ProcessedNotification, ReadTimestamps } from "../types"
+
+const storage = new Storage()
+const READ_TIMESTAMPS_KEY = 'xzzdpro_read_timestamps'
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
 const $$ = (selector: string): NodeListOf<HTMLElement> => document.querySelectorAll(selector);
@@ -11,6 +14,7 @@ const NOTIFICATION_TYPE_NAMES: Record<string, string> = {
   'activity_opened': '新文件发布',
   'homework_opened_for_submission': '新作业发布',
   'homework_score_updated': '作业成绩发布',
+  'exam_opened': '测验已开放',
   'exam_will_start': '测验即将开始',
   'exam_submit_started': '测验已开始'
 };
@@ -19,9 +23,75 @@ const VALID_TYPES = [
   'activity_opened',
   'homework_opened_for_submission',
   'homework_score_updated',
+  'exam_opened',
   'exam_will_start',
   'exam_submit_started'
 ];
+
+// Default read timestamps (all set to 0 means no notifications are marked as read)
+const DEFAULT_READ_TIMESTAMPS: ReadTimestamps = {
+  activity_opened: 0,
+  homework_opened_for_submission: 0,
+  homework_score_updated: 0,
+  exam_opened: 0,
+  exam_will_start: 0,
+  exam_submit_started: 0
+};
+
+// Current read timestamps in memory
+let currentReadTimestamps: ReadTimestamps = { ...DEFAULT_READ_TIMESTAMPS };
+
+async function loadReadTimestamps(): Promise<ReadTimestamps> {
+  try {
+    const stored = await storage.get<ReadTimestamps>(READ_TIMESTAMPS_KEY);
+    if (stored) {
+      currentReadTimestamps = { ...DEFAULT_READ_TIMESTAMPS, ...stored };
+      return currentReadTimestamps;
+    }
+  } catch (error) {
+    console.error('XZZDPRO: 加载已读时间戳失败', error);
+  }
+  currentReadTimestamps = { ...DEFAULT_READ_TIMESTAMPS };
+  return currentReadTimestamps;
+}
+
+async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
+  try {
+    await storage.set(READ_TIMESTAMPS_KEY, timestamps);
+    currentReadTimestamps = timestamps;
+    console.log('XZZDPRO: 已保存已读时间戳', timestamps);
+  } catch (error) {
+    console.error('XZZDPRO: 保存已读时间戳失败', error);
+  }
+}
+
+async function markTypeAsRead(type: string): Promise<void> {
+  // Handle exam types together (exam_opened, exam_will_start and exam_submit_started share the same button)
+  const typesToMark = type === 'exam_will_start'
+    ? ['exam_opened', 'exam_will_start', 'exam_submit_started']
+    : [type];
+
+  let updated = false;
+
+  for (const t of typesToMark) {
+    const notificationsOfType = allNotifications.filter(n => n.type === t);
+    if (notificationsOfType.length === 0) continue;
+
+    const maxTimestamp = Math.max(...notificationsOfType.map(n => n.timestamp));
+
+    // Update the stored timestamp if the new one is greater
+    const typeKey = t as keyof ReadTimestamps;
+    if (maxTimestamp > currentReadTimestamps[typeKey]) {
+      currentReadTimestamps[typeKey] = maxTimestamp;
+      updated = true;
+    }
+  }
+
+  // Save once after processing all types
+  if (updated) {
+    await saveReadTimestamps(currentReadTimestamps);
+  }
+}
 
 // Get user ID by fetching course activity data
 async function getUserId(): Promise<string | null> {
@@ -147,13 +217,13 @@ function formatTime(timestamp: number): string {
 function generateNotificationLink(notification: ApiNotificationData): string {
   const { payload } = notification;
 
-  if (payload.activity_id && payload.course_id) {
-    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.activity_id}`;
+  if (payload.exam_id && payload.course_id){
+    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/exam/${payload.exam_id}`;
   } else if (payload.homework_id && payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.homework_id}`;
-  } else if (payload.exam_id && payload.course_id) {
+  } else if (payload.activity_id && payload.course_id) {
     // Exam type uses different URL format
-    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/exam/${payload.exam_id}`;
+    return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.activity_id}`;
   } else if (payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}`;
   }
@@ -180,6 +250,11 @@ function processNotification(notification: ApiNotificationData): ProcessedNotifi
     title = '未知通知';
   }
 
+  // Determine read status based on stored timestamps
+  const typeKey = notification.type as keyof ReadTimestamps;
+  const storedTimestamp = currentReadTimestamps[typeKey] || 0;
+  const isRead = notification.timestamp <= storedTimestamp;
+
   return {
     id: notification.id,
     type: notification.type as NotificationType,
@@ -187,8 +262,9 @@ function processNotification(notification: ApiNotificationData): ProcessedNotifi
     courseName: payload.course_name,
     time: formatTime(notification.timestamp),
     link: generateNotificationLink(notification),
-    read: notification.read || false,
-    score: payload.score
+    read: isRead,
+    score: payload.score,
+    timestamp: notification.timestamp
   };
 }
 
@@ -210,7 +286,12 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
 
   let filtered = notifications;
   if (filterType !== 'all') {
-    filtered = notifications.filter(n => n.type === filterType);
+    // Handle exam types together
+    if (filterType === 'exam_will_start') {
+      filtered = notifications.filter(n => n.type === 'exam_opened' || n.type === 'exam_will_start' || n.type === 'exam_submit_started');
+    } else {
+      filtered = notifications.filter(n => n.type === filterType);
+    }
   }
 
   if (filtered.length === 0) {
@@ -258,13 +339,18 @@ function setupFilterHandlers() {
   // Unread filter buttons
   const unreadFilterBtns = $$('.unread-filter-btn');
   unreadFilterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const filterType = btn.getAttribute('data-type') || 'all';
       currentUnreadFilter = filterType;
 
       // Update active state
       unreadFilterBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+
+      // Mark this type as read when clicking non-"all" buttons
+      if (filterType !== 'all') {
+        await markTypeAsRead(filterType);
+      }
 
       // Re-render unread notifications
       const unreadNotifications = allNotifications.filter(n => !n.read);
@@ -293,22 +379,13 @@ function setupFilterHandlers() {
 function updateNotificationCounts() {
   // Count unread notifications by type
   const unreadNotifications = allNotifications.filter(n => !n.read);
-  const readNotifications = allNotifications.filter(n => n.read);
 
   const unreadCounts = {
     all: unreadNotifications.length,
     activity_opened: unreadNotifications.filter(n => n.type === 'activity_opened').length,
     homework_opened_for_submission: unreadNotifications.filter(n => n.type === 'homework_opened_for_submission').length,
     homework_score_updated: unreadNotifications.filter(n => n.type === 'homework_score_updated').length,
-    exam_will_start: unreadNotifications.filter(n => n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
-  };
-
-  const readCounts = {
-    all: readNotifications.length,
-    activity_opened: readNotifications.filter(n => n.type === 'activity_opened').length,
-    homework_opened_for_submission: readNotifications.filter(n => n.type === 'homework_opened_for_submission').length,
-    homework_score_updated: readNotifications.filter(n => n.type === 'homework_score_updated').length,
-    exam_will_start: readNotifications.filter(n => n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
+    exam_will_start: unreadNotifications.filter(n => n.type === 'exam_opened' || n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
   };
 
   // Update unread badges
@@ -321,20 +398,13 @@ function updateNotificationCounts() {
       badge.style.display = count > 0 ? 'flex' : 'none';
     }
   });
-
-  // Update read badges
-  $$('.read-filter-btn').forEach(btn => {
-    const type = btn.getAttribute('data-type') || 'all';
-    const badge = btn.querySelector('.badge') as HTMLElement | null;
-    if (badge) {
-      const count = readCounts[type as keyof typeof readCounts] || 0;
-      badge.textContent = String(count);
-      badge.style.display = count > 0 ? 'flex' : 'none';
-    }
-  });
 }
 
 async function loadAndRenderNotifications() {
+  // First, load the stored read timestamps
+  await loadReadTimestamps();
+  console.log('XZZDPRO: 已加载已读时间戳', currentReadTimestamps);
+
   const userId = await getUserId();
   if (!userId) {
     console.error('XZZDPRO: 无法获取用户ID');
@@ -419,23 +489,18 @@ export function bulletinListBeautifier(): void {
         <div class="filter-tabs">
           <button class="filter-btn read-filter-btn active" data-type="all">
             全部
-            <span class="badge">0</span>
           </button>
           <button class="filter-btn read-filter-btn" data-type="activity_opened">
             新文件
-            <span class="badge">0</span>
           </button>
           <button class="filter-btn read-filter-btn" data-type="homework_opened_for_submission">
             新作业
-            <span class="badge">0</span>
           </button>
           <button class="filter-btn read-filter-btn" data-type="homework_score_updated">
             作业成绩
-            <span class="badge">0</span>
           </button>
           <button class="filter-btn read-filter-btn" data-type="exam_will_start">
             测验开始
-            <span class="badge">0</span>
           </button>
         </div>
         <div class="notifications-container" id="read-notifications-container">

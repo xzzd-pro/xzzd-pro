@@ -125,7 +125,7 @@ function isCourseToday(teachingClassName: string, today: Date): boolean {
 function getLoadingHtml(text: string = '加载中...'): string {
   return `
     <div class="xzzd-loading-state" style="padding: 20px; text-align: center; color: #888;">
-      <span class="spinner"><h4>Checking...${text}</h4></span> 
+      <span class="spinner">Checking...${text}</span> 
     </div>
   `;
 }
@@ -170,7 +170,7 @@ async function loadAndRenderCourses() {
           <div class="course-instructor">任课老师：${course.instructors}</div>
         </a>
       `).join('')
-    : `<p class="no-courses-message">今天没有课程安排</p>`;
+    : `<p class="no-courses-message"><span>今天没有课程安排</span></p>`;
 
   container.innerHTML = todayCoursesHtml;
 }
@@ -241,7 +241,7 @@ async function loadAndRenderTodos() {
           ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>`
           : `<div class="todo-item">${itemContent}</div>`;
       }).join('')
-    : `<p class="no-todos-message">太棒了，没有待办事项！</p>`;
+    : `<p class="no-todos-message"><span>太棒了，没有待办事项！</span></p>`;
 
   container.innerHTML = todoListHtml;
 }

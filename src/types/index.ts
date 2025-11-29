@@ -47,6 +47,7 @@ export type NotificationType =
   | "activity_opened"
   | "homework_opened_for_submission"
   | "homework_score_updated"
+  | "exam_opened"
   | "exam_will_start"
   | "exam_submit_started"
   | "activity_expiring";
@@ -85,6 +86,17 @@ export interface ProcessedNotification {
   link: string;
   read: boolean;
   score?: string;
+  timestamp: number;
+}
+
+// Read timestamps storage for marking notifications as read
+export interface ReadTimestamps {
+  activity_opened: number;
+  homework_opened_for_submission: number;
+  homework_score_updated: number;
+  exam_opened: number;
+  exam_will_start: number;
+  exam_submit_started: number;
 }
 
 // Activity material types
@@ -207,6 +219,45 @@ export interface ProcessedHomework {
   deadline: Date;
   scorePublished: boolean;
   link: string;
+}
+
+// Homework submission types
+export interface SubmissionUpload {
+  id: number;
+  name: string;
+  size: number;
+  type: string;
+  created_at: string;
+  allow_download: boolean;
+}
+
+export interface HomeworkSubmission {
+  id: number;
+  activity_id: number;
+  is_draft: boolean;
+  is_latest_version: boolean;
+  marked_submitted: boolean;
+  submitted_at: string;
+  uploads: SubmissionUpload[];
+  score: string | null;
+}
+
+export interface SubmissionListResponse {
+  list: HomeworkSubmission[];
+}
+
+// Upload API types
+export interface UploadPreRegisterResponse {
+  id: number;
+  key: number;
+  name: string;
+  status: string;
+  upload_url: string;
+  url: string;
+}
+
+export interface UploadFileResponse {
+  file_key: string;
 }
 
 // Layout state for index page
