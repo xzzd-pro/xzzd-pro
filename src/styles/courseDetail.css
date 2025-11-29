@@ -1045,3 +1045,386 @@ body:not(.xzzdpro-body)::before {
     width: 100%;
   }
 }
+
+/* --- score board styles --- */
+.score-board-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.score-section {
+  background-color: var(--background-color);
+  border-radius: 12px;
+  padding: 24px;
+  border-left: 4px solid var(--primary-accent-color);
+}
+
+.score-section .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary-color);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border-color);
+}
+
+.no-data-message {
+  color: var(--text-secondary-color);
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+}
+
+/* --- total score section --- */
+.total-score-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.total-score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+}
+
+.score-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary-color);
+}
+
+.score-status {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.score-status.announce-yes {
+  background-color: var(--primary-accent-color);
+  color: white;
+}
+
+.score-status.announce-no {
+  background-color: var(--card-border-color);
+  color: var(--text-secondary-color);
+}
+
+/* --- rollcall section --- */
+.rollcall-header,
+.rollcall-item {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.rollcall-header {
+  background-color: var(--card-background);
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary-color);
+}
+
+.rollcall-list {
+  background-color: var(--card-background);
+  border-radius: 0 0 8px 8px;
+}
+
+.rollcall-item {
+  border-top: 1px solid var(--card-border-color);
+}
+
+.rollcall-item:first-child {
+  border-top: none;
+}
+
+.rollcall-time {
+  font-size: 14px;
+  color: var(--text-primary-color);
+}
+
+.rollcall-status {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.rollcall-status.status-normal {
+  background-color: var(--primary-accent-color);
+  color: white;
+}
+
+.rollcall-status.status-absent {
+  background-color: #dc3545;
+  color: white;
+}
+
+.rollcall-scored {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.rollcall-scored.scored-yes {
+  color: var(--primary-accent-color);
+}
+
+.rollcall-scored.scored-no {
+  color: var(--text-secondary-color);
+}
+
+/* --- performance section --- */
+.performance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.performance-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 20px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+}
+
+.perf-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary-color);
+}
+
+.perf-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary-color);
+}
+
+.perf-value.announce-yes {
+  color: var(--primary-accent-color);
+}
+
+.perf-value.announce-no {
+  color: var(--text-secondary-color);
+}
+
+.perf-value.perf-score {
+  font-size: 24px;
+  color: var(--primary-accent-color);
+}
+
+/* --- custom score items section --- */
+.custom-score-header,
+.custom-score-item {
+  display: grid;
+  grid-template-columns: 1fr 100px 100px;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.custom-score-header {
+  background-color: var(--card-background);
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary-color);
+}
+
+.custom-score-list {
+  background-color: var(--card-background);
+  border-radius: 0 0 8px 8px;
+}
+
+.custom-score-item {
+  border-top: 1px solid var(--card-border-color);
+}
+
+.custom-score-item:first-child {
+  border-top: none;
+}
+
+.custom-score-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary-color);
+}
+
+.custom-score-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-accent-color);
+  text-align: center;
+}
+
+.custom-score-percentage {
+  font-size: 13px;
+  color: var(--text-secondary-color);
+  text-align: center;
+}
+
+/* --- activity scores section --- */
+.activity-subsection {
+  margin-top: 20px;
+}
+
+.activity-subsection:first-child {
+  margin-top: 0;
+}
+
+.subsection-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary-color);
+  margin: 0 0 12px 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--primary-accent-color);
+}
+
+/* homework scores */
+.homework-score-header,
+.homework-score-item {
+  display: grid;
+  grid-template-columns: 1fr 80px 80px 1fr;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.homework-score-header {
+  background-color: var(--card-background);
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary-color);
+}
+
+.homework-score-list {
+  background-color: var(--card-background);
+  border-radius: 0 0 8px 8px;
+}
+
+.homework-score-item {
+  border-top: 1px solid var(--card-border-color);
+}
+
+.homework-score-item:first-child {
+  border-top: none;
+}
+
+.hw-score-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary-color);
+}
+
+.hw-score-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary-accent-color);
+  text-align: center;
+}
+
+.hw-score-percentage {
+  font-size: 13px;
+  color: var(--text-secondary-color);
+  text-align: center;
+}
+
+.hw-score-comment {
+  font-size: 13px;
+  color: var(--text-secondary-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* exam scores */
+.exam-score-header,
+.exam-score-item {
+  display: grid;
+  grid-template-columns: 1fr 100px;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: center;
+}
+
+.exam-score-header {
+  background-color: var(--card-background);
+  border-radius: 8px 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary-color);
+}
+
+.exam-score-list {
+  background-color: var(--card-background);
+  border-radius: 0 0 8px 8px;
+}
+
+.exam-score-item {
+  border-top: 1px solid var(--card-border-color);
+}
+
+.exam-score-item:first-child {
+  border-top: none;
+}
+
+.exam-score-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary-color);
+}
+
+.exam-score-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-accent-color);
+  text-align: center;
+}
+
+/* --- score board responsive --- */
+@media (max-width: 768px) {
+  .total-score-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .performance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rollcall-header,
+  .rollcall-item {
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .custom-score-header,
+  .custom-score-item {
+    grid-template-columns: 1fr 80px 80px;
+    gap: 8px;
+  }
+
+  .homework-score-header,
+  .homework-score-item {
+    grid-template-columns: 1fr 60px 60px;
+    gap: 8px;
+  }
+
+  .homework-score-header span:last-child,
+  .homework-score-item .hw-score-comment {
+    display: none;
+  }
+}

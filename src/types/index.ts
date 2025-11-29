@@ -269,3 +269,122 @@ export interface LayoutState {
   todoCardFlex: number;
   sidebarCollapsed: boolean;
 }
+
+// Score board types
+// 1. 总成绩设置
+export interface AnnounceScoreSettings {
+  announce_raw_score_time: string | null;
+  announce_raw_score_type: string;
+  announce_score_time: string | null;
+  announce_score_type: string;
+  is_announce_raw_score_time_passed: boolean;
+  is_announce_score_time_passed: boolean;
+}
+
+export interface AnnounceScoreSettingsResponse {
+  announce_score_settings: AnnounceScoreSettings;
+}
+
+// 2. 考勤成绩
+export interface RollcallItem {
+  is_expired: boolean;
+  is_number: boolean;
+  is_radar: boolean;
+  published_at: string | null;
+  rollcall_id: number;
+  rollcall_status: string;
+  rollcall_time: string;
+  scored: boolean;
+  source: string;
+  status: string;
+  student_rollcall_id: number;
+  student_status: string;
+  student_status_detail: string;
+  title: string;
+  type: string;
+}
+
+export interface RollcallsResponse {
+  rollcalls: RollcallItem[];
+}
+
+// 3. 课堂表现成绩
+export interface PerformanceScoreResponse {
+  announce_score_setting: string;
+  extra_score_updated_time: string | null;
+  interaction_score: number | null;
+  score: number | null;
+  score_announce_setting: {
+    announce_time: string | null;
+    setting_name: string;
+  };
+  score_announced: boolean;
+  score_percentage: string;
+  standard_score: number;
+}
+
+// 4. 自定义成绩项
+export interface CustomScoreItem {
+  announce_score_time: string | null;
+  announce_score_type: string;
+  can_announce_score: boolean;
+  created_at: string;
+  id: number;
+  is_external_score_item: boolean | null;
+  name: string;
+  referrer_type: string;
+  score: string;
+  score_percentage: string;
+}
+
+export interface CustomScoreItemsResponse {
+  custom_score_items: CustomScoreItem[];
+}
+
+// 5. 学习活动成绩 - 作业
+export interface HomeworkScoreActivity {
+  id: number;
+  title: string;
+  score_percentage: string;
+  end_time: string;
+  data: {
+    score_percentage: string;
+  };
+}
+
+export interface HomeworkScoreItem {
+  activity_id: number;
+  final_score: number | null;
+  instructor_comment: string;
+  inter_score: number | null;
+  intra_score: number | null;
+  score: string;
+  student_id: number;
+}
+
+export interface HomeworkScoresResponse {
+  homework_activities: HomeworkScoreActivity[];
+  scores: HomeworkScoreItem[];
+}
+
+// 5. 学习活动成绩 - 测试
+export interface ExamScoreItem {
+  activity_id: number;
+  score: number;
+  submission_scores: number[];
+}
+
+export interface ExamScoresResponse {
+  exam_scores: ExamScoreItem[];
+}
+
+export interface ExamInfo {
+  title: string;
+  type: string;
+  unique_key: string;
+  using_phase: string;
+}
+
+export interface ExamsResponse {
+  exams: ExamInfo[];
+}
