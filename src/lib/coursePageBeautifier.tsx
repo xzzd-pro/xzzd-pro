@@ -151,6 +151,20 @@ export function coursePageBeautifier(): void {
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
 
+  // 移除 chatbot 并监视动态添加
+  const removeChatbot = () => {
+    document.querySelectorAll('air-chatbot-app').forEach(el => el.remove());
+  };
+  removeChatbot();
+
+  const observer = new MutationObserver(() => {
+    removeChatbot();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // 5秒后停止监视
+  setTimeout(() => observer.disconnect(), 5000);
+
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root';
