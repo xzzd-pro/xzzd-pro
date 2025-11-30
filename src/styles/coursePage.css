@@ -30,8 +30,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .resize-handle-left,
@@ -59,7 +59,7 @@
 .search-card {
   background-color: var(--card-background);
   border-radius: 0;
-  padding: 24px;
+  padding: 16px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.3s ease;
 }
@@ -68,115 +68,110 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-.search-card h3 {
-  margin: 0 0 20px 0;
-  color: var(--text-primary-color);
-  font-weight: 600;
-  font-size: 24px;
-}
-
 /* --- search form --- */
 .search-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 16px;
-}
-
-.form-group {
+.search-row {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.form-group label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary-color);
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 280px;
+  gap: 12px;
 }
 
-.form-input,
-.form-select {
-  padding: 10px 12px;
-  border-radius: 8px;
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 0;
   border: 1px solid var(--card-border-color);
   background-color: var(--background-color);
   color: var(--text-primary-color);
-  font-size: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: 15px;
+  transition: border-color 0.2s ease;
 }
 
-.form-input:focus,
-.form-select:focus {
+.search-input:focus {
   outline: none;
   border-color: var(--primary-accent-color);
-  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
 
-.form-input::placeholder {
+.search-input::placeholder {
   color: var(--text-secondary-color);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-/* checkbox group */
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.checkbox-label {
+.search-btn {
+  padding: 10px 20px;
+  border: none;
+  background-color: var(--primary-accent-color);
+  border-radius: 0;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
+  gap: 6px;
   font-size: 14px;
-  color: var(--text-primary-color);
-  transition: color 0.2s ease;
+  font-weight: 500;
+  color: white;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
 }
 
-.checkbox-label:hover {
+.search-btn:hover {
+  background-color: #0056b3;
+}
+
+.search-btn svg {
+  width: 16px;
+  height: 16px;
+  color: white;
+}
+
+/* filter chips */
+.filter-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background-color: var(--background-color);
+  border: 1px solid var(--card-border-color);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary-color);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.filter-chip:hover {
+  border-color: var(--primary-accent-color);
   color: var(--primary-accent-color);
 }
 
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: var(--primary-accent-color);
-}
-
-/* form actions */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 8px;
-}
-
-.btn-primary {
-  padding: 10px 24px;
+.filter-chip:has(input:checked) {
   background-color: var(--primary-accent-color);
+  border-color: var(--primary-accent-color);
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.btn-primary:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+.filter-chip input[type="checkbox"] {
+  display: none;
 }
 
 /* --- courses card --- */
@@ -189,7 +184,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 400px;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .courses-card:hover {
@@ -206,9 +202,10 @@
 /* --- courses grid --- */
 .courses-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -234,46 +231,51 @@
   flex-direction: column;
   background-color: var(--background-color);
   border-radius: 0;
-  padding: 20px;
+  padding: 16px 20px;
   border-left: 4px solid var(--primary-accent-color);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  height: 120px;
-  min-height: 120px;
-  max-height: 120px;
   overflow: hidden;
+  height: 100px;
+  flex-shrink: 0;
 }
 
 .course-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .course-card-header {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .course-card-header .course-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--text-primary-color);
   margin: 0;
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .course-card-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .course-card-body p {
   margin: 0;
   font-size: 14px;
   color: var(--text-secondary-color);
-  line-height: 1.5;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .course-instructor,

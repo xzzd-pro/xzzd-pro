@@ -98,8 +98,8 @@ async function loadAndRenderCourses(filters: CourseFilters = {}) {
           <h4 class="course-name">${courseName}</h4>
         </div>
         <div class="course-card-body">
-          <p class="course-instructor">👨‍🏫 ${instructors}</p>
-          ${teachingClass ? `<p class="course-time">📅 ${teachingClass}</p>` : ''}
+          <p class="course-instructor">授课老师： ${instructors}</p>
+          ${teachingClass ? `<p class="course-time">上课时间： ${teachingClass}</p>` : ''}
         </div>
       </a>
     `;
@@ -111,14 +111,12 @@ async function loadAndRenderCourses(filters: CourseFilters = {}) {
 function setupSearchHandler() {
   const searchBtn = $('#course-search-btn');
   const keywordInput = $('#course-keyword') as HTMLInputElement;
-  const semesterSelect = $('#course-semester') as HTMLSelectElement;
   const statusCheckboxes = $$('input[name="course-status"]') as NodeListOf<HTMLInputElement>;
 
   if (!searchBtn) return;
 
-  searchBtn.addEventListener('click', () => {
+  const doSearch = () => {
     const keyword = keywordInput?.value || '';
-    const semester = semesterSelect?.value || '';
 
     const selectedStatus: string[] = [];
     statusCheckboxes.forEach(checkbox => {
@@ -132,11 +130,18 @@ function setupSearchHandler() {
       status: selectedStatus.length > 0 ? selectedStatus : ["ongoing", "notStarted", "closed"]
     };
 
-    if (semester) {
-      filters.semester_id = [semester];
-    }
-
     loadAndRenderCourses(filters);
+  };
+
+  // 点击搜索按钮
+  searchBtn.addEventListener('click', doSearch);
+
+  // 回车搜索
+  keywordInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doSearch();
+    }
   });
 }
 
@@ -159,49 +164,38 @@ export function coursePageBeautifier(): void {
       <div class="resize-handle resize-handle-left"></div>
       <div class="main-content-wrapper">
         <div class="widget-card search-card">
-          <h3>搜索课程</h3>
           <div class="search-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="course-keyword">关键词</label>
-                <input type="text" id="course-keyword" placeholder="课程名称或教师" class="form-input">
+            <div class="search-row">
+              <div class="search-input-wrapper">
+                <input type="text" id="course-keyword" placeholder="搜索课程名称或教师..." class="form-input search-input">
+                <button id="course-search-btn" class="search-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="M21 21l-4.35-4.35"/>
+                  </svg>
+                  <span>搜索</span>
+                </button>
               </div>
-              <div class="form-group">
-                <label for="course-semester">学期</label>
-                <select id="course-semester" class="form-select">
-                  <option value="">全部学期</option>
-                  <option value="78">2024-2025学年第一学期</option>
-                  <option value="79">2024-2025学年第二学期</option>
-                </select>
+              <div class="filter-chips">
+                <label class="filter-chip">
+                  <input type="checkbox" name="course-status" value="ongoing" checked>
+                  <span>进行中</span>
+                </label>
+                <label class="filter-chip">
+                  <input type="checkbox" name="course-status" value="notStarted" checked>
+                  <span>未开始</span>
+                </label>
+                <label class="filter-chip">
+                  <input type="checkbox" name="course-status" value="closed" checked>
+                  <span>已结束</span>
+                </label>
               </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>课程状态</label>
-                <div class="checkbox-group">
-                  <label class="checkbox-label">
-                    <input type="checkbox" name="course-status" value="ongoing" checked>
-                    <span>进行中</span>
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" name="course-status" value="notStarted" checked>
-                    <span>未开始</span>
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" name="course-status" value="closed" checked>
-                    <span>已结束</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button id="course-search-btn" class="btn-primary">搜索</button>
             </div>
           </div>
         </div>
 
         <div class="widget-card courses-card">
-          <h3>📚 我的课程</h3>
+          <h3>我的课程</h3>
           <div class="courses-grid-container">
             ${getLoadingHtml('正在加载课程...')}
           </div>

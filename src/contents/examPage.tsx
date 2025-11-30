@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react"
 import { examBeautifier } from "../lib/examBeautifier"
 
 export const config: PlasmoCSConfig = {
-  //  repealed
+  //  abolished
   matches: ["https://courses.zju.edu.cn/course/*/exam1111*"],
   css: ["../styles/global.css", "../styles/courseDetail.css"],
   run_at: "document_end"
