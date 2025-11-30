@@ -1,6 +1,6 @@
 // lib/homeworkBeautifier.tsx
 
-import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle } from "./components/courseDetailHelpers"
+import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/courseDetailHelpers"
 import type { HomeworkApiResponse, HomeworkActivity, ProcessedHomework, SubmissionListResponse, HomeworkSubmission } from "../types"
 
 // Get user ID (similar to bulletinListBeautifier)
@@ -502,6 +502,8 @@ export async function homeworkBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
 
   console.log('XZZDPRO: 作业页面渲染完成，开始加载数据...');
 

@@ -1,6 +1,6 @@
 // lib/courseOverviewBeautifier.tsx
 
-import { getCourseIdFromUrl, renderCourseDetailPage, setupThemeToggle } from "./components/courseDetailHelpers"
+import { getCourseIdFromUrl, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/courseDetailHelpers"
 
 interface Instructor {
   id: number;
@@ -177,6 +177,8 @@ export async function courseOverviewBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
 
   // 获取课程数据
   const courseData = await fetchCourseData(courseId);

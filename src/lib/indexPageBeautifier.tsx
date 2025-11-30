@@ -1,7 +1,7 @@
 // lib/indexPageBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/layoutHelpers"
 import { setupResizeHandlers, applySavedLayout } from "./resizeHandlers"
 
 import type{
@@ -296,6 +296,7 @@ export async function indexPageBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');
 

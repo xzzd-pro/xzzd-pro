@@ -1,6 +1,6 @@
 // lib/scoreBoardBeautifier.tsx
 
-import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle } from "./components/courseDetailHelpers"
+import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/courseDetailHelpers"
 import type {
   AnnounceScoreSettingsResponse,
   RollcallsResponse,
@@ -506,6 +506,8 @@ export async function scoreBoardBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
 
   console.log('XZZDPRO: 成绩页面渲染完成，开始加载数据...');
 

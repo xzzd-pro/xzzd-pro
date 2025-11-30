@@ -1,7 +1,7 @@
 // lib/bulletinListBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/layoutHelpers"
 import type { ApiNotificationData, NotificationType, ProcessedNotification, ReadTimestamps } from "../types"
 
 const storage = new Storage()
@@ -454,59 +454,63 @@ export function bulletinListBeautifier(): void {
 
     ${renderSidebar({ currentPage: 'notification' })}
 
-    <main class="xzzdpro-main">
-      <div class="widget-card notifications-card">
-        <h3>未读公告</h3>
-        <div class="filter-tabs">
-          <button class="filter-btn unread-filter-btn active" data-type="all">
-            全部
-            <span class="badge">0</span>
-          </button>
-          <button class="filter-btn unread-filter-btn" data-type="activity_opened">
-            新文件
-            <span class="badge">0</span>
-          </button>
-          <button class="filter-btn unread-filter-btn" data-type="homework_opened_for_submission">
-            新作业
-            <span class="badge">0</span>
-          </button>
-          <button class="filter-btn unread-filter-btn" data-type="homework_score_updated">
-            作业成绩
-            <span class="badge">0</span>
-          </button>
-          <button class="filter-btn unread-filter-btn" data-type="exam_will_start">
-            测验开始
-            <span class="badge">0</span>
-          </button>
+    <main class="xzzdpro-main" id="main-grid">
+      <div class="resize-handle resize-handle-left"></div>
+      <div class="main-content-wrapper">
+        <div class="widget-card notifications-card">
+          <h3>未读公告</h3>
+          <div class="filter-tabs">
+            <button class="filter-btn unread-filter-btn active" data-type="all">
+              全部
+              <span class="badge">0</span>
+            </button>
+            <button class="filter-btn unread-filter-btn" data-type="activity_opened">
+              新文件
+              <span class="badge">0</span>
+            </button>
+            <button class="filter-btn unread-filter-btn" data-type="homework_opened_for_submission">
+              新作业
+              <span class="badge">0</span>
+            </button>
+            <button class="filter-btn unread-filter-btn" data-type="homework_score_updated">
+              作业成绩
+              <span class="badge">0</span>
+            </button>
+            <button class="filter-btn unread-filter-btn" data-type="exam_will_start">
+              测验开始
+              <span class="badge">0</span>
+            </button>
+          </div>
+          <div class="notifications-container" id="unread-notifications-container">
+            ${getLoadingHtml('正在加载未读公告...')}
+          </div>
         </div>
-        <div class="notifications-container" id="unread-notifications-container">
-          ${getLoadingHtml('正在加载未读公告...')}
-        </div>
-      </div>
 
-      <div class="widget-card notifications-card">
-        <h3>已读公告</h3>
-        <div class="filter-tabs">
-          <button class="filter-btn read-filter-btn active" data-type="all">
-            全部
-          </button>
-          <button class="filter-btn read-filter-btn" data-type="activity_opened">
-            新文件
-          </button>
-          <button class="filter-btn read-filter-btn" data-type="homework_opened_for_submission">
-            新作业
-          </button>
-          <button class="filter-btn read-filter-btn" data-type="homework_score_updated">
-            作业成绩
-          </button>
-          <button class="filter-btn read-filter-btn" data-type="exam_will_start">
-            测验开始
-          </button>
-        </div>
-        <div class="notifications-container" id="read-notifications-container">
-          ${getLoadingHtml('正在加载已读公告...')}
+        <div class="widget-card notifications-card">
+          <h3>已读公告</h3>
+          <div class="filter-tabs">
+            <button class="filter-btn read-filter-btn active" data-type="all">
+              全部
+            </button>
+            <button class="filter-btn read-filter-btn" data-type="activity_opened">
+              新文件
+            </button>
+            <button class="filter-btn read-filter-btn" data-type="homework_opened_for_submission">
+              新作业
+            </button>
+            <button class="filter-btn read-filter-btn" data-type="homework_score_updated">
+              作业成绩
+            </button>
+            <button class="filter-btn read-filter-btn" data-type="exam_will_start">
+              测验开始
+            </button>
+          </div>
+          <div class="notifications-container" id="read-notifications-container">
+            ${getLoadingHtml('正在加载已读公告...')}
+          </div>
         </div>
       </div>
+      <div class="resize-handle resize-handle-right"></div>
     </main>
   `;
 
@@ -514,6 +518,8 @@ export function bulletinListBeautifier(): void {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
   setupFilterHandlers();
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');

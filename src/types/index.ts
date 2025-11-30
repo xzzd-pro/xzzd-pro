@@ -388,3 +388,73 @@ export interface ExamInfo {
 export interface ExamsResponse {
   exams: ExamInfo[];
 }
+
+// Forum/Discussion types
+export interface TopicCategory {
+  activity: any | null;
+  activity_id: number;
+  category_instructor_reply_rate: number;
+  category_like_count: number;
+  category_unread_reply_count: number;
+  category_unread_topic_count: number;
+  category_visits_number: number;
+  created_at: string;
+  current_user_reply_count: number;
+  current_user_topic_count: number;
+  id: number;
+  title: string;
+  topics: Topic[];
+  topics_and_replies_count: number;
+}
+
+export interface TopicCategoriesResponse {
+  end: number;
+  page: number;
+  page_size: number;
+  pages: number;
+  start: number;
+  topic_categories: TopicCategory[];
+  total: number;
+}
+
+export interface TopicAuthor {
+  id: number;
+  name: string;
+  avatar_url?: string;
+}
+
+export interface Topic {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  author: TopicAuthor;
+  reply_count: number;
+  like_count: number;
+  is_top: boolean;
+  is_digest: boolean;
+  instructor_replied: boolean;
+  last_reply_at: string | null;
+}
+
+export interface CategoryDetailResponse {
+  activity_id: number | null;
+  id: number;
+  result: {
+    end: number;
+    page: number;
+    page_size: number;
+    pages: number;
+    start: number;
+    topics: Topic[];
+    total: number;
+  };
+}
+
+export interface ProcessedCategory {
+  id: number;
+  title: string;
+  topicCount: number;
+  unreadCount: number;
+}

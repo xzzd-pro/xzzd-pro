@@ -1,6 +1,6 @@
 // lib/coursewareBeautifier.tsx
 
-import { renderCourseDetailPage, setupThemeToggle, getCourseIdFromUrl, getCourseName } from "./components/courseDetailHelpers"
+import { renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle, getCourseIdFromUrl, getCourseName } from "./components/courseDetailHelpers"
 import type { CoursewareApiResponse, CoursewareActivity, ProcessedCoursewareSection, ProcessedCoursewareFile } from "../types"
 
 // Fetch coursewares for a course
@@ -208,6 +208,8 @@ export async function coursewareBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
 
   console.log('XZZDPRO: 课件下载页面渲染完成，开始加载数据...');
 

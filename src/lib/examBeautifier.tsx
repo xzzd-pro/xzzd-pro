@@ -1,6 +1,6 @@
 // lib/examBeautifier.tsx
 
-import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle } from "./components/courseDetailHelpers"
+import { getCourseIdFromUrl, getCourseName, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/courseDetailHelpers"
 
 export async function examBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管小测页...');
@@ -33,6 +33,8 @@ export async function examBeautifier(): Promise<void> {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
 
   console.log('XZZDPRO: 小测页面渲染完成');
 }

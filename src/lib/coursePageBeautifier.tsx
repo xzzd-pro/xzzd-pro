@@ -1,7 +1,7 @@
 // lib/coursePageBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { renderHeader, renderSidebar, setupThemeToggle } from "./components/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/layoutHelpers"
 import type { ApiCourseData } from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -155,55 +155,59 @@ export function coursePageBeautifier(): void {
 
     ${renderSidebar({ currentPage: 'courses' })}
 
-    <main class="xzzdpro-main">
-      <div class="widget-card search-card">
-        <h3>搜索课程</h3>
-        <div class="search-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="course-keyword">关键词</label>
-              <input type="text" id="course-keyword" placeholder="课程名称或教师" class="form-input">
-            </div>
-            <div class="form-group">
-              <label for="course-semester">学期</label>
-              <select id="course-semester" class="form-select">
-                <option value="">全部学期</option>
-                <option value="78">2024-2025学年第一学期</option>
-                <option value="79">2024-2025学年第二学期</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>课程状态</label>
-              <div class="checkbox-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" name="course-status" value="ongoing" checked>
-                  <span>进行中</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" name="course-status" value="notStarted" checked>
-                  <span>未开始</span>
-                </label>
-                <label class="checkbox-label">
-                  <input type="checkbox" name="course-status" value="closed" checked>
-                  <span>已结束</span>
-                </label>
+    <main class="xzzdpro-main" id="main-grid">
+      <div class="resize-handle resize-handle-left"></div>
+      <div class="main-content-wrapper">
+        <div class="widget-card search-card">
+          <h3>搜索课程</h3>
+          <div class="search-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="course-keyword">关键词</label>
+                <input type="text" id="course-keyword" placeholder="课程名称或教师" class="form-input">
+              </div>
+              <div class="form-group">
+                <label for="course-semester">学期</label>
+                <select id="course-semester" class="form-select">
+                  <option value="">全部学期</option>
+                  <option value="78">2024-2025学年第一学期</option>
+                  <option value="79">2024-2025学年第二学期</option>
+                </select>
               </div>
             </div>
-          </div>
-          <div class="form-actions">
-            <button id="course-search-btn" class="btn-primary">搜索</button>
+            <div class="form-row">
+              <div class="form-group">
+                <label>课程状态</label>
+                <div class="checkbox-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="course-status" value="ongoing" checked>
+                    <span>进行中</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="course-status" value="notStarted" checked>
+                    <span>未开始</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="course-status" value="closed" checked>
+                    <span>已结束</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="course-search-btn" class="btn-primary">搜索</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="widget-card courses-card">
-        <h3>📚 我的课程</h3>
-        <div class="courses-grid-container">
-          ${getLoadingHtml('正在加载课程...')}
+        <div class="widget-card courses-card">
+          <h3>📚 我的课程</h3>
+          <div class="courses-grid-container">
+            ${getLoadingHtml('正在加载课程...')}
+          </div>
         </div>
       </div>
+      <div class="resize-handle resize-handle-right"></div>
     </main>
   `;
 
@@ -211,6 +215,8 @@ export function coursePageBeautifier(): void {
   document.body.classList.add('xzzdpro-body');
 
   setupThemeToggle();
+  setupHelpModal();
+  setupSidebarToggle();
   setupSearchHandler();
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');
