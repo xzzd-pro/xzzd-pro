@@ -187,7 +187,8 @@
 
 /* --- todo-list style --- */
 
-.todo-list-container {
+.todo-list-container,
+.courses-list-container {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
@@ -197,16 +198,19 @@
   max-height: 100%;
 }
 
-.todo-list-container::-webkit-scrollbar {
+.todo-list-container::-webkit-scrollbar,
+.courses-list-container::-webkit-scrollbar {
   width: 6px;
 }
 
-.todo-list-container::-webkit-scrollbar-track {
+.todo-list-container::-webkit-scrollbar-track,
+.courses-list-container::-webkit-scrollbar-track {
   background: transparent;
   border-radius: 3px;
 }
 
-.todo-list-container::-webkit-scrollbar-thumb {
+.todo-list-container::-webkit-scrollbar-thumb,
+.courses-list-container::-webkit-scrollbar-thumb {
   background: var(--primary-accent-color);
   border-radius: 3px;
   transition: background 0.2s ease;
@@ -353,28 +357,7 @@
   font-size: 24px;
 }
 
-.courses-list-container {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  margin-top: 8px;
-  padding-right: 8px;
-  min-height: 0;
-  height: 100%;
-}
-
-.courses-list-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.courses-list-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.courses-list-container::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
-  transition: background 0.2s ease;
-}
+/* Removed old .courses-list-container styles as they are now merged with .todo-list-container */
 
 /* course item styles */
 .course-item {
