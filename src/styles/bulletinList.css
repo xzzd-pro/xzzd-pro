@@ -18,7 +18,7 @@
   grid-area: main;
   overflow: hidden;
   display: grid;
-  grid-template-columns: 0.5fr 1500px 0.5fr;
+  grid-template-columns: 0.15fr 0.7fr 0.15fr;
   grid-template-rows: 1fr;
   gap: 0;
   height: 100%;

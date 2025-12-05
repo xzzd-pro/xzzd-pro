@@ -46,6 +46,7 @@ export interface ProcessedCourse {
 export type NotificationType =
   | "activity_opened"
   | "homework_opened_for_submission"
+  | "course_homework_make_up"
   | "homework_score_updated"
   | "exam_opened"
   | "exam_will_start"
@@ -93,6 +94,7 @@ export interface ProcessedNotification {
 export interface ReadTimestamps {
   activity_opened: number;
   homework_opened_for_submission: number;
+  course_homework_make_up: number;
   homework_score_updated: number;
   exam_opened: number;
   exam_will_start: number;

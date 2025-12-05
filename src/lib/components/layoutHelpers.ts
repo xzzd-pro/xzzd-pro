@@ -1,7 +1,7 @@
 // lib/components/layoutHelpers.ts - Shared layout components for header and sidebar
 
 import { createThemeToggle } from "./themeToggle"
-import { navIcons } from "./navIcons"
+import { navIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
 
 const storage = new Storage()

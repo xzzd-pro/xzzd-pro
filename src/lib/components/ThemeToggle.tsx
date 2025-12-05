@@ -1,5 +1,5 @@
 import { Storage } from "@plasmohq/storage";
-import { themeIcons } from "./themeIcons";
+import { themeIcons } from "./icons";
 
 export class ThemeToggle {
   private storage: Storage;

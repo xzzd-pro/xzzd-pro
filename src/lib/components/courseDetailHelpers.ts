@@ -1,7 +1,7 @@
 // lib/courseDetailHelpers.ts - Shared helpers for all course detail pages
 
 import { createThemeToggle } from "./themeToggle"
-import { courseDetailIcons } from "./courseDetailIcons"
+import { courseDetailIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
 
 const storage = new Storage()
@@ -190,9 +190,9 @@ export function renderCourseDetailPage(
         </button>
       </div>
       <div class="sidebar-footer">
-        <a href="https://courses.zju.edu.cn/user/index#/" class="back-btn">
+        <a href="https://courses.zju.edu.cn/user/courses#/" class="back-btn">
           <span class="back-icon">←</span>
-          <span class="back-text">返回主页</span>
+          <span class="back-text">返回课程</span>
         </a>
       </div>
     </nav>

@@ -13,6 +13,7 @@ const $$ = (selector: string): NodeListOf<HTMLElement> => document.querySelector
 const NOTIFICATION_TYPE_NAMES: Record<string, string> = {
   'activity_opened': '新文件发布',
   'homework_opened_for_submission': '新作业发布',
+  'course_homework_make_up': '补交作业',
   'homework_score_updated': '作业成绩发布',
   'exam_opened': '测验已开放',
   'exam_will_start': '测验即将开始',
@@ -22,6 +23,7 @@ const NOTIFICATION_TYPE_NAMES: Record<string, string> = {
 const VALID_TYPES = [
   'activity_opened',
   'homework_opened_for_submission',
+  'course_homework_make_up',
   'homework_score_updated',
   'exam_opened',
   'exam_will_start',
@@ -32,6 +34,7 @@ const VALID_TYPES = [
 const DEFAULT_READ_TIMESTAMPS: ReadTimestamps = {
   activity_opened: 0,
   homework_opened_for_submission: 0,
+  course_homework_make_up: 0,
   homework_score_updated: 0,
   exam_opened: 0,
   exam_will_start: 0,
@@ -66,10 +69,17 @@ async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
 }
 
 async function markTypeAsRead(type: string): Promise<void> {
-  // Handle exam types together (exam_opened, exam_will_start and exam_submit_started share the same button)
-  const typesToMark = type === 'exam_will_start'
-    ? ['exam_opened', 'exam_will_start', 'exam_submit_started']
-    : [type];
+  // Handle grouped types together
+  // exam types share the same button
+  // homework types (new + make up) share the same button
+  let typesToMark: string[];
+  if (type === 'exam_will_start') {
+    typesToMark = ['exam_opened', 'exam_will_start', 'exam_submit_started'];
+  } else if (type === 'homework_opened_for_submission') {
+    typesToMark = ['homework_opened_for_submission', 'course_homework_make_up'];
+  } else {
+    typesToMark = [type];
+  }
 
   let updated = false;
 
@@ -286,9 +296,11 @@ function renderNotifications(notifications: ProcessedNotification[], containerId
 
   let filtered = notifications;
   if (filterType !== 'all') {
-    // Handle exam types together
+    // Handle grouped types together
     if (filterType === 'exam_will_start') {
       filtered = notifications.filter(n => n.type === 'exam_opened' || n.type === 'exam_will_start' || n.type === 'exam_submit_started');
+    } else if (filterType === 'homework_opened_for_submission') {
+      filtered = notifications.filter(n => n.type === 'homework_opened_for_submission' || n.type === 'course_homework_make_up');
     } else {
       filtered = notifications.filter(n => n.type === filterType);
     }
@@ -383,7 +395,7 @@ function updateNotificationCounts() {
   const unreadCounts = {
     all: unreadNotifications.length,
     activity_opened: unreadNotifications.filter(n => n.type === 'activity_opened').length,
-    homework_opened_for_submission: unreadNotifications.filter(n => n.type === 'homework_opened_for_submission').length,
+    homework_opened_for_submission: unreadNotifications.filter(n => n.type === 'homework_opened_for_submission' || n.type === 'course_homework_make_up').length,
     homework_score_updated: unreadNotifications.filter(n => n.type === 'homework_score_updated').length,
     exam_will_start: unreadNotifications.filter(n => n.type === 'exam_opened' || n.type === 'exam_will_start' || n.type === 'exam_submit_started').length,
   };
@@ -444,6 +456,20 @@ export function bulletinListBeautifier(): void {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
+
+  // 移除 chatbot 并监视动态添加
+  const removeChatbot = () => {
+    document.querySelectorAll('air-chatbot-app').forEach(el => el.remove());
+  };
+  removeChatbot();
+
+  const observer = new MutationObserver(() => {
+    removeChatbot();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // 5秒后停止监视
+  setTimeout(() => observer.disconnect(), 5000);
 
   document.body.innerHTML = '';
   const root = document.createElement('div');

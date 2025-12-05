@@ -9,7 +9,7 @@ import {
   setupHelpModal,
   setupSidebarToggle,
 } from "./components/layoutHelpers";
-import { setupResizeHandlers, applySavedLayout } from "./resizeHandlers";
+import { setupResizeHandlers, applySavedLayout } from "./components/resizeHandlers";
 
 import type {
   ApiTodoData,
@@ -483,11 +483,25 @@ export async function indexPageBeautifier(): Promise<void> {
 
   const usernameElement = $('#userCurrentName');
   const username = usernameElement ? usernameElement.textContent.trim() : '同学';
-  
+
   // Get student ID from .user-no
   const userNoElement = $('.user-no');
   const studentId = userNoElement ? userNoElement.textContent.trim() : '';
   console.log('XZZDPRO: Found student ID:', studentId);
+
+  // 移除 chatbot 并监视动态添加
+  const removeChatbot = () => {
+    document.querySelectorAll('air-chatbot-app').forEach(el => el.remove());
+  };
+  removeChatbot();
+
+  const observer = new MutationObserver(() => {
+    removeChatbot();
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  // 5秒后停止监视
+  setTimeout(() => observer.disconnect(), 5000);
 
   const today = new Date();
   const todayDate = formatDate(today);

@@ -8,6 +8,7 @@ import { getUserId, detectActivityType, getActivityIdFromUrl } from "../lib/comp
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/learning-activity*"],
+  exclude_matches: ["https://courses.zju.edu.cn/course/*/learning-activity#/exam*"],
   css: ["../styles/global.css", "../styles/courseDetail.css"],
   run_at: "document_end"
 }

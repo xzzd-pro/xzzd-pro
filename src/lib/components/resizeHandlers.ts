@@ -1,7 +1,7 @@
-// lib/resizeHandlers.ts
+// lib/components/resizeHandlers.ts
 
 import { Storage } from "@plasmohq/storage"
-import type { LayoutState } from "../types"
+import type { LayoutState } from "../../types"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"

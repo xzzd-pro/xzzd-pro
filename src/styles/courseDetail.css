@@ -37,11 +37,10 @@ body:not(.xzzdpro-body)::before {
 .xzzdpro-sidebar {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .sidebar-content {
-  flex: 1;
+  flex: 0 1 auto;
   overflow-y: auto;
 }
 
@@ -55,7 +54,7 @@ body:not(.xzzdpro-body)::before {
 .sidebar-footer {
   padding: 16px 15px;
   border-top: 2px solid var(--card-border-color);
-  margin-top: auto;
+  flex: 0 0 auto;
 }
 
 .back-btn {
@@ -1722,26 +1721,33 @@ body:not(.xzzdpro-body)::before {
 
 /* --- sidebar collapsed state for course detail --- */
 .xzzdpro-root.sidebar-collapsed .course-title {
-  display: none;
+  visibility: hidden;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  overflow: hidden;
 }
 
 .xzzdpro-root.sidebar-collapsed .back-text {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
+  display: none;
 }
 
 .xzzdpro-root.sidebar-collapsed .back-btn {
   justify-content: center;
-  padding: 12px 16px;
+  padding: 12px;
   gap: 0;
+  line-height: 1;
 }
 
 .xzzdpro-root.sidebar-collapsed .sidebar-footer {
   padding: 16px 8px;
+  width: 100%;
+  align-self: stretch;
 }
 
 .xzzdpro-root.sidebar-collapsed .sidebar-content {
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -93,17 +93,22 @@
 .search-input {
   flex: 1;
   padding: 10px 16px;
-  border-radius: 0;
+  border-radius: 8px;
   border: 1px solid var(--card-border-color);
-  background-color: var(--background-color);
+  background-color: var(--card-background);
   color: var(--text-primary-color);
   font-size: 15px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  /* 禁用系统颜色方案，确保使用插件定义的颜色 */
+  color-scheme: light dark;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .search-input:focus {
   outline: none;
   border-color: var(--primary-accent-color);
+  background-color: var(--card-background);
 }
 
 .search-input::placeholder {
@@ -115,7 +120,7 @@
   padding: 10px 20px;
   border: none;
   background-color: var(--primary-accent-color);
-  border-radius: 0;
+  border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
