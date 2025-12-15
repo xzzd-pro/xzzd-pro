@@ -3,6 +3,7 @@
 import { createThemeToggle } from "./themeToggle"
 import { navIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
+import { Storage } from "@plasmohq/storage"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -24,7 +25,7 @@ interface SidebarOptions {
  * @returns HTML string for the header
  */
 export function renderHeader(options: HeaderOptions = {}): string {
-  const { username = '同学', showUsername = true } = options;
+  const { username = '', showUsername = true } = options;
   const themeToggle = createThemeToggle();
 
   return `
@@ -39,7 +40,7 @@ export function renderHeader(options: HeaderOptions = {}): string {
         ${themeToggle.renderHTML()}
         <div class="user-profile">
           <span class="user-avatar"></span>
-          ${showUsername ? `<span class="username">${username}</span>` : ''}
+          ${showUsername && username ? `<span class="username">${username}</span>` : ''}
         </div>
       </div>
     </header>
@@ -94,7 +95,7 @@ export function renderSidebar(options: SidebarOptions = {}): string {
           </a>
         </li>
         <li class="nav-item ${currentPage === 'assistant' ? 'active' : ''}">
-           <a href="#" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
+           <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
         </li>
       </ul>
       <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
@@ -184,4 +185,17 @@ export async function setupSidebarToggle(): Promise<void> {
       console.error('XZZDPRO: Failed to save sidebar state', error);
     }
   });
+}
+
+
+export function setupAssistantNavigation(): void {
+  const link = document.getElementById('nav-assistant-link');
+  if (link) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Force hard navigation to bypass SPA router
+      window.location.assign('https://courses.zju.edu.cn/air');
+    });
+  }
 }

@@ -8,6 +8,7 @@ import {
   setupThemeToggle,
   setupHelpModal,
   setupSidebarToggle,
+  setupAssistantNavigation,
 } from "./components/layoutHelpers";
 import { setupResizeHandlers, applySavedLayout } from "./components/resizeHandlers";
 
@@ -68,28 +69,28 @@ async function fetchTodosFromApi(): Promise<ApiTodoData[]> {
 async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
   try {
     const payload = {
-        "conditions": {
-          "semester_id": [
-            "78"
-          ],
-          "status": [
-            "ongoing",
-            "notStarted",
-            "closed"
-          ],
-          "keyword": "",
-          "classify_type": "recently_started",
-          "display_studio_list": false
-        },
-        "showScorePassedStatus": false
+      "conditions": {
+        "semester_id": [
+          "78"
+        ],
+        "status": [
+          "ongoing",
+          "notStarted",
+          "closed"
+        ],
+        "keyword": "",
+        "classify_type": "recently_started",
+        "display_studio_list": false
+      },
+      "showScorePassedStatus": false
     }
 
     const response = await fetch('https://courses.zju.edu.cn/api/my-courses', {
-      method: 'POST', 
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json' 
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload) 
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
@@ -418,7 +419,7 @@ async function loadAndRenderTodos() {
   }
 
   const today = new Date();
-  
+
   // data processing
   const todos: ProcessedTodo[] = rawTodos.map(item => {
     const title = item.title || '未知任务';
@@ -448,16 +449,16 @@ async function loadAndRenderTodos() {
   // HTML
   const todoListHtml = todos.length > 0
     ? todos.map(todo => {
-        let daysLeftClass = '';
-        let daysLeftText = '';
-        if (todo.daysLeft !== null) {
-          if (todo.daysLeft <= 0) { daysLeftClass = 'days-left-overdue'; daysLeftText = '已过期'; }
-          else if (todo.daysLeft <= 3) { daysLeftClass = 'days-left-urgent'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
-          else if (todo.daysLeft <= 7) { daysLeftClass = 'days-left-soon'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
-          else { daysLeftClass = 'days-left-normal'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
-        }
+      let daysLeftClass = '';
+      let daysLeftText = '';
+      if (todo.daysLeft !== null) {
+        if (todo.daysLeft <= 0) { daysLeftClass = 'days-left-overdue'; daysLeftText = '已过期'; }
+        else if (todo.daysLeft <= 3) { daysLeftClass = 'days-left-urgent'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
+        else if (todo.daysLeft <= 7) { daysLeftClass = 'days-left-soon'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
+        else { daysLeftClass = 'days-left-normal'; daysLeftText = `剩余 ${todo.daysLeft} 天`; }
+      }
 
-        const itemContent = `
+      const itemContent = `
           ${todo.courseName ? `<div class="todo-course-name">${todo.courseName}</div>` : ''}
           <div class="todo-item-header">
             <span class="todo-title">${todo.title}</span>
@@ -468,10 +469,10 @@ async function loadAndRenderTodos() {
             ${daysLeftText ? `<span class="todo-days-left ${daysLeftClass}">${daysLeftText}</span>` : ''}
           </div>
         `;
-        return todo.link
-          ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>`
-          : `<div class="todo-item">${itemContent}</div>`;
-      }).join('')
+      return todo.link
+        ? `<a href="${todo.link}" class="todo-item todo-item-link">${itemContent}</a>`
+        : `<div class="todo-item">${itemContent}</div>`;
+    }).join('')
     : `<p class="no-todos-message"><span>太棒了，没有待办事项！</span></p>`;
 
   container.innerHTML = todoListHtml;
@@ -482,7 +483,7 @@ export async function indexPageBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管主页...');
 
   const usernameElement = $('#userCurrentName');
-  const username = usernameElement ? usernameElement.textContent.trim() : '同学';
+  const username = usernameElement ? usernameElement.textContent.trim() : '';
 
   // Get student ID from .user-no
   const userNoElement = $('.user-no');
@@ -549,6 +550,8 @@ export async function indexPageBeautifier(): Promise<void> {
 
   setupThemeToggle();
   setupHelpModal();
+  setupAssistantNavigation();
+
 
   console.log('XZZDPRO: 页面骨架渲染完成，开始异步加载数据...');
 

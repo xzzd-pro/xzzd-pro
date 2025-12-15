@@ -27,6 +27,17 @@ export class ThemeToggle {
     }
   }
 
+  private applyTheme(theme: string): void {
+    const html = document.documentElement;
+    html.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
+    this.updateThemeIcon(theme);
+  }
+
   setup(): void {
     const themeToggleBtn = document.getElementById(this.buttonId);
     const themeIcon = document.querySelector(`.${this.iconClass}`) as HTMLElement;
@@ -39,13 +50,13 @@ export class ThemeToggle {
     // 初始化图标
     this.storage.get('theme').then((currentTheme) => {
       const theme = currentTheme || 'light';
-      this.updateThemeIcon(theme);
+      this.applyTheme(theme);
     });
 
     // 监听storage变化
     this.storage.watch({
       theme: (change) => {
-        this.updateThemeIcon(change.newValue || 'light');
+        this.applyTheme(change.newValue || 'light');
       }
     });
 
@@ -56,7 +67,7 @@ export class ThemeToggle {
 
       // 保存到storage
       await this.storage.set('theme', newTheme);
-      this.updateThemeIcon(newTheme);
+      this.applyTheme(newTheme);
 
       console.log(`XZZDPRO: 主题已切换至 ${newTheme}`);
     });

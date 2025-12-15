@@ -1,21 +1,13 @@
 /* styles/index-page.css */
 
-.xzzdpro-root {
-  display: grid;
-  grid-template-areas:
-    "header header"
-    "sidebar main";
-  grid-template-columns: 320px 1fr;
-  grid-template-rows: auto 1fr;
-  height: 100vh;
-  overflow: hidden;
-  transition: grid-template-columns 0.3s ease;
-}
+/* styles/index-page.css */
+
+/* .xzzdpro-root definition moved to global.css */
 
 /* --- main-area style --- */
+/* --- main-area style --- */
 .xzzdpro-main {
-  grid-area: main;
-  overflow: hidden;
+  /* grid-area, overflow defined in global.css */
   display: grid;
   grid-template-columns: 100px 1fr 100px;
   grid-template-rows: 1fr;
@@ -30,12 +22,13 @@
   grid-template-columns: 1fr 12px 1fr;
   grid-template-rows: auto 12px 1fr;
   gap: 0;
-  height: 100%; 
+  height: 100%;
   box-sizing: border-box;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
-.resize-handle-left,.resize-handle-right {
+.resize-handle-left,
+.resize-handle-right {
   width: 100px;
   cursor: ew-resize;
   background-color: transparent;
@@ -165,7 +158,7 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  height: 100%; 
+  height: 100%;
   margin-right: 0;
 }
 
@@ -174,7 +167,7 @@
 .welcome-card {
   display: flex;
   overflow: hidden;
-  flex-direction:column;
+  flex-direction: column;
   align-items: center;
 }
 

@@ -1,7 +1,7 @@
 // lib/coursePageBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAssistantNavigation } from "./components/layoutHelpers"
 import type { ApiCourseData } from "../types"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -149,7 +149,7 @@ export function coursePageBeautifier(): void {
   console.log('XZZDPRO: 准备接管课程页...');
 
   const usernameElement = $('#userCurrentName');
-  const username = usernameElement ? usernameElement.textContent.trim() : '同学';
+  const username = usernameElement ? usernameElement.textContent.trim() : '';
 
   // 移除 chatbot 并监视动态添加
   const removeChatbot = () => {
@@ -224,6 +224,7 @@ export function coursePageBeautifier(): void {
 
   setupThemeToggle();
   setupHelpModal();
+  setupAssistantNavigation();
   setupSidebarToggle();
   setupSearchHandler();
 

@@ -1,7 +1,7 @@
 // lib/bulletinListBeautifier
 
 import { Storage } from "@plasmohq/storage"
-import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAssistantNavigation } from "./components/layoutHelpers"
 import type { ApiNotificationData, NotificationType, ProcessedNotification, ReadTimestamps } from "../types"
 
 const storage = new Storage()
@@ -227,7 +227,7 @@ function formatTime(timestamp: number): string {
 function generateNotificationLink(notification: ApiNotificationData): string {
   const { payload } = notification;
 
-  if (payload.exam_id && payload.course_id){
+  if (payload.exam_id && payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/exam/${payload.exam_id}`;
   } else if (payload.homework_id && payload.course_id) {
     return `https://courses.zju.edu.cn/course/${payload.course_id}/learning-activity#/${payload.homework_id}`;
@@ -455,7 +455,7 @@ export function bulletinListBeautifier(): void {
   console.log('XZZDPRO: 准备接管公告页...');
 
   const usernameElement = $('#userCurrentName');
-  const username = usernameElement ? usernameElement.textContent.trim() : '同学';
+  const username = usernameElement ? usernameElement.textContent.trim() : '';
 
   // 移除 chatbot 并监视动态添加
   const removeChatbot = () => {
@@ -545,6 +545,7 @@ export function bulletinListBeautifier(): void {
 
   setupThemeToggle();
   setupHelpModal();
+  setupAssistantNavigation();
   setupSidebarToggle();
   setupFilterHandlers();
 

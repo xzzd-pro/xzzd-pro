@@ -6,8 +6,17 @@
   font-display: swap;
 }
 
-.xzzdpro-root{
+.xzzdpro-root {
   font-family: "LXGW WenKai Screen", sans-serif !important;
+  display: grid;
+  grid-template-areas:
+    "header header"
+    "sidebar main";
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  overflow: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 /* day theme */
@@ -43,6 +52,13 @@ html.xzzdpro[data-theme='dark'] {
   padding: 0;
 }
 
+.xzzdpro-main {
+  grid-area: main;
+  overflow: hidden;
+  height: 100%;
+  position: relative;
+}
+
 /* specific components */
 /* --- widget-card style --- */
 .widget-card {
@@ -56,6 +72,7 @@ html.xzzdpro[data-theme='dark'] {
 .widget-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
+
 .widget-card h2,
 .widget-card h3,
 .widget-card h4 {
@@ -88,7 +105,7 @@ html.xzzdpro[data-theme='dark'] {
   justify-content: space-between;
 }
 
-.widget-card span{
+.widget-card span {
   font-size: 16px;
 }
 

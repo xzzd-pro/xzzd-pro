@@ -1,7 +1,7 @@
 // background/index.ts
 // Background service worker for handling file uploads (bypasses CORS)
 
-export {}
+export { }
 
 interface UploadRequest {
   type: 'UPLOAD_FILE'
