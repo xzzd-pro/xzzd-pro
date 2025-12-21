@@ -1836,7 +1836,7 @@ function setupChatHandlers() {
         provider,
         config: {
           apiKey: config.apiKey,
-          baseUrl: config.baseUrl,
+          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
           model: config.model
         },
         onProgress: (msg) => {
@@ -1949,11 +1949,15 @@ function setupSettingsHandlers() {
     providerSelect.value = provider
 
     const config = currentSettings.configs[provider]
+    const defaults = PROVIDER_DEFAULTS[provider]
+
     if (config) {
       apiKeyInput.value = config.apiKey || ''
       baseUrlInput.value = config.baseUrl || ''
       modelInput.value = config.model
     }
+    
+    baseUrlInput.placeholder = defaults.baseUrl || '官方默认地址'
   }
 
   const closeSettings = () => panel?.classList.remove('open')
@@ -1994,6 +1998,7 @@ function setupSettingsHandlers() {
     if (!currentSettings) return
     const provider = providerSelect.value as Provider
     const config = currentSettings.configs[provider]
+    const defaults = PROVIDER_DEFAULTS[provider]
 
     if (config) {
       apiKeyInput.value = config.apiKey || ''
@@ -2003,8 +2008,9 @@ function setupSettingsHandlers() {
       // Default fallback if no config exists yet (shouldn't happen with correct usage)
       apiKeyInput.value = ''
       baseUrlInput.value = ''
-      baseUrlInput.placeholder = defaults.baseUrl || '官方地址'
     }
+    
+    baseUrlInput.placeholder = defaults.baseUrl || '官方默认地址'
   })
 
 

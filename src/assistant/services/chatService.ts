@@ -41,6 +41,11 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
             }))
         )
 
+        // --- API Call Debug Start ---
+        const sanitizedConfig = { ...config, apiKey: '***' }
+        console.info('Config:', JSON.stringify(sanitizedConfig, null, 2))
+        // --- API Call Debug End ---
+
         let fullResponse = ''
         const stream = await model.stream(langchainMessages)
 
@@ -52,6 +57,7 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
             }
         }
 
+        console.info('XZZDPRO: API Response (Stream Complete):', fullResponse)
         onComplete?.(fullResponse)
         return fullResponse
     } catch (error) {
@@ -73,8 +79,15 @@ export async function generateResponse(
     const visualContext = getVisualContext()
     const langchainMessages = convertToLangChainMessages(systemPrompt, messages, visualContext)
 
+    const sanitizedConfig = { ...config, apiKey: '***' }
+    console.info('Config:', JSON.stringify(sanitizedConfig, null, 2))
+
     const response = await model.invoke(langchainMessages)
-    return typeof response.content === 'string' ? response.content : ''
+    const content = typeof response.content === 'string' ? response.content : ''
+
+    console.info('XZZDPRO: API Response (Invoke):', content)
+
+    return content
 }
 
 interface VisualContent {
