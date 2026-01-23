@@ -1,4 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist'
+import { sendToBackground } from "@plasmohq/messaging"
 
 // @ts-ignore
 import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
@@ -8,15 +9,29 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
 const MAX_IMAGE_PAGES = 10 // Limit pages to prevent huge payloads
 
+async function fetchBlobViaBackground(url: string): Promise<Blob> {
+    const res = await sendToBackground({
+        name: "fetch-file",
+        body: { url }
+    })
+
+    if (res.error) {
+        throw new Error(res.error)
+    }
+
+    if (!res.dataUri) {
+        throw new Error("No data received")
+    }
+
+    // Convert Data URI to Blob
+    const response = await fetch(res.dataUri)
+    return await response.blob()
+}
+
 export async function fetchFileContent(url: string, filename: string): Promise<string> {
     try {
-        const response = await fetch(url, { credentials: 'include' })
-        if (!response.ok) {
-            // Log the actual status text for debugging
-            return `[下载失败: ${response.status} ${response.statusText}]`
-        }
-
-        const blob = await response.blob()
+        // Use background fetch to bypass CORS
+        const blob = await fetchBlobViaBackground(url)
         const ext = filename.split('.').pop()?.toLowerCase() || ''
 
         if (ext === 'pdf') {
@@ -42,9 +57,7 @@ export async function fetchFileContent(url: string, filename: string): Promise<s
  */
 export async function fetchPdfBlob(url: string): Promise<Blob | null> {
     try {
-        const response = await fetch(url, { credentials: 'include' })
-        if (!response.ok) return null
-        return await response.blob()
+        return await fetchBlobViaBackground(url)
     } catch {
         return null
     }
