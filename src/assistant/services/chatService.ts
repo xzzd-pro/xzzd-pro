@@ -123,7 +123,7 @@ function convertToLangChainMessages(
             }
         }
 
-        result.push(new HumanMessage({ content: imageContent }))
+        result.push(new HumanMessage({ content: imageContent as any }))
 
         // Add a dummy AI acknowledgement to ensure valid User -> Assistant -> User alternation
         // Many OpenAI-compatible providers (like Qwen, DeepSeek) fail if there are consecutive User messages
@@ -166,7 +166,7 @@ function convertToLangChainMessages(
             // If we have mixed content (images + text), use complex format
             // If only text (including text attachments), we could simplify, but complex is safe for HumanMessage
             if (content.length > 0) {
-                result.push(new HumanMessage({ content }))
+                result.push(new HumanMessage({ content: content as any }))
             }
         } else {
             result.push(new AIMessage(msg.content))

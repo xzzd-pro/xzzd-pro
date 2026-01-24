@@ -90,7 +90,11 @@ export async function convertPdfToImages(blob: Blob): Promise<string[]> {
         const context = canvas.getContext('2d')
 
         if (context) {
-            await page.render({ canvasContext: context, viewport }).promise
+            await page.render({ 
+                canvasContext: context, 
+                viewport,
+                canvas: canvas
+            }).promise
             images.push(canvas.toDataURL('image/png'))
         }
     }

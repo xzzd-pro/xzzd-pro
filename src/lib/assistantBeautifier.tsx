@@ -3,7 +3,7 @@ import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, clearChat
 import { fetchAllCourses, buildCourseContext } from '../assistant/services/courseDataService'
 import { preloadCourseContext } from '../assistant/services/contextBuilder'
 import { streamChat, formatErrorMessage } from '../assistant/services/chatService'
-import { PROVIDER_DEFAULTS, PROVIDER_CONFIGS } from '../assistant/config'
+import { PROVIDER_DEFAULTS } from '../assistant/config'
 import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment } from '../assistant/types'
 import { convertPdfToImages } from '../assistant/services/fileService'
 import { Storage } from "@plasmohq/storage"
@@ -54,7 +54,7 @@ export async function createAssistantHost(): Promise<HTMLElement> {
   overlayElement.className = 'assistant-fullpage'
   overlayElement.innerHTML = `
     <div class="assistant-content-container">
-      ${renderAssistantPage('', true)}
+      ${renderAssistantPage('')}
     </div>
   `
 
@@ -500,7 +500,8 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
         flex-direction: column;
         gap: 8px;
         max-width: 100%;
-        align-items: flex-start;
+        width: 100%;
+        align-items: stretch;
     }
     .message.user .message-body {
         align-items: flex-end;
@@ -508,14 +509,20 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
 
     .message-text {
         background-color: var(--xzzd-card-bg);
-        padding: 10px 16px;
+        padding: 8px 16px;
         border-radius: 12px;
-        line-height: 1.6;
+        line-height: 1.5;
         color: var(--xzzd-text-primary);
         font-size: 15px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         position: relative; /* Anchor for Copy Button */
         z-index: 1; /* Establish stacking context */
+    }
+    .message-text p {
+        margin: 0;
+    }
+    .message-text p + p {
+        margin-top: 8px;
     }
     .message.user .message-text {
         background-color: var(--xzzd-user-bubble-bg);
@@ -1365,83 +1372,6 @@ function scrollToBottom() {
   if (container) {
     container.scrollTop = container.scrollHeight
   }
-}
-
-function setupSettingsHandlers() {
-  const settingsBtn = overlayElement?.querySelector('.settings-btn') as HTMLButtonElement
-  const closeSettingsBtn = overlayElement?.querySelector('#close-settings-btn') as HTMLButtonElement
-  const settingsPanel = overlayElement?.querySelector('#settings-panel') as HTMLElement
-  const saveBtn = overlayElement?.querySelector('#save-settings-btn') as HTMLButtonElement
-
-  const providerSelect = overlayElement?.querySelector('#provider-select') as HTMLSelectElement
-  const apiKeyInput = overlayElement?.querySelector('#api-key-input') as HTMLInputElement
-  const modelInput = overlayElement?.querySelector('#model-input') as HTMLInputElement
-  const baseUrlInput = overlayElement?.querySelector('#base-url-input') as HTMLInputElement
-
-  function openSettings() {
-    if (settingsPanel) {
-      settingsPanel.classList.add('open')
-      // Populate fields
-      if (currentSettings) {
-        const provider = currentSettings.provider
-        const config = currentSettings.configs[provider]
-
-        if (providerSelect) providerSelect.value = provider
-        if (apiKeyInput) apiKeyInput.value = config?.apiKey || ''
-        if (modelInput) modelInput.value = config?.model || ''
-        if (baseUrlInput) baseUrlInput.value = config?.baseUrl || ''
-      }
-    }
-  }
-
-  function closeSettings() {
-    if (settingsPanel) settingsPanel.classList.remove('open')
-  }
-
-  settingsBtn?.addEventListener('click', openSettings)
-  closeSettingsBtn?.addEventListener('click', closeSettings)
-
-  // Auto-fill defaults or load saved config when provider changes
-  providerSelect?.addEventListener('change', () => {
-    const provider = providerSelect.value as Provider
-    const savedConfig = currentSettings?.configs[provider]
-    const defaults = PROVIDER_CONFIGS[provider]
-
-    // Priority: Saved Config > Defaults
-    if (savedConfig) {
-      if (apiKeyInput) apiKeyInput.value = savedConfig.apiKey || ''
-      if (modelInput) modelInput.value = savedConfig.model || ''
-      if (baseUrlInput) baseUrlInput.value = savedConfig.baseUrl || ''
-    } else if (defaults) {
-      if (apiKeyInput) apiKeyInput.value = '' // Don't auto-fill API key from defaults usually, unless it's empty/public? actually defaults don't have sensitive keys.
-      if (modelInput) modelInput.value = defaults.defaultModel
-      if (baseUrlInput) baseUrlInput.value = defaults.defaultBaseUrl || ''
-    }
-  })
-
-  saveBtn?.addEventListener('click', async () => {
-    const provider = (providerSelect?.value as Provider) || 'openai'
-
-    // Construct new settings object preserving other providers
-    const newSettings: AssistantSettings = {
-      provider,
-      configs: {
-        ...currentSettings?.configs,
-        [provider]: {
-          apiKey: apiKeyInput?.value.trim(),
-          model: modelInput?.value.trim(),
-          baseUrl: baseUrlInput?.value.trim()
-        }
-      }
-    }
-
-    await saveSettings(newSettings)
-    currentSettings = newSettings
-    showStatus('设置已保存', 'success')
-    closeSettings()
-
-    // Refresh chat if needed (or just let next message use new settings)
-  })
 }
 
 function setupChatHandlers() {
