@@ -99,6 +99,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-user-bubble-bg: #e8eaed;
       --xzzd-input-bg: #f0f4f9;
       --xzzd-input-hover: #e2e6ea;
+      --math-filter: none;
     }
 
     :host([data-theme='dark']) {
@@ -116,6 +117,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-scrollbar-track: #2f2f2f;
       --xzzd-scrollbar-thumb: #555;
       --xzzd-scrollbar-thumb-hover: #777;
+      --math-filter: invert(1) hue-rotate(180deg);
     }
 
     /* Scrollbar Styling */
