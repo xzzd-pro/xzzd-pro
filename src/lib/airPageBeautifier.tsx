@@ -6,7 +6,8 @@ import {
   setupThemeToggle,
   setupHelpModal,
   setupSidebarToggle,
-  setupAssistantNavigation
+  setupAssistantNavigation,
+  setupAvatarUpload
 } from "./components/layoutHelpers";
 import { setupResizeHandlers, applySavedLayout } from "./components/resizeHandlers";
 import { createAssistantHost } from "./assistantBeautifier";
@@ -59,6 +60,7 @@ export async function mountAirPage() {
   // 4. Initialize standard layout interactions
   setupThemeToggle();
   setupHelpModal();
+  setupAvatarUpload();
   setupSidebarToggle();
   setupAssistantNavigation();
 

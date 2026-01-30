@@ -26,7 +26,7 @@ body:not(.xzzdpro-body)::before {
   grid-template-areas:
     "header header"
     "sidebar main";
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 280px 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
   overflow: hidden;
@@ -39,53 +39,67 @@ body:not(.xzzdpro-body)::before {
   flex-direction: column;
 }
 
-.sidebar-content {
+.sidebar-section {
   flex: 0 1 auto;
   overflow-y: auto;
 }
 
 .course-title {
   padding: 0 15px 16px 15px;
-  border-bottom: 2px solid var(--card-border-color);
+  border-bottom: 2px solid hsl(var(--border));
   margin-bottom: 16px;
+}
+
+/* --- navigation divider --- */
+.nav-divider {
+  height: 1px;
+  background-color: hsl(var(--border));
+  margin: 12px 15px;
+  opacity: 0.6;
+}
+
+/* --- back navigation item --- */
+.nav-item-back {
+  margin-top: 8px;
+}
+
+.nav-link-back {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground)) !important;
+  border-radius: 8px;
+  margin: 0 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link-back:hover {
+  background-color: hsl(var(--primary));
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.nav-link-back .nav-icon {
+  font-size: 18px;
+  font-weight: bold;
+  transition: transform 0.2s ease;
+}
+
+.nav-link-back:hover .nav-icon {
+  transform: translateX(-2px);
 }
 
 /* --- sidebar footer --- */
 .sidebar-footer {
   padding: 16px 15px;
-  border-top: 2px solid var(--card-border-color);
+  border-top: 2px solid hsl(var(--border));
   flex: 0 0 auto;
-}
-
-.back-btn {
   display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background-color: var(--primary-accent-color);
-  color: white;
-  border-radius: 8px;
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 16px;
-  transition: all 0.2s ease;
+  align-items: center;
 }
 
-.back-btn:hover {
-  background-color: var(--primary-accent-color);
-  transform: translateX(-4px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
-}
-
-.back-icon {
-  font-size: 20px;
-  transition: transform 0.2s ease;
-}
-
-.back-btn:hover .back-icon {
-  transform: translateX(-2px);
-}
 
 /* --- main area layout --- */
 .xzzdpro-main {
@@ -124,14 +138,14 @@ body:not(.xzzdpro-body)::before {
 }
 
 .main-content-wrapper::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
+  background: hsl(var(--primary));
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 /* --- title card --- */
 .title-card {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0;
   padding: 24px 32px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -144,7 +158,7 @@ body:not(.xzzdpro-body)::before {
 
 /* --- content card --- */
 .content-card {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0;
   padding: 32px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -179,7 +193,7 @@ body:not(.xzzdpro-body)::before {
 
 .loading-message {
   text-align: center;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   padding: 40px 0;
   font-size: 16px;
 }
@@ -195,10 +209,10 @@ body:not(.xzzdpro-body)::before {
   display: flex;
   align-items: center;
   gap: 16px;
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 8px;
   padding: 20px;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -223,7 +237,7 @@ body:not(.xzzdpro-body)::before {
 .material-name {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin-bottom: 8px;
   word-wrap: break-word;
   line-height: 1.4;
@@ -233,7 +247,7 @@ body:not(.xzzdpro-body)::before {
   display: flex;
   gap: 16px;
   font-size: 14px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .material-size,
@@ -257,7 +271,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
   border-radius: 8px;
   text-decoration: none;
@@ -279,8 +293,8 @@ body:not(.xzzdpro-body)::before {
 
 .download-disabled {
   padding: 10px 20px;
-  background-color: var(--card-border-color);
-  color: var(--text-secondary-color);
+  background-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -288,7 +302,7 @@ body:not(.xzzdpro-body)::before {
 
 .no-materials-message {
   text-align: center;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   padding: 60px 20px;
   font-size: 16px;
 }
@@ -301,10 +315,10 @@ body:not(.xzzdpro-body)::before {
 }
 
 .courseware-section {
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 8px;
   overflow: hidden;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
   transition: box-shadow 0.2s ease;
 }
 
@@ -313,7 +327,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .courseware-section.closed {
-  border-left-color: var(--text-secondary-color);
+  border-left-color: var(--muted-foreground);
   opacity: 0.85;
 }
 
@@ -331,7 +345,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .section-header:hover {
-  background-color: var(--card-border-color);
+  background-color: hsl(var(--border));
 }
 
 .section-expand-icon {
@@ -347,7 +361,7 @@ body:not(.xzzdpro-body)::before {
 .section-expand-icon svg {
   width: 20px;
   height: 20px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .courseware-section.expanded .section-expand-icon {
@@ -363,7 +377,7 @@ body:not(.xzzdpro-body)::before {
   margin: 0 0 8px 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   line-height: 1.4;
 }
 
@@ -378,12 +392,12 @@ body:not(.xzzdpro-body)::before {
   padding: 4px 10px;
   border-radius: 4px;
   font-weight: 600;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
 .section-status.closed {
-  background-color: var(--text-secondary-color);
+  background-color: var(--muted-foreground);
 }
 
 .section-status.not-started {
@@ -392,13 +406,13 @@ body:not(.xzzdpro-body)::before {
 }
 
 .section-criterion {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   display: flex;
   align-items: center;
 }
 
 .section-file-count {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   display: flex;
   align-items: center;
 }
@@ -421,7 +435,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .no-files-message {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
   padding: 16px 0;
 }
@@ -432,7 +446,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -449,7 +463,7 @@ body:not(.xzzdpro-body)::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .file-icon svg {
@@ -465,7 +479,7 @@ body:not(.xzzdpro-body)::before {
 .file-name {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin-bottom: 4px;
   word-wrap: break-word;
   line-height: 1.4;
@@ -473,7 +487,7 @@ body:not(.xzzdpro-body)::before {
 
 .file-size {
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .file-actions {
@@ -485,7 +499,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
   border-radius: 6px;
   text-decoration: none;
@@ -507,8 +521,8 @@ body:not(.xzzdpro-body)::before {
 
 .file-actions .download-disabled {
   padding: 8px 16px;
-  background-color: var(--card-border-color);
-  color: var(--text-secondary-color);
+  background-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -522,10 +536,10 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-item {
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 0;
   padding: 24px;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
   transition: all 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
@@ -536,7 +550,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-item.closed {
-  border-left-color: var(--text-secondary-color);
+  border-left-color: var(--muted-foreground);
   opacity: 0.85;
 }
 
@@ -555,7 +569,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-link {
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   text-decoration: none;
   font-size: 20px;
   font-weight: 600;
@@ -564,7 +578,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-link:hover {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .homework-badges {
@@ -582,17 +596,17 @@ body:not(.xzzdpro-body)::before {
 }
 
 .badge-ongoing {
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
 .badge-closed {
-  background-color: var(--text-secondary-color);
+  background-color: var(--muted-foreground);
   color: white;
 }
 
 .badge-submitted {
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
@@ -606,7 +620,7 @@ body:not(.xzzdpro-body)::before {
   gap: 24px;
   flex-wrap: wrap;
   padding-top: 12px;
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .homework-deadline,
@@ -617,13 +631,13 @@ body:not(.xzzdpro-body)::before {
 }
 
 .meta-label {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
   font-weight: 500;
 }
 
 .meta-value {
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   font-size: 15px;
   font-weight: 600;
 }
@@ -643,14 +657,14 @@ body:not(.xzzdpro-body)::before {
 }
 
 .score-value {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
   font-size: 18px;
   font-weight: 700;
 }
 
 .no-homework-message {
   text-align: center;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   padding: 60px 20px;
   font-size: 16px;
 }
@@ -671,7 +685,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-header-wrapper:hover {
-  background-color: var(--card-border-color);
+  background-color: hsl(var(--border));
 }
 
 .homework-expand-icon {
@@ -688,7 +702,7 @@ body:not(.xzzdpro-body)::before {
 .homework-expand-icon svg {
   width: 20px;
   height: 20px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .homework-item.expanded .homework-expand-icon {
@@ -719,15 +733,15 @@ body:not(.xzzdpro-body)::before {
 .upload-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin: 0 0 16px 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--card-border-color);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .submission-time {
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   margin: 0 0 12px 0;
 }
 
@@ -742,14 +756,14 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 6px;
 }
 
 .submitted-file .file-icon {
   width: 28px;
   height: 28px;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .submitted-file .file-icon svg {
@@ -764,45 +778,45 @@ body:not(.xzzdpro-body)::before {
 .submitted-file .file-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .submitted-file .file-size {
   font-size: 12px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .no-submissions-message {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
 }
 
 /* --- upload area styles --- */
 .upload-dropzone {
-  border: 2px dashed var(--card-border-color);
+  border: 2px dashed hsl(var(--border));
   border-radius: 8px;
   padding: 32px;
   text-align: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
 }
 
 .upload-dropzone:hover,
 .upload-dropzone.dragover {
-  border-color: var(--primary-accent-color);
+  border-color: hsl(var(--primary));
   background-color: rgba(0, 123, 255, 0.05);
 }
 
 .upload-icon {
   width: 48px;
   height: 48px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   margin-bottom: 12px;
 }
 
 .upload-hint {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
   margin: 0;
 }
@@ -823,21 +837,21 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 6px;
-  border: 1px solid var(--card-border-color);
+  border: 1px solid hsl(var(--border));
 }
 
 .upload-file-name {
   flex: 1;
   font-size: 14px;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   word-break: break-all;
 }
 
 .upload-file-size {
   font-size: 12px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   flex-shrink: 0;
 }
 
@@ -846,7 +860,7 @@ body:not(.xzzdpro-body)::before {
   height: 24px;
   border: none;
   background-color: transparent;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 18px;
   cursor: pointer;
   border-radius: 4px;
@@ -863,7 +877,7 @@ body:not(.xzzdpro-body)::before {
   margin-top: 16px;
   width: 100%;
   padding: 14px 24px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
   border: none;
   border-radius: 8px;
@@ -880,8 +894,8 @@ body:not(.xzzdpro-body)::before {
 }
 
 .upload-submit-btn:disabled {
-  background-color: var(--card-border-color);
-  color: var(--text-secondary-color);
+  background-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
   cursor: not-allowed;
 }
 
@@ -905,20 +919,20 @@ body:not(.xzzdpro-body)::before {
 
 .course-info-section,
 .description-block {
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 12px;
   padding: 24px;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
 }
 
 .course-info-section .section-title,
 .description-block .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--card-border-color);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .course-info-grid {
@@ -937,13 +951,13 @@ body:not(.xzzdpro-body)::before {
 .info-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .info-value {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   line-height: 1.5;
 }
 
@@ -952,7 +966,7 @@ body:not(.xzzdpro-body)::before {
   flex-direction: column;
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .instructors-list {
@@ -966,7 +980,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -981,13 +995,13 @@ body:not(.xzzdpro-body)::before {
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--primary-accent-color);
+  border: 2px solid hsl(var(--primary));
 }
 
 .instructor-name {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .course-description-section {
@@ -999,7 +1013,7 @@ body:not(.xzzdpro-body)::before {
 .description-content {
   font-size: 15px;
   line-height: 1.8;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .description-content p {
@@ -1008,7 +1022,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .no-data {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-style: italic;
 }
 
@@ -1053,23 +1067,23 @@ body:not(.xzzdpro-body)::before {
 }
 
 .score-section {
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 12px;
   padding: 24px;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
 }
 
 .score-section .section-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin: 0 0 20px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--card-border-color);
+  border-bottom: 1px solid hsl(var(--border));
 }
 
 .no-data-message {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   font-size: 14px;
   text-align: center;
   padding: 20px;
@@ -1087,14 +1101,14 @@ body:not(.xzzdpro-body)::before {
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px;
 }
 
 .score-label {
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .score-status {
@@ -1105,13 +1119,13 @@ body:not(.xzzdpro-body)::before {
 }
 
 .score-status.announce-yes {
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
 .score-status.announce-no {
-  background-color: var(--card-border-color);
-  color: var(--text-secondary-color);
+  background-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 /* --- rollcall section --- */
@@ -1125,20 +1139,20 @@ body:not(.xzzdpro-body)::before {
 }
 
 .rollcall-header {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px 8px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .rollcall-list {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0 0 8px 8px;
 }
 
 .rollcall-item {
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .rollcall-item:first-child {
@@ -1147,7 +1161,7 @@ body:not(.xzzdpro-body)::before {
 
 .rollcall-time {
   font-size: 14px;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .rollcall-status {
@@ -1159,7 +1173,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .rollcall-status.status-normal {
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   color: white;
 }
 
@@ -1175,11 +1189,11 @@ body:not(.xzzdpro-body)::before {
 }
 
 .rollcall-scored.scored-yes {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .rollcall-scored.scored-no {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 /* --- performance section --- */
@@ -1194,33 +1208,33 @@ body:not(.xzzdpro-body)::before {
   flex-direction: column;
   gap: 8px;
   padding: 16px 20px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px;
 }
 
 .perf-label {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .perf-value {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .perf-value.announce-yes {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .perf-value.announce-no {
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .perf-value.perf-score {
   font-size: 24px;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 /* --- custom score items section --- */
@@ -1234,20 +1248,20 @@ body:not(.xzzdpro-body)::before {
 }
 
 .custom-score-header {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px 8px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .custom-score-list {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0 0 8px 8px;
 }
 
 .custom-score-item {
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .custom-score-item:first-child {
@@ -1257,19 +1271,19 @@ body:not(.xzzdpro-body)::before {
 .custom-score-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .custom-score-value {
   font-size: 16px;
   font-weight: 600;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
   text-align: center;
 }
 
 .custom-score-percentage {
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   text-align: center;
 }
 
@@ -1285,10 +1299,10 @@ body:not(.xzzdpro-body)::before {
 .subsection-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   margin: 0 0 12px 0;
   padding-left: 12px;
-  border-left: 3px solid var(--primary-accent-color);
+  border-left: 3px solid hsl(var(--primary));
 }
 
 /* homework scores */
@@ -1302,20 +1316,20 @@ body:not(.xzzdpro-body)::before {
 }
 
 .homework-score-header {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px 8px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .homework-score-list {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0 0 8px 8px;
 }
 
 .homework-score-item {
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .homework-score-item:first-child {
@@ -1325,25 +1339,25 @@ body:not(.xzzdpro-body)::before {
 .hw-score-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .hw-score-value {
   font-size: 15px;
   font-weight: 600;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
   text-align: center;
 }
 
 .hw-score-percentage {
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   text-align: center;
 }
 
 .hw-score-comment {
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1360,20 +1374,20 @@ body:not(.xzzdpro-body)::before {
 }
 
 .exam-score-header {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px 8px 0 0;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .exam-score-list {
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 0 0 8px 8px;
 }
 
 .exam-score-item {
-  border-top: 1px solid var(--card-border-color);
+  border-top: 1px solid hsl(var(--border));
 }
 
 .exam-score-item:first-child {
@@ -1383,13 +1397,13 @@ body:not(.xzzdpro-body)::before {
 .exam-score-name {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
 }
 
 .exam-score-value {
   font-size: 16px;
   font-weight: 600;
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
   text-align: center;
 }
 
@@ -1442,10 +1456,10 @@ body:not(.xzzdpro-body)::before {
 }
 
 .forum-category-item {
-  background-color: var(--background-color);
+  background-color: hsl(var(--muted));
   border-radius: 8px;
   overflow: hidden;
-  border-left: 4px solid var(--primary-accent-color);
+  border-left: 4px solid hsl(var(--primary));
   transition: box-shadow 0.2s ease;
 }
 
@@ -1463,7 +1477,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .category-header-wrapper:hover {
-  background-color: var(--card-border-color);
+  background-color: hsl(var(--border));
 }
 
 .category-expand-icon {
@@ -1480,7 +1494,7 @@ body:not(.xzzdpro-body)::before {
 .category-expand-icon svg {
   width: 20px;
   height: 20px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .forum-category-item.expanded .category-expand-icon {
@@ -1504,7 +1518,7 @@ body:not(.xzzdpro-body)::before {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   line-height: 1.4;
 }
 
@@ -1520,8 +1534,8 @@ body:not(.xzzdpro-body)::before {
 }
 
 .badge-count {
-  background-color: var(--card-border-color);
-  color: var(--text-secondary-color);
+  background-color: hsl(var(--border));
+  color: hsl(var(--muted-foreground));
 }
 
 .category-meta {
@@ -1560,7 +1574,7 @@ body:not(.xzzdpro-body)::before {
 .no-topics-message,
 .no-forum-message {
   text-align: center;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
   padding: 40px 20px;
   font-size: 14px;
 }
@@ -1578,7 +1592,7 @@ body:not(.xzzdpro-body)::before {
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
-  background-color: var(--card-background);
+  background-color: hsl(var(--card));
   border-radius: 8px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1613,7 +1627,7 @@ body:not(.xzzdpro-body)::before {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--text-primary-color);
+  color: hsl(var(--foreground));
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
@@ -1622,7 +1636,7 @@ body:not(.xzzdpro-body)::before {
 }
 
 .topic-title-link:hover {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .topic-tag {
@@ -1652,7 +1666,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 12px;
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .topic-author {
@@ -1675,7 +1689,7 @@ body:not(.xzzdpro-body)::before {
   align-items: center;
   gap: 4px;
   font-size: 13px;
-  color: var(--text-secondary-color);
+  color: hsl(var(--muted-foreground));
 }
 
 .stat-icon {
@@ -1688,11 +1702,11 @@ body:not(.xzzdpro-body)::before {
 }
 
 .stat-item.instructor-replied {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 .stat-item.instructor-replied .stat-icon {
-  color: var(--primary-accent-color);
+  color: hsl(var(--primary));
 }
 
 /* --- forum responsive --- */
@@ -1705,7 +1719,7 @@ body:not(.xzzdpro-body)::before {
   .topic-stats {
     width: 100%;
     padding-top: 12px;
-    border-top: 1px solid var(--card-border-color);
+    border-top: 1px solid hsl(var(--border));
     justify-content: flex-start;
   }
 
@@ -1729,15 +1743,18 @@ body:not(.xzzdpro-body)::before {
   overflow: hidden;
 }
 
-.xzzdpro-root.sidebar-collapsed .back-text {
-  display: none;
+.xzzdpro-root.sidebar-collapsed .nav-divider {
+  margin: 12px 8px;
 }
 
-.xzzdpro-root.sidebar-collapsed .back-btn {
+.xzzdpro-root.sidebar-collapsed .nav-link-back {
+  margin: 0 8px;
   justify-content: center;
   padding: 12px;
-  gap: 0;
-  line-height: 1;
+}
+
+.xzzdpro-root.sidebar-collapsed .nav-link-back .nav-text {
+  display: none;
 }
 
 .xzzdpro-root.sidebar-collapsed .sidebar-footer {
@@ -1746,9 +1763,107 @@ body:not(.xzzdpro-body)::before {
   align-self: stretch;
 }
 
-.xzzdpro-root.sidebar-collapsed .sidebar-content {
+.xzzdpro-root.sidebar-collapsed .sidebar-section {
   flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* --- skeleton loading styles --- */
+.skeleton-item {
+  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--border)) 50%, hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-label {
+  height: 14px;
+  width: 80px;
+  display: block;
+}
+
+.skeleton-value {
+  height: 18px;
+  width: 150px;
+  display: block;
+}
+
+.skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skeleton-name {
+  height: 16px;
+  width: 80px;
+  display: block;
+}
+
+.skeleton-line {
+  height: 16px;
+  width: 100%;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+/* skeleton for sections */
+.skeleton-section {
+  background-color: hsl(var(--muted));
+  border-radius: 8px;
+  overflow: hidden;
+  border-left: 4px solid hsl(var(--border));
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.skeleton-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.skeleton-section-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.skeleton-section-title {
+  height: 20px;
+  flex: 1;
+  max-width: 300px;
+}
+
+.skeleton-section-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  margin-left: 36px;
+}
+
+.skeleton-badge {
+  height: 24px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+.skeleton-file-count {
+  height: 16px;
+  width: 80px;
 }

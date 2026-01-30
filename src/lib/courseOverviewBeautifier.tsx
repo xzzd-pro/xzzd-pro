@@ -1,6 +1,6 @@
 // lib/courseOverviewBeautifier.tsx
 
-import { getCourseIdFromUrl, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle } from "./components/courseDetailHelpers"
+import { getCourseIdFromUrl, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAvatarUpload } from "./components/courseDetailHelpers"
 
 interface Instructor {
   id: number;
@@ -41,6 +41,52 @@ interface CourseData {
   course_outline?: {
     common_fields?: CourseOutlineField[];
   };
+}
+
+// Generate skeleton loading HTML
+function getLoadingHtml(): string {
+  return `
+    <div class="course-overview-content">
+      <div class="course-info-section">
+        <h3 class="section-title">课程信息</h3>
+        <div class="course-info-grid">
+          ${Array(6).fill('').map(() => `
+            <div class="info-item">
+              <span class="skeleton-item skeleton-label"></span>
+              <span class="skeleton-item skeleton-value"></span>
+            </div>
+          `).join('')}
+        </div>
+        <div class="instructors-section">
+          <span class="skeleton-item skeleton-label"></span>
+          <div class="instructors-list">
+            <div class="instructor-item">
+              <div class="skeleton-item skeleton-avatar"></div>
+              <span class="skeleton-item skeleton-name"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="course-description-section">
+        <div class="description-block">
+          <h3 class="section-title">课程简介（中文）</h3>
+          <div class="description-content">
+            <div class="skeleton-item skeleton-line"></div>
+            <div class="skeleton-item skeleton-line"></div>
+            <div class="skeleton-item skeleton-line short"></div>
+          </div>
+        </div>
+        <div class="description-block">
+          <h3 class="section-title">课程简介（英文）</h3>
+          <div class="description-content">
+            <div class="skeleton-item skeleton-line"></div>
+            <div class="skeleton-item skeleton-line"></div>
+            <div class="skeleton-item skeleton-line short"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function fetchCourseData(courseId: string): Promise<CourseData | null> {
@@ -176,8 +222,8 @@ export async function courseOverviewBeautifier(): Promise<void> {
     return;
   }
 
-  // 先显示加载状态
-  const loadingHtml = `<p class="loading-message">正在加载课程概览...</p>`;
+  // 先显示骨架加载状态
+  const loadingHtml = getLoadingHtml();
 
   root.innerHTML = renderCourseDetailPage(
     courseId,
@@ -192,6 +238,7 @@ export async function courseOverviewBeautifier(): Promise<void> {
 
   setupThemeToggle();
   setupHelpModal();
+  setupAvatarUpload();
   setupSidebarToggle();
 
   // 获取课程数据

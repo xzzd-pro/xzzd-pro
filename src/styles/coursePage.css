@@ -1,22 +1,7 @@
 /* styles/coursePage.css */
 
-/* --- root layout --- */
-.xzzdpro-root {
-  display: grid;
-  grid-template-areas:
-    "header header"
-    "sidebar main";
-  grid-template-columns: 320px 1fr;
-  grid-template-rows: auto 1fr;
-  height: 100vh;
-  overflow: hidden;
-  transition: grid-template-columns 0.3s ease;
-}
-
-/* --- main area layout --- */
+/* Restore original width constraint */
 .xzzdpro-main {
-  grid-area: main;
-  overflow: hidden;
   display: grid;
   grid-template-columns: 0.5fr 1000px 0.5fr;
   grid-template-rows: 1fr;
@@ -29,7 +14,6 @@
   padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
   overflow: hidden;
   min-height: 0;
 }
@@ -40,296 +24,81 @@
   position: relative;
 }
 
-/* scrollbar */
-.main-content-wrapper::-webkit-scrollbar {
-  width: 8px;
-}
-
-.main-content-wrapper::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.main-content-wrapper::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-/* --- search card --- */
-.search-card {
-  background-color: var(--card-background);
-  border-radius: 0;
-  padding: 16px 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
-}
-
-.search-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-/* --- search form --- */
-.search-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.search-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.search-input-wrapper {
-  display: flex;
-  align-items: center;
+/* --- course page container --- */
+.course-page-container {
   flex: 1;
-  min-width: 280px;
-  gap: 12px;
-}
-
-.search-input {
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 8px;
-  border: 1px solid var(--card-border-color);
-  background-color: var(--card-background);
-  color: var(--text-primary-color);
-  font-size: 15px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-  /* 禁用系统颜色方案，确保使用插件定义的颜色 */
-  color-scheme: light dark;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: var(--primary-accent-color);
-  background-color: var(--card-background);
-}
-
-.search-input::placeholder {
-  color: var(--text-secondary-color);
-  opacity: 0.7;
-}
-
-.search-btn {
-  padding: 10px 20px;
-  border: none;
-  background-color: var(--primary-accent-color);
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  transition: background-color 0.2s ease;
-  white-space: nowrap;
-}
-
-.search-btn:hover {
-  background-color: #0056b3;
-}
-
-.search-btn svg {
-  width: 16px;
-  height: 16px;
-  color: white;
-}
-
-/* filter chips */
-.filter-chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.filter-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 20px;
-  background-color: var(--background-color);
-  border: 1px solid var(--card-border-color);
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text-secondary-color);
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.filter-chip:hover {
-  border-color: var(--primary-accent-color);
-  color: var(--primary-accent-color);
-}
-
-.filter-chip:has(input:checked) {
-  background-color: var(--primary-accent-color);
-  border-color: var(--primary-accent-color);
-  color: white;
-}
-
-.filter-chip input[type="checkbox"] {
-  display: none;
-}
-
-/* --- courses card --- */
-.courses-card {
-  background-color: var(--card-background);
-  border-radius: 0;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.3s ease;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.courses-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+/* Force override shadcn/ui Card default styles */
+.course-page-container .rounded-lg.border.bg-card .flex.flex-col.space-y-1\.5.p-6 {
+  gap: 0.25rem !important;
+  padding: 0.75rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
-.courses-card h3 {
-  margin: 0 0 20px 0;
-  color: var(--text-primary-color);
-  font-weight: 600;
-  font-size: 24px;
+.course-page-container .rounded-lg.border.bg-card .p-6.pt-0 {
+  padding: 0.75rem !important;
+  padding-top: 0 !important;
 }
 
-/* --- courses grid --- */
-.courses-grid-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
+/* Force text spacing to be minimal but readable */
+.course-page-container .space-y-0 {
+  gap: 0 !important;
 }
 
-.courses-grid-container::-webkit-scrollbar {
+.course-page-container .space-y-0 > p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.course-page-container .space-y-0 > p + p {
+  margin-top: 4px !important;
+}
+
+/* Custom scrollbar styles */
+.course-page-container ::-webkit-scrollbar {
   width: 6px;
 }
 
-.courses-grid-container::-webkit-scrollbar-track {
+.course-page-container ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.course-page-container ::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 
-.courses-grid-container::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
-  border-radius: 3px;
-  transition: background 0.2s ease;
+.course-page-container ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border) / 0.8);
 }
 
-/* --- course card --- */
-.course-card {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--background-color);
-  border-radius: 0;
-  padding: 16px 20px;
-  border-left: 4px solid var(--primary-accent-color);
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  overflow: hidden;
-  height: 100px;
-  flex-shrink: 0;
-}
-
-.course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
-
-.course-card-header {
-  margin-bottom: 10px;
-}
-
-.course-card-header .course-name {
-  font-size: 17px;
-  font-weight: 600;
-  color: var(--text-primary-color);
-  margin: 0;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.course-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.course-card-body p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-secondary-color);
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.course-instructor,
-.course-time {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* loading and empty states */
-.xzzd-loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  color: var(--text-secondary-color);
-  font-size: 14px;
-  grid-column: 1 / -1;
-}
-
-.xzzd-loading-state .spinner {
-  margin-right: 8px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.no-courses-message {
-  text-align: center;
-  color: var(--text-secondary-color);
-  padding: 40px;
-  font-size: 14px;
-  grid-column: 1 / -1;
+/* Ensure scrolling works properly */
+.course-page-container .overflow-auto {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
 }
 
 /* responsive design */
+@media (max-width: 1200px) {
+  .xzzdpro-main {
+    grid-template-columns: 0.2fr 1fr 0.2fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .form-row {
+  .xzzdpro-main {
     grid-template-columns: 1fr;
   }
 
-  .courses-grid-container {
-    grid-template-columns: 1fr;
+  .main-content-wrapper {
+    grid-column: 1;
+    padding: 16px;
   }
 }
