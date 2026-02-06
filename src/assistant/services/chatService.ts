@@ -62,6 +62,23 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
         return fullResponse
     } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error))
+        
+        // Log detailed error information for debugging
+        console.error('XZZDPRO: streamChat error details:', {
+            message: err.message,
+            name: err.name,
+            stack: err.stack,
+            originalError: error
+        })
+        
+        // Log config info (without revealing API key)
+        console.error('XZZDPRO: Request config:', {
+            provider,
+            model: config.model,
+            baseUrl: config.baseUrl || 'default',
+            hasApiKey: !!config.apiKey
+        })
+        
         onError?.(err)
         throw err
     }
@@ -193,6 +210,26 @@ export function formatErrorMessage(error: Error): string {
 
     if (message.includes('model') && message.includes('not found')) {
         return '模型不可用，请在设置中选择其他模型'
+    }
+
+    if (message.includes('400') || message.includes('bad request')) {
+        // 提供更详细的诊断建议
+        const advice = [
+            '请排查以下几点：',
+            '1. 模型名称是否正确（如：gpt-4, gpt-4-vision 等）',
+            '2. Base URL 是否正确配置',
+            '3. API Key 是否过期或被撤销',
+            '4. 是否在设置中正确保存了所有配置'
+        ].join('\n')
+        return `请求格式错误 (400)\n${advice}`
+    }
+
+    if (message.includes('403') || message.includes('forbidden')) {
+        return '禁止访问 (403)：请检查 API Key 是否有权使用此模型'
+    }
+
+    if (message.includes('500') || message.includes('server error')) {
+        return 'AI 服务器出错，请稍后重试'
     }
 
     return `请求失败：${error.message}`
