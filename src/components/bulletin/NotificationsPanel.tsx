@@ -242,6 +242,8 @@ export function NotificationsPanel() {
   const [unreadFilter, setUnreadFilter] = useState('all')
   const [readFilter, setReadFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
+  // 临时已读的通知类型，用于去掉红点但保持在未读栏中
+  const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function loadData() {
@@ -282,6 +284,23 @@ export function NotificationsPanel() {
     } else if (type === 'homework_opened_for_submission') {
       typesToMark = ['homework_opened_for_submission', 'course_homework_make_up']
     } else if (type === 'others') {
+      typesToMark = ['others']
+    } else {
+      typesToMark = [type]
+    }
+
+    // 将这些类型添加到临时已读集合中
+    setTempReadTypes(prev => {
+      const newSet = new Set(prev)
+      typesToMark.forEach(t => newSet.add(t))
+      return newSet
+    })
+
+    // 保存时间戳到存储，但不立即更新通知的 read 状态
+    let updated = false
+    const newTimestamps = { ...readTimestamps }
+
+    if (type === 'others') {
       // 标记所有其他类型的通知为已读
       const mainTypes = [
         'activity_opened',
@@ -295,72 +314,28 @@ export function NotificationsPanel() {
       const otherNotifications = allNotifications.filter(n => !mainTypes.includes(n.type))
       if (otherNotifications.length > 0) {
         const maxTimestamp = Math.max(...otherNotifications.map(n => n.timestamp))
-        const newTimestamps = { ...readTimestamps, others: maxTimestamp }
-        await saveReadTimestamps(newTimestamps)
-        setReadTimestamps(newTimestamps)
-
-        // Update notification read status
-        setAllNotifications(prev =>
-          prev.map(n => {
-            if (!mainTypes.includes(n.type)) {
-              return { ...n, read: n.timestamp <= maxTimestamp }
-            }
-            return n
-          })
-        )
-      }
-      return
-    } else {
-      typesToMark = [type]
-    }
-
-    let updated = false
-    const newTimestamps = { ...readTimestamps }
-
-    for (const t of typesToMark) {
-      const notificationsOfType = allNotifications.filter(n => n.type === t)
-      if (notificationsOfType.length === 0) continue
-
-      const maxTimestamp = Math.max(...notificationsOfType.map(n => n.timestamp))
-      const typeKey = t as keyof ReadTimestamps
-
-      if (maxTimestamp > newTimestamps[typeKey]) {
-        newTimestamps[typeKey] = maxTimestamp
+        newTimestamps.others = maxTimestamp
         updated = true
+      }
+    } else {
+      for (const t of typesToMark) {
+        const notificationsOfType = allNotifications.filter(n => n.type === t)
+        if (notificationsOfType.length === 0) continue
+
+        const maxTimestamp = Math.max(...notificationsOfType.map(n => n.timestamp))
+        const typeKey = t as keyof ReadTimestamps
+
+        if (maxTimestamp > newTimestamps[typeKey]) {
+          newTimestamps[typeKey] = maxTimestamp
+          updated = true
+        }
       }
     }
 
     if (updated) {
       await saveReadTimestamps(newTimestamps)
       setReadTimestamps(newTimestamps)
-
-      // Update notification read status
-      setAllNotifications(prev =>
-        prev.map(n => {
-          const mainTypes = [
-            'activity_opened',
-            'homework_opened_for_submission',
-            'course_homework_make_up',
-            'homework_score_updated',
-            'exam_opened',
-            'exam_will_start',
-            'exam_submit_started'
-          ]
-
-          let typeKey: keyof ReadTimestamps
-          if (mainTypes.includes(n.type)) {
-            typeKey = n.type as keyof ReadTimestamps
-          } else {
-            typeKey = 'others'
-          }
-
-          const storedTimestamp = newTimestamps[typeKey] || 0
-          return {
-            ...n,
-            read: n.timestamp <= storedTimestamp
-          }
-        })
-      )
+      console.log('XZZDPRO: 已标记为临时已读，刷新后将移动到已读栏', typesToMark)
     }
   }, [readTimestamps, allNotifications])
 
@@ -377,6 +352,7 @@ export function NotificationsPanel() {
         showBadges={true}
         onMarkAsRead={handleMarkAsRead}
         isLoading={isLoading}
+        tempReadTypes={tempReadTypes}
       />
       <NotificationCard
         title="已读公告"

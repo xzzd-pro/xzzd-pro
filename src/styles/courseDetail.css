@@ -919,10 +919,10 @@ body:not(.xzzdpro-body)::before {
 
 .course-info-section,
 .description-block {
-  background-color: hsl(var(--muted));
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
   border-radius: 12px;
   padding: 24px;
-  border-left: 4px solid hsl(var(--primary));
 }
 
 .course-info-section .section-title,

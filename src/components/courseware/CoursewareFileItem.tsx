@@ -1,7 +1,8 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
-import { Download } from "lucide-react"
+import { Download, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FilePreviewModal } from "@/components/ui/file-preview-modal"
 import type { ProcessedCoursewareFile } from "@/types"
 
 // Get file extension icon as JSX
@@ -96,46 +97,68 @@ interface CoursewareFileItemProps {
 }
 
 export function CoursewareFileItem({ file, className }: CoursewareFileItemProps) {
+  const [showPreview, setShowPreview] = React.useState(false)
+
   return (
-    <div className={cn(
-      "flex items-center gap-4 p-4 bg-card rounded-lg transition-all duration-200",
-      "hover:translate-x-1 hover:shadow-md",
-      className
-    )}>
-      <div className="w-9 h-9 flex-shrink-0 text-primary">
-        {getFileIcon(file.name)}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[15px] font-medium text-foreground mb-1 break-words leading-snug">
-          {file.name}
+    <>
+      <div className={cn(
+        "flex items-center gap-4 p-4 bg-card rounded-lg transition-all duration-200",
+        "hover:translate-x-1 hover:shadow-md",
+        className
+      )}>
+        <div className="w-9 h-9 flex-shrink-0 text-primary">
+          {getFileIcon(file.name)}
         </div>
-        <div className="text-[13px] text-muted-foreground">
-          {file.sizeText}
+        <div className="flex-1 min-w-0">
+          <div className="text-[15px] font-medium text-foreground mb-1 break-words leading-snug">
+            {file.name}
+          </div>
+          <div className="text-[13px] text-muted-foreground">
+            {file.sizeText}
+          </div>
         </div>
-      </div>
-      <div className="flex-shrink-0">
-        {file.canDownload ? (
+        <div className="flex-shrink-0 flex items-center gap-2">
           <Button
-            asChild
             size="sm"
+            variant="outline"
             className="gap-1.5"
+            onClick={() => setShowPreview(true)}
           >
-            <a
-              href={file.downloadUrl}
-              download={file.name}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Download className="w-4 h-4" />
-              <span>下载</span>
-            </a>
+            <Eye className="w-4 h-4" />
+            <span>预览</span>
           </Button>
-        ) : (
-          <span className="px-4 py-2 bg-border text-muted-foreground rounded-md text-[13px] font-medium">
-            不可下载
-          </span>
-        )}
+          {file.canDownload ? (
+            <Button
+              asChild
+              size="sm"
+              className="gap-1.5"
+            >
+              <a
+                href={file.downloadUrl}
+                download={file.name}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download className="w-4 h-4" />
+                <span>下载</span>
+              </a>
+            </Button>
+          ) : (
+            <span className="px-4 py-2 bg-border text-muted-foreground rounded-md text-[13px] font-medium">
+              不可下载
+            </span>
+          )}
+        </div>
       </div>
-    </div>
+
+      <FilePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        fileName={file.name}
+        fileUrl={file.downloadUrl}
+        fileSize={file.sizeText}
+        canDownload={file.canDownload}
+      />
+    </>
   )
 }

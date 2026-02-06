@@ -2,6 +2,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { MessageCircle, User, Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -41,59 +42,55 @@ function DiscussionItem({ topic, className }: DiscussionItemProps) {
   }
 
   return (
-    <AccordionItem
-      value={topic.id.toString()}
-      className={cn(
-        "bg-muted rounded-lg overflow-hidden border-l-4 transition-shadow duration-200",
-        "hover:shadow-md",
-        topic.isSticky ? "border-l-yellow-500" : "border-l-primary",
-        topic.isLocked && "opacity-75",
-        className
-      )}
-    >
-      <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-border/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start gap-3 mb-3">
-            <MessageCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
-                {topic.title}
-              </h3>
-              <div className="flex gap-4 flex-wrap text-[13px]">
-                {topic.isSticky && (
-                  <Badge variant="outline" className="bg-yellow-500 text-gray-900 border-transparent">
-                    置顶
-                  </Badge>
-                )}
-                {topic.isLocked && (
-                  <Badge variant="secondary">
-                    已锁定
-                  </Badge>
-                )}
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  {topic.author}
-                </span>
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {formatDate(topic.createdAt)}
-                </span>
-                <span className="text-muted-foreground">
-                  {topic.replyCount} 回复
-                </span>
+    <Card className="transition-shadow duration-200 hover:shadow-md">
+      <AccordionItem
+        value={topic.id.toString()}
+        className="border-none"
+      >
+        <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-3 mb-3">
+              <MessageCircle className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
+                  {topic.title}
+                </h3>
+                <div className="flex gap-4 flex-wrap text-[13px]">
+                  {topic.isSticky && (
+                    <Badge variant="outline" className="bg-yellow-500 text-gray-900 border-transparent">
+                      置顶
+                    </Badge>
+                  )}
+                  {topic.isLocked && (
+                    <Badge variant="secondary">
+                      已锁定
+                    </Badge>
+                  )}
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    {topic.author}
+                  </span>
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {formatDate(topic.createdAt)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {topic.replyCount} 回复
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </AccordionTrigger>
-      <AccordionContent className="px-5 pb-5 pl-14">
-        <div className="bg-card rounded-lg p-4 border border-border">
-          <div className="text-sm text-foreground whitespace-pre-wrap">
-            {topic.content}
+        </AccordionTrigger>
+        <AccordionContent className="px-5 pb-5 pl-14">
+          <div className="bg-card rounded-lg p-4 border border-border">
+            <div className="text-sm text-foreground whitespace-pre-wrap">
+              {topic.content}
+            </div>
           </div>
-        </div>
-      </AccordionContent>
-    </AccordionItem>
+        </AccordionContent>
+      </AccordionItem>
+    </Card>
   )
 }
 
@@ -102,19 +99,21 @@ function DiscussionSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-muted rounded-lg overflow-hidden border-l-4 border-l-border p-5">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-5 h-5 rounded" />
-            <div className="flex-1">
-              <Skeleton className="h-5 w-3/4 max-w-[300px] mb-3" />
-              <div className="flex gap-3">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
+        <Card key={i}>
+          <CardHeader className="p-5">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-5 h-5 rounded" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-3/4 max-w-[300px] mb-3" />
+                <div className="flex gap-3">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardHeader>
+        </Card>
       ))}
     </div>
   )

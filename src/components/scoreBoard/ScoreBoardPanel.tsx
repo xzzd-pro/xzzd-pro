@@ -115,7 +115,7 @@ function formatTime(isoTime: string): string {
 function TotalScoreSection({ settings }: { settings: AnnounceScoreSettingsResponse | null }) {
   if (!settings) {
     return (
-      <Card className="border-l-4 border-l-primary">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">总成绩</CardTitle>
         </CardHeader>
@@ -130,19 +130,19 @@ function TotalScoreSection({ settings }: { settings: AnnounceScoreSettingsRespon
   const rawAnnounced = settings.announce_score_settings.announce_raw_score_type !== 'no_announce'
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">总成绩</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+          <div className="flex justify-between items-center p-4 bg-card border rounded-lg">
             <span className="font-medium">最终成绩</span>
             <Badge variant={finalAnnounced ? "default" : "secondary"}>
               {finalAnnounced ? '已公布' : '未公布'}
             </Badge>
           </div>
-          <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
+          <div className="flex justify-between items-center p-4 bg-card border rounded-lg">
             <span className="font-medium">原始成绩</span>
             <Badge variant={rawAnnounced ? "default" : "secondary"}>
               {rawAnnounced ? '已公布' : '未公布'}
@@ -157,7 +157,7 @@ function TotalScoreSection({ settings }: { settings: AnnounceScoreSettingsRespon
 function RollcallSection({ rollcalls }: { rollcalls: RollcallItem[] }) {
   if (rollcalls.length === 0) {
     return (
-      <Card className="border-l-4 border-l-primary">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">考勤成绩</CardTitle>
         </CardHeader>
@@ -169,12 +169,12 @@ function RollcallSection({ rollcalls }: { rollcalls: RollcallItem[] }) {
   }
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">考勤成绩</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-[1fr_100px_100px] gap-4 px-4 py-3 bg-muted text-sm font-semibold text-muted-foreground">
+        <div className="grid grid-cols-[1fr_100px_100px] gap-4 px-4 py-3 bg-card border-b text-sm font-semibold text-muted-foreground">
           <span>签到时间</span>
           <span className="text-center">出勤状态</span>
           <span className="text-center">是否计分</span>
@@ -202,7 +202,7 @@ function RollcallSection({ rollcalls }: { rollcalls: RollcallItem[] }) {
 function PerformanceSection({ performance }: { performance: PerformanceScoreResponse | null }) {
   if (!performance) {
     return (
-      <Card className="border-l-4 border-l-primary">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">课堂表现成绩</CardTitle>
         </CardHeader>
@@ -219,25 +219,25 @@ function PerformanceSection({ performance }: { performance: PerformanceScoreResp
     : '0%'
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">课堂表现成绩</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col gap-2 p-4 bg-muted rounded-lg">
+          <div className="flex flex-col gap-2 p-4 bg-card border rounded-lg">
             <span className="text-sm text-muted-foreground">公布状态</span>
             <Badge variant={announced ? "default" : "secondary"} className="w-fit">
               {announced ? '已公布' : '未公布'}
             </Badge>
           </div>
-          <div className="flex flex-col gap-2 p-4 bg-muted rounded-lg">
+          <div className="flex flex-col gap-2 p-4 bg-card border rounded-lg">
             <span className="text-sm text-muted-foreground">成绩</span>
             <span className="text-2xl font-bold text-primary">
               {performance.score !== null ? performance.score : '--'}
             </span>
           </div>
-          <div className="flex flex-col gap-2 p-4 bg-muted rounded-lg">
+          <div className="flex flex-col gap-2 p-4 bg-card border rounded-lg">
             <span className="text-sm text-muted-foreground">成绩占比</span>
             <span className="text-lg font-semibold">{percentageDisplay}</span>
           </div>
@@ -250,7 +250,7 @@ function PerformanceSection({ performance }: { performance: PerformanceScoreResp
 function CustomScoreSection({ items }: { items: CustomScoreItem[] }) {
   if (items.length === 0) {
     return (
-      <Card className="border-l-4 border-l-primary">
+      <Card>
         <CardHeader className="pb-4">
           <CardTitle className="text-lg">自定义成绩项</CardTitle>
         </CardHeader>
@@ -262,12 +262,12 @@ function CustomScoreSection({ items }: { items: CustomScoreItem[] }) {
   }
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">自定义成绩项</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="grid grid-cols-[1fr_100px_100px] gap-4 px-4 py-3 bg-muted text-sm font-semibold text-muted-foreground">
+        <div className="grid grid-cols-[1fr_100px_100px] gap-4 px-4 py-3 bg-card border-b text-sm font-semibold text-muted-foreground">
           <span>名称</span>
           <span className="text-center">得分</span>
           <span className="text-center">成绩占比</span>
@@ -316,23 +316,23 @@ function ActivityScoresSection({
   })
 
   return (
-    <Card className="border-l-4 border-l-primary">
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-lg">学习活动成绩</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Homework Section */}
         <div>
-          <h4 className="text-[15px] font-semibold mb-3 pl-3 border-l-[3px] border-l-primary">作业</h4>
+          <h4 className="text-[15px] font-semibold mb-3">作业</h4>
           {hasHomework ? (
             <>
-              <div className="grid grid-cols-[1fr_80px_80px_1fr] gap-4 px-4 py-3 bg-muted text-sm font-semibold text-muted-foreground rounded-t-lg">
+              <div className="grid grid-cols-[1fr_80px_80px_1fr] gap-4 px-4 py-3 bg-card border rounded-t-lg text-sm font-semibold text-muted-foreground">
                 <span>名称</span>
                 <span className="text-center">成绩</span>
                 <span className="text-center">占比</span>
                 <span>老师评语</span>
               </div>
-              <div className="divide-y divide-border bg-card rounded-b-lg">
+              <div className="divide-y divide-border bg-card border border-t-0 rounded-b-lg">
                 {homeworkData.homework_activities.map(activity => {
                   const scoreItem = scoreMap.get(activity.id)
                   return (
@@ -359,14 +359,14 @@ function ActivityScoresSection({
 
         {/* Exam Section */}
         <div>
-          <h4 className="text-[15px] font-semibold mb-3 pl-3 border-l-[3px] border-l-primary">测试</h4>
+          <h4 className="text-[15px] font-semibold mb-3">测试</h4>
           {hasExams ? (
             <>
-              <div className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 bg-muted text-sm font-semibold text-muted-foreground rounded-t-lg">
+              <div className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 bg-card border rounded-t-lg text-sm font-semibold text-muted-foreground">
                 <span>名称</span>
                 <span className="text-center">得分</span>
               </div>
-              <div className="divide-y divide-border bg-card rounded-b-lg">
+              <div className="divide-y divide-border bg-card border border-t-0 rounded-b-lg">
                 {examScores.exam_scores.map(scoreItem => {
                   const examInfo = examMap.get(scoreItem.activity_id)
                   return (
@@ -394,7 +394,7 @@ function ScoreBoardSkeleton() {
   return (
     <div className="flex flex-col gap-6">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i} className="border-l-4 border-l-border">
+        <Card key={i}>
           <CardHeader className="pb-4">
             <Skeleton className="h-6 w-32" />
           </CardHeader>

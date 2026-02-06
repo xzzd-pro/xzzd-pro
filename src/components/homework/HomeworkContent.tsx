@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Upload, X, FileText } from "lucide-react"
+import { Upload, X, FileText, Eye, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FilePreviewModal } from "@/components/ui/file-preview-modal"
 import type { ProcessedHomework, HomeworkSubmission, SubmissionUpload } from "@/types"
 
 // Format file size
@@ -74,6 +75,61 @@ async function submitHomework(activityId: number, uploadIds: number[]): Promise<
     console.error('XZZDPRO: 提交作业时出错', error)
     return false
   }
+}
+
+// Submitted file item component
+function SubmittedFileItem({ upload }: { upload: SubmissionUpload }) {
+  const [showPreview, setShowPreview] = React.useState(false)
+
+  // Construct download URL for submitted files
+  const downloadUrl = `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`
+
+  return (
+    <>
+      <div className="flex items-center gap-3 p-3 bg-card rounded-lg">
+        <FileText className="w-7 h-7 text-primary flex-shrink-0" />
+        <div className="flex-1">
+          <div className="text-sm font-medium">{upload.name}</div>
+          <div className="text-xs text-muted-foreground">{formatFileSize(upload.size)}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setShowPreview(true)}
+          >
+            <Eye className="w-4 h-4" />
+            <span>预览</span>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            className="gap-1.5"
+          >
+            <a
+              href={downloadUrl}
+              download={upload.name}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="w-4 h-4" />
+              <span>下载</span>
+            </a>
+          </Button>
+        </div>
+      </div>
+
+      <FilePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        fileName={upload.name}
+        fileUrl={downloadUrl}
+        fileSize={formatFileSize(upload.size)}
+        canDownload={true}
+      />
+    </>
+  )
 }
 
 interface HomeworkContentProps {
@@ -163,13 +219,10 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
             </p>
             <div className="flex flex-col gap-2">
               {latestSubmission.uploads.map(upload => (
-                <div key={upload.id} className="flex items-center gap-3 p-3 bg-card rounded-lg">
-                  <FileText className="w-7 h-7 text-primary flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">{upload.name}</div>
-                    <div className="text-xs text-muted-foreground">{formatFileSize(upload.size)}</div>
-                  </div>
-                </div>
+                <SubmittedFileItem
+                  key={upload.id}
+                  upload={upload}
+                />
               ))}
             </div>
           </>

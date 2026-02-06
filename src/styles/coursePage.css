@@ -36,13 +36,25 @@
 /* Force override shadcn/ui Card default styles */
 .course-page-container .rounded-lg.border.bg-card .flex.flex-col.space-y-1\.5.p-6 {
   gap: 0.25rem !important;
-  padding: 0.75rem !important;
+  padding: 1.5rem !important;
   padding-bottom: 0.25rem !important;
 }
 
 .course-page-container .rounded-lg.border.bg-card .p-6.pt-0 {
-  padding: 0.75rem !important;
+  padding: 1.5rem !important;
   padding-top: 0 !important;
+}
+
+/* 确保标题和内容左对齐 */
+.course-page-container .rounded-lg.border.bg-card .text-2xl.font-semibold {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+/* 确保搜索表单内容与标题左对齐 */
+.course-page-container .space-y-6 {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
 
 /* Force text spacing to be minimal but readable */
