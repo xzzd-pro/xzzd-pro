@@ -10,7 +10,7 @@ const LAYOUT_STORAGE_KEY = "indexPageLayout"
 const DEFAULT_LAYOUT: LayoutState = {
   leftHandleWidth: 100,
   rightHandleWidth: 100,
-  welcomeCardHeight: 120,
+  welcomeCardHeight: 150,
   coursesCardFlex: 1,
   todoCardFlex: 1,
   sidebarCollapsed: false

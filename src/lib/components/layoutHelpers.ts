@@ -3,7 +3,9 @@
 import { createThemeToggle } from "./themeToggle"
 import { navIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
-import { Storage } from "@plasmohq/storage"
+import { createRoot } from "react-dom/client"
+import React from "react"
+import { AvatarUpload } from "../../components/ui/avatar-upload"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -31,7 +33,7 @@ export function renderHeader(options: HeaderOptions = {}): string {
   return `
     <header class="xzzdpro-header">
       <div class="logo-area">
-        ${LOGO_SRC ? `<img src="${LOGO_SRC}" alt="Logo">` : 'Logo 区域'}
+        ${LOGO_SRC ? `<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link"><img src="${LOGO_SRC}" alt="Logo"></a>` : '<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link">Logo 区域</a>'}
         <button class="help-btn" id="help-btn" title="使用须知">
           <span>使用须知</span>
         </button>
@@ -39,7 +41,7 @@ export function renderHeader(options: HeaderOptions = {}): string {
       <div class="right-section">
         ${themeToggle.renderHTML()}
         <div class="user-profile">
-          <span class="user-avatar"></span>
+          <div id="user-avatar-container" class="user-avatar-container"></div>
           ${showUsername && username ? `<span class="username">${username}</span>` : ''}
         </div>
       </div>
@@ -78,29 +80,39 @@ export function renderSidebar(options: SidebarOptions = {}): string {
 
   return `
     <nav class="xzzdpro-sidebar">
-      <ul class="sidebar-nav">
-        <li class="nav-item ${currentPage === 'home' ? 'active' : ''}">
-          <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-            <span class="nav-icon">${navIcons.home}</span><span class="nav-text">主页</span>
-          </a>
-        </li>
-        <li class="nav-item ${currentPage === 'notification' ? 'active' : ''}">
-          <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-           <span class="nav-icon">${navIcons.notification}</span><span class="nav-text">动态</span>
-          </a>
-        </li>
-        <li class="nav-item ${currentPage === 'courses' ? 'active' : ''}">
-          <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-            <span class="nav-icon">${navIcons.courses}</span><span class="nav-text">课程</span>
-          </a>
-        </li>
-        <li class="nav-item ${currentPage === 'assistant' ? 'active' : ''}">
-           <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link"><span class="nav-icon">${navIcons.assistant}</span><span class="nav-text">学习助理</span></a>
-        </li>
-      </ul>
-      <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
-        <span class="toggle-icon">&lt;&lt;</span>
-      </button>
+      <div class="sidebar-section">
+        <ul class="sidebar-nav">
+          <li class="nav-item ${currentPage === 'home' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
+              <span class="nav-icon">${navIcons.home}</span>
+              <span class="nav-text">主页</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'notification' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
+              <span class="nav-icon">${navIcons.notification}</span>
+              <span class="nav-text">动态</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'courses' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
+              <span class="nav-icon">${navIcons.courses}</span>
+              <span class="nav-text">课程</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'assistant' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link">
+              <span class="nav-icon">${navIcons.assistant}</span>
+              <span class="nav-text">学习助理</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
+          <span class="toggle-icon">&lt;&lt;</span>
+        </button>
+      </div>
     </nav>
   `;
 }
@@ -187,6 +199,22 @@ export async function setupSidebarToggle(): Promise<void> {
   });
 }
 
+
+/**
+ * Setup avatar upload functionality
+ * Should be called after the header HTML is added to the DOM
+ */
+export function setupAvatarUpload(): void {
+  const container = document.getElementById('user-avatar-container');
+  if (!container) return;
+
+  const root = createRoot(container);
+  root.render(React.createElement(AvatarUpload, {
+    size: 'lg',
+    fallback: 'U',
+    className: 'user-avatar'
+  }));
+}
 
 export function setupAssistantNavigation(): void {
   const link = document.getElementById('nav-assistant-link');

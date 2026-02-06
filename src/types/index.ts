@@ -99,6 +99,7 @@ export interface ReadTimestamps {
   exam_opened: number;
   exam_will_start: number;
   exam_submit_started: number;
+  others: number;
 }
 
 // Activity material types

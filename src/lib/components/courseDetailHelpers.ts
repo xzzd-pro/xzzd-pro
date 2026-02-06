@@ -1,6 +1,6 @@
 // lib/courseDetailHelpers.ts - Shared helpers for all course detail pages
 
-import { createThemeToggle } from "./themeToggle"
+import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "./layoutHelpers"
 import { courseDetailIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
 
@@ -40,7 +40,7 @@ export async function getCourseName(): Promise<string> {
   }
 }
 
-// Get user ID by fetching from API
+// Get user ID by fetching from API - iterates through all courses until a valid userId is found
 export async function getUserId(): Promise<string | null> {
   try {
     const coursesResponse = await fetch('https://courses.zju.edu.cn/api/my-courses', {
@@ -58,21 +58,44 @@ export async function getUserId(): Promise<string | null> {
       })
     });
 
-    if (!coursesResponse.ok) return null;
+    if (!coursesResponse.ok) {
+      console.error('XZZDPRO: 获取课程列表失败');
+      return null;
+    }
+
     const coursesData = await coursesResponse.json();
-    if (!coursesData.courses || coursesData.courses.length === 0) return null;
+    if (!coursesData.courses || coursesData.courses.length === 0) {
+      console.error('XZZDPRO: 没有找到任何课程');
+      return null;
+    }
 
-    const courseId = coursesData.courses[0].id;
-    const activityResponse = await fetch(
-      `https://courses.zju.edu.cn/api/course/${courseId}/activity-reads-for-user`
-    );
+    // Iterate through all courses until we find a valid userId
+    for (const course of coursesData.courses) {
+      const courseId = course.id;
+      try {
+        const activityResponse = await fetch(
+          `https://courses.zju.edu.cn/api/course/${courseId}/activity-reads-for-user`
+        );
 
-    if (!activityResponse.ok) return null;
-    const activityData = await activityResponse.json();
-    if (!activityData.activity_reads || activityData.activity_reads.length === 0) return null;
+        if (!activityResponse.ok) continue;
 
-    const userId = activityData.activity_reads[0].created_by_id || activityData.activity_reads[0].created_for_id;
-    return userId ? String(userId) : null;
+        const activityData = await activityResponse.json();
+        if (!activityData.activity_reads || activityData.activity_reads.length === 0) continue;
+
+        const firstActivity = activityData.activity_reads[0];
+        const userId = firstActivity.created_by_id || firstActivity.created_for_id;
+
+        if (userId) {
+          console.log('XZZDPRO: 成功提取到用户ID', userId);
+          return String(userId);
+        }
+      } catch (error) {
+        console.warn(`XZZDPRO: 处理课程 ${courseId} 时发生异常`, error);
+      }
+    }
+
+    console.error('XZZDPRO: 遍历所有课程均无法提取有效用户ID');
+    return null;
   } catch (error) {
     console.error('XZZDPRO: 获取用户ID时出错', error);
     return null;
@@ -100,7 +123,79 @@ export async function detectActivityType(activityId: string, userId: string): Pr
   }
 }
 
-// Render common page structure
+/**
+ * Render course detail sidebar with navigation items
+ * @param courseId - The course ID
+ * @param currentPage - The current active page
+ * @returns HTML string for the sidebar
+ */
+export function renderCourseDetailSidebar(courseId: string, currentPage: string): string {
+  return `
+    <nav class="xzzdpro-sidebar">
+      <div class="sidebar-section">
+        <ul class="sidebar-nav">
+          <li class="nav-item ${currentPage === 'overview' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/content#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.overview}</span>
+              <span class="nav-text">课程概览</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'materials' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/courseware#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.courseware}</span>
+              <span class="nav-text">课件下载</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'homework' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/homework#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.homework}</span>
+              <span class="nav-text">作业提交</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'quiz' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/exam" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.quiz}</span>
+              <span class="nav-text">小测</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'discussion' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/forum#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.discussion}</span>
+              <span class="nav-text">讨论区</span>
+            </a>
+          </li>
+          <li class="nav-item ${currentPage === 'grades' ? 'active' : ''}">
+            <a href="https://courses.zju.edu.cn/course/${courseId}/score#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.grades}</span>
+              <span class="nav-text">成绩</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
+              <span class="nav-icon">${courseDetailIcons.back}</span>
+              <span class="nav-text">返回课程</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
+          <span class="toggle-icon">&lt;&lt;</span>
+        </button>
+      </div>
+    </nav>
+  `;
+}
+
+/**
+ * Render common page structure for course detail pages
+ * @param courseId - The course ID
+ * @param courseName - The course name
+ * @param currentPage - The current active page
+ * @param pageTitle - The page title
+ * @param contentHtml - The main content HTML
+ * @returns HTML string for the complete page
+ */
 export function renderCourseDetailPage(
   courseId: string,
   courseName: string,
@@ -108,94 +203,12 @@ export function renderCourseDetailPage(
   pageTitle: string,
   contentHtml: string
 ): string {
-  const logoSrc = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
-  const themeToggle = createThemeToggle();
+  const header = renderHeader({ showUsername: false });
+  const sidebar = renderCourseDetailSidebar(courseId, currentPage);
 
   return `
-    <header class="xzzdpro-header">
-      <div class="logo-area">
-        ${logoSrc ? `<img src="${logoSrc}" alt="Logo">` : 'Logo 区域'}
-        <button class="help-btn" id="help-btn" title="使用须知">
-          <span>使用须知</span>
-        </button>
-      </div>
-      <div class="right-section">
-        ${themeToggle.renderHTML()}
-        <div class="user-profile">
-          <span class="user-avatar"></span>
-        </div>
-      </div>
-    </header>
-
-    <!-- 使用须知模态框 -->
-    <div class="modal-overlay" id="help-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>使用须知</h3>
-          <button class="modal-close" id="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p><strong>欢迎使用 XZZDPRO 学在浙大美化插件！</strong></p>
-          <ul>
-            <li>本插件仅用于美化学在浙大页面，不会修改任何数据</li>
-            <li>点击侧边栏底部的 &lt;&lt; 按钮可以收缩/展开侧边栏</li>
-            <li>点击顶部的主题切换按钮可以切换明暗主题</li>
-            <li>主页支持拖拽调整各区域大小</li>
-            <li>布局设置会自动保存</li>
-          </ul>
-          <p><strong>如有问题或建议，欢迎反馈！</strong></p>
-        </div>
-      </div>
-    </div>
-
-    <nav class="xzzdpro-sidebar">
-      <div class="sidebar-content">
-        <div class="course-title">
-          <h3> 课程详情 </h3>
-        </div>
-        <ul class="sidebar-nav">
-          <li class="nav-item ${currentPage === 'overview' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/content#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.overview}</span><span class="nav-text">课程概览</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'materials' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/courseware#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.courseware}</span><span class="nav-text">课件下载</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'homework' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/homework#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.homework}</span><span class="nav-text">作业提交</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'quiz' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/exam" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.quiz}</span><span class="nav-text">小测</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'discussion' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/forum#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.discussion}</span><span class="nav-text">讨论区</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'grades' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/score#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.grades}</span><span class="nav-text">成绩</span>
-            </a>
-          </li>
-        </ul>
-        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
-          <span class="toggle-icon">&lt;&lt;</span>
-        </button>
-      </div>
-      <div class="sidebar-footer">
-        <a href="https://courses.zju.edu.cn/user/courses#/" class="back-btn">
-          <span class="back-icon">←</span>
-          <span class="back-text">返回课程</span>
-        </a>
-      </div>
-    </nav>
+    ${header}
+    ${sidebar}
 
     <main class="xzzdpro-main" id="main-grid">
       <div class="resize-handle resize-handle-left"></div>
@@ -215,75 +228,5 @@ export function renderCourseDetailPage(
   `;
 }
 
-// Setup theme toggle
-export function setupThemeToggle(): void {
-  const themeToggle = createThemeToggle();
-  themeToggle.setup();
-}
-
-// Setup help modal functionality
-export function setupHelpModal(): void {
-  const helpBtn = document.getElementById('help-btn');
-  const modal = document.getElementById('help-modal');
-  const closeBtn = document.getElementById('modal-close');
-
-  if (!helpBtn || !modal || !closeBtn) return;
-
-  helpBtn.addEventListener('click', () => {
-    modal.classList.add('active');
-  });
-
-  closeBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-
-  // 点击遮罩层关闭
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('active');
-    }
-  });
-
-  // ESC 键关闭
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      modal.classList.remove('active');
-    }
-  });
-}
-
-// Setup sidebar toggle functionality
-export async function setupSidebarToggle(): Promise<void> {
-  const toggleBtn = document.getElementById('sidebar-toggle');
-  const root = document.querySelector('.xzzdpro-root') as HTMLElement;
-
-  if (!toggleBtn || !root) return;
-
-  // Load and apply saved state
-  try {
-    const state = await storage.get<{ sidebarCollapsed?: boolean }>(LAYOUT_STORAGE_KEY);
-    if (state?.sidebarCollapsed) {
-      root.classList.add('sidebar-collapsed');
-      toggleBtn.setAttribute('title', '展开侧边栏');
-    }
-  } catch (error) {
-    console.error('XZZDPRO: Failed to load sidebar state', error);
-  }
-
-  // Setup click handler
-  toggleBtn.addEventListener('click', async () => {
-    const isCollapsed = root.classList.toggle('sidebar-collapsed');
-
-    // Update title
-    toggleBtn.setAttribute('title', isCollapsed ? '展开侧边栏' : '收缩侧边栏');
-
-    // Save state
-    try {
-      const currentState = await storage.get<Record<string, unknown>>(LAYOUT_STORAGE_KEY) || {};
-      await storage.set(LAYOUT_STORAGE_KEY, { ...currentState, sidebarCollapsed: isCollapsed });
-      console.log('XZZDPRO: Sidebar toggled', { collapsed: isCollapsed });
-    } catch (error) {
-      console.error('XZZDPRO: Failed to save sidebar state', error);
-    }
-  });
-}
+// Re-export setup functions from layoutHelpers for convenience
+export { setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "./layoutHelpers";

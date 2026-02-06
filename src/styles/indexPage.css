@@ -1,13 +1,7 @@
-/* styles/index-page.css */
+/* styles/indexPage.css */
 
-/* styles/index-page.css */
-
-/* .xzzdpro-root definition moved to global.css */
-
-/* --- main-area style --- */
 /* --- main-area style --- */
 .xzzdpro-main {
-  /* grid-area, overflow defined in global.css */
   display: grid;
   grid-template-columns: 100px 1fr 100px;
   grid-template-rows: 1fr;
@@ -42,7 +36,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -58,7 +52,7 @@
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -84,7 +78,7 @@
   top: 50%;
   transform: translateY(-50%);
   height: 4px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -110,28 +104,13 @@
   left: 50%;
   transform: translateX(-50%);
   width: 4px;
-  background-color: var(--primary-accent-color);
+  background-color: hsl(var(--primary));
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 .resize-handle-vertical:hover::after {
   opacity: 0.5;
-}
-
-/* scrollbar */
-.xzzdpro-main::-webkit-scrollbar {
-  width: 8px;
-}
-
-.xzzdpro-main::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.xzzdpro-main::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
-  border-radius: 4px;
-  transition: background 0.2s ease;
 }
 
 /* --- card position --- */
@@ -163,7 +142,6 @@
 }
 
 /* --- welcome-card style --- */
-
 .welcome-card {
   display: flex;
   overflow: hidden;
@@ -172,14 +150,12 @@
 }
 
 .welcome-card p {
-  color: var(--text-primary-color);
+  color: hsl(var(--muted-foreground));
   margin: 8px 0 0 0;
-  opacity: 0.9;
-  font-size: 24px;
+  font-size: 20px;
 }
 
-/* --- todo-list style --- */
-
+/* --- list container styles --- */
 .todo-list-container,
 .courses-list-container {
   flex: 1;
@@ -199,144 +175,12 @@
 .todo-list-container::-webkit-scrollbar-track,
 .courses-list-container::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 3px;
 }
 
 .todo-list-container::-webkit-scrollbar-thumb,
 .courses-list-container::-webkit-scrollbar-thumb {
-  background: var(--primary-accent-color);
+  background: hsl(var(--border));
   border-radius: 3px;
-  transition: background 0.2s ease;
-}
-
-/* --- todo-item style --- */
-.todo-item {
-  background-color: var(--card-background);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border-left: 3px solid var(--primary-accent-color, #4f46e5);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  height: 100px;
-  min-height: 120px;
-  max-height: 120px;
-  overflow: hidden;
-}
-
-.todo-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.todo-item-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.todo-item-link:hover {
-  transform: translateX(6px);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
-}
-
-.todo-item-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.todo-title {
-  color: var(--text-primary-color, #1a1a1a);
-  font-size: 20px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.todo-type-badge {
-  background-color: var(--primary-accent-color, #4f46e5);
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
-
-.todo-course-name {
-  color: var(--text-secondary-color, #6b7280);
-  font-size: 14px;
-  margin-bottom: 8px;
-  opacity: 0.9;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.todo-item-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: space-between;
-}
-
-.todo-deadline {
-  color: var(--text-secondary-color, #6b7280);
-  font-size: 18px;
-}
-
-/* days - left */
-.todo-days-left {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.days-left-overdue {
-  background-color: #fee2e2;
-  color: #dc2626;
-}
-
-[data-theme="dark"] .days-left-overdue {
-  background-color: #7f1d1d;
-  color: #fca5a5;
-}
-
-.days-left-urgent {
-  background-color: #fed7aa;
-  color: #ea580c;
-}
-
-[data-theme="dark"] .days-left-urgent {
-  background-color: #7c2d12;
-  color: #fdba74;
-}
-
-.days-left-soon {
-  background-color: #fef3c7;
-  color: #d97706;
-}
-
-[data-theme="dark"] .days-left-soon {
-  background-color: #78350f;
-  color: #fcd34d;
-}
-
-.days-left-normal {
-  background-color: #d1fae5;
-  color: #059669;
-}
-
-[data-theme="dark"] .days-left-normal {
-  background-color: #064e3b;
-  color: #6ee7b7;
-}
-
-.no-todos-message {
-  text-align: center;
-  color: var(--text-secondary-color, #6b7280);
-  padding: 32px 0;
-  font-size: 14px;
 }
 
 /* --- today-courses-card style --- */
@@ -346,50 +190,20 @@
 }
 
 .today-courses-card .date {
-  color: var(--text-secondary-color);
-  font-size: 24px;
-}
-
-/* Removed old .courses-list-container styles as they are now merged with .todo-list-container */
-
-/* course item styles */
-.course-item {
-  display: block;
-  background-color: var(--card-background);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  border-left: 3px solid var(--primary-accent-color, #4f46e5);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-  height: 80px;
-  min-height: 80px;
-  max-height: 80px;
-  overflow: hidden;
-}
-
-.course-item:hover {
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
-.course-name {
-  font-weight: 600;
-  color: var(--text-primary-color, #1a1a1a);
-  font-size: 18px;
-  margin-bottom: 8px;
-}
-
-.course-instructor {
-  color: var(--text-secondary-color, #6b7280);
-  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+  font-size: 20px;
   font-weight: 400;
 }
 
-.no-courses-message {
-  text-align: center;
-  color: var(--text-secondary-color, #6b7280);
-  padding: 32px 0;
-  font-size: 14px;
+/* Force text spacing for index page cards */
+.today-courses-card .space-y-0 > p,
+.todo-card .space-y-0 > p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.today-courses-card .space-y-0 > p + p,
+.todo-card .space-y-0 > p + p {
+  margin-top: 4px !important;
 }
