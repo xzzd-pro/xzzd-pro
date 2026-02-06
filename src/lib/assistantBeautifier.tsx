@@ -1901,20 +1901,35 @@ function setupSettingsHandlers() {
 
     try {
       const provider = providerSelect.value as Provider
+      const apiKey = apiKeyInput.value.trim()
+      const baseUrl = baseUrlInput.value.trim()
+      const model = modelInput.value.trim()
+      
+      // 验证必填字段
+      if (!apiKey) {
+        alert('❌ API Key 不能为空')
+        return
+      }
+      if (!model) {
+        alert('❌ 模型名称不能为空（如：gpt-4, gpt-4-vision 等）')
+        return
+      }
+      
       const config = {
-        apiKey: apiKeyInput.value.trim(),
-        baseUrl: baseUrlInput.value.trim(),
-        model: modelInput.value.trim()
+        apiKey,
+        baseUrl,
+        model
       }
 
       currentSettings.provider = provider
       currentSettings.configs[provider] = config
 
       await saveSettings(currentSettings)
+      showStatus('设置已保存', 'success')
       closeSettings()
     } catch (error) {
       console.error('Failed to save settings:', error)
-      alert('保存失败，请重试')
+      alert('❌ 保存失败，请重试')
     } finally {
       (saveBtn as HTMLButtonElement).disabled = false;
       (saveBtn as HTMLButtonElement).textContent = '保存设置'
