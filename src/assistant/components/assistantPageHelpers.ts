@@ -13,24 +13,6 @@ export function renderAssistantPage(username: string = ""): string {
   return `
     <div class="assistant-layout">
       <main class="chat-area">
-        <div class="chat-header">
-          <div class="header-left-group">
-            <button id="flashcard-split-toggle" class="icon-btn split-toggle-btn" title="展开闪卡面板">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 5C3 3.9 3.9 3 5 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V5Z" stroke="currentColor" stroke-width="1.8"/>
-                <path d="M10 3V21" stroke="currentColor" stroke-width="1.8"/>
-              </svg>
-            </button>
-            <h3 id="current-course-name">请选择一门课程</h3>
-          </div>
-          
-          <div class="header-right-group">
-            <button id="clear-history-btn" class="clear-history-btn" style="display: none;">清除历史</button>
-            <button id="settings-btn" class="settings-btn" title="设置">
-              ${navIcons.settings}
-            </button>
-          </div>
-        </div>
         <div id="assistant-main-panels" class="assistant-main-panels">
           <section id="flashcard-panel" class="flashcard-panel">
             <div id="flashcard-messages-container" class="flashcard-messages-container">
@@ -47,6 +29,7 @@ export function renderAssistantPage(username: string = ""): string {
           </section>
 
           <section id="chat-panel" class="chat-panel">
+            <div id="chat-course-subtitle" class="chat-course-subtitle" style="display: none;"></div>
             <div id="messages-container" class="messages-container">
               <div class="empty-state">
                 <div class="empty-state-icon">
@@ -92,6 +75,9 @@ export function renderAssistantPage(username: string = ""): string {
                             </button>
                         </div>
                     </div>
+                    <button id="settings-btn" class="modern-icon-btn settings-inline-btn" title="设置">
+                      ${navIcons.settings}
+                    </button>
                     <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-btn" title="闪卡模式">
                       <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.23-.28-.62-.38-.96-.23-.35.15-.58.5-.58.89V14h8v-2.36c0-.39-.23-.74-.58-.89-.34-.14-.73-.05-.96.23z"/>

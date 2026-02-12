@@ -194,7 +194,31 @@
   text-decoration: none;
 }
 
+.xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn {
+  display: flex;
+  align-items: center;
+  color: hsl(var(--muted-foreground));
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  border-radius: var(--radius);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
 .xzzdpro-sidebar .sidebar-nav > li > a:hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn:hover,
+.xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn.active {
   background-color: hsl(var(--accent));
   color: hsl(var(--accent-foreground));
 }
@@ -244,7 +268,8 @@
 }
 
 .xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > a,
-.xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > .nav-link-expandable .nav-link-main {
+.xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > .nav-link-expandable .nav-link-main,
+.xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn {
   justify-content: center;
   padding: 10px;
   gap: 0;

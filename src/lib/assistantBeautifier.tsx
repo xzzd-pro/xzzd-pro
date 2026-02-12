@@ -1,6 +1,6 @@
 import { renderAssistantPage, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
 import { hydrateFlashcardBubbles } from '../assistant/components/flashcardRenderer'
-import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, clearChatHistory, createChatMessage } from '../assistant/storage'
+import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, createChatMessage } from '../assistant/storage'
 import { fetchAllCourses, buildCourseContext } from '../assistant/services/courseDataService'
 import { preloadCourseContext } from '../assistant/services/contextBuilder'
 import { streamChat, formatErrorMessage } from '../assistant/services/chatService'
@@ -26,12 +26,22 @@ let overlayElement: HTMLElement | null = null
 let isFlashcardMode = false
 let isFlashcardSplitView = false
 let isSplitTransitioning = false
+let externalSplitToggleHandler: ((event: Event) => void) | null = null
+let externalClearHistoryHandler: ((event: Event) => void) | null = null
 
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
 }
 
 export function closeAssistant(): void {
+  if (externalSplitToggleHandler) {
+    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+    externalSplitToggleHandler = null
+  }
+  if (externalClearHistoryHandler) {
+    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+    externalClearHistoryHandler = null
+  }
   if (overlayHost && document.body.contains(overlayHost)) {
     overlayHost.remove()
     overlayHost = null
@@ -559,6 +569,15 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       flex-direction: column;
       gap: 24px;
     }
+    .chat-course-subtitle {
+      flex-shrink: 0;
+      padding: 10px 24px 8px 24px;
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      border-bottom: 1px solid var(--xzzd-card-border);
+      background: var(--xzzd-card-bg);
+      text-align: left;
+    }
     .message {
       display: flex;
       flex-direction: column; /* Default stack */
@@ -1028,6 +1047,10 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     .modern-icon-btn svg {
       width: 24px;
       height: 24px;
+    }
+    .settings-inline-btn svg {
+      width: 22px;
+      height: 22px;
     }
     .modern-icon-btn:disabled {
         opacity: 0.3;
@@ -1636,14 +1659,6 @@ async function switchCourse(courseId: string) {
   isCoursewareLoaded = false // Reset loading state
   syncSidebarCourseActive(courseId)
 
-  // Update Header
-  const headerEl = overlayElement?.querySelector('#current-course-name')
-  if (headerEl) headerEl.textContent = currentCourseName
-
-  // Show clear button
-  const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLElement
-  if (clearBtn) clearBtn.style.display = ''
-
   // Enable inputs
   const chatInput = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
@@ -1706,10 +1721,21 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
 function renderMessages() {
   const chatContainer = overlayElement?.querySelector('#messages-container') as HTMLElement | null
   const flashcardContainer = overlayElement?.querySelector('#flashcard-messages-container') as HTMLElement | null
+  const courseSubtitleEl = overlayElement?.querySelector('#chat-course-subtitle') as HTMLElement | null
   if (!chatContainer) return
 
   const chatMessages = isFlashcardSplitView ? messages.filter(msg => !msg.flashcards) : messages
   const flashcardMessages = messages.filter(msg => !!msg.flashcards)
+
+  if (courseSubtitleEl) {
+    if (currentCourseName) {
+      courseSubtitleEl.textContent = currentCourseName
+      courseSubtitleEl.style.display = 'block'
+    } else {
+      courseSubtitleEl.textContent = ''
+      courseSubtitleEl.style.display = 'none'
+    }
+  }
 
   if (chatMessages.length === 0) {
     chatContainer.innerHTML = `
@@ -1766,11 +1792,10 @@ function setupChatHandlers() {
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
   const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
-  const splitToggleBtn = overlayElement?.querySelector('#flashcard-split-toggle') as HTMLButtonElement
   const chatAreaEl = overlayElement?.querySelector('.chat-area') as HTMLElement
-  const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
+  const sidebarSplitToggleBtn = document.getElementById('nav-assistant-flashcard-toggle') as HTMLButtonElement | null
 
   const updateSplitUI = () => {
     if (!chatAreaEl) return
@@ -1778,13 +1803,54 @@ function setupChatHandlers() {
     if (isFlashcardSplitView) {
       chatAreaEl.classList.add('split-open')
       chatAreaEl.classList.remove('split-collapsing')
-      splitToggleBtn?.classList.add('active')
-      if (splitToggleBtn) splitToggleBtn.title = '收起闪卡面板'
+      sidebarSplitToggleBtn?.classList.add('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '收起闪卡面板'
     } else {
       chatAreaEl.classList.remove('split-open')
       chatAreaEl.classList.remove('split-collapsing')
-      splitToggleBtn?.classList.remove('active')
-      if (splitToggleBtn) splitToggleBtn.title = '展开闪卡面板'
+      sidebarSplitToggleBtn?.classList.remove('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+    }
+  }
+
+  const toggleSplitView = () => {
+    if (!chatAreaEl || isSplitTransitioning) return
+
+    if (isFlashcardSplitView) {
+      isSplitTransitioning = true
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = true
+      sidebarSplitToggleBtn?.classList.remove('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+
+      chatAreaEl.classList.add('split-collapsing')
+
+      window.setTimeout(() => {
+        isFlashcardSplitView = false
+        chatAreaEl.classList.remove('split-open')
+        chatAreaEl.classList.remove('split-collapsing')
+        isSplitTransitioning = false
+        if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = false
+        renderMessages()
+      }, 300)
+      return
+    }
+
+    isFlashcardSplitView = true
+    updateSplitUI()
+    renderMessages()
+  }
+
+  const clearCurrentHistory = async () => {
+    if (!currentCourseId) return
+    if (confirm('确认要清空当前课程的聊天记录吗？')) {
+      messages = []
+      renderMessages()
+      await saveChatHistory(currentCourseId, {
+        courseId: currentCourseId,
+        courseName: currentCourseName,
+        messages: [],
+        updatedAt: Date.now()
+      })
     }
   }
 
@@ -1812,21 +1878,21 @@ function setupChatHandlers() {
     }
   }
 
-  // Clear History
-  clearBtn?.addEventListener('click', async () => {
-    if (confirm('确认要清空当前课程的聊天记录吗？')) {
-      messages = []
-      renderMessages()
-      if (currentCourseId) {
-        await saveChatHistory(currentCourseId, {
-          courseId: currentCourseId,
-          courseName: currentCourseName,
-          messages: [],
-          updatedAt: Date.now()
-        })
-      }
-    }
-  })
+  if (externalSplitToggleHandler) {
+    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+  }
+  externalSplitToggleHandler = () => {
+    toggleSplitView()
+  }
+  window.addEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+
+  if (externalClearHistoryHandler) {
+    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+  }
+  externalClearHistoryHandler = () => {
+    void clearCurrentHistory()
+  }
+  window.addEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
   const previewArea = overlayElement?.querySelector('#file-preview-area') as HTMLElement
   const plusMenu = overlayElement?.querySelector('#plus-menu') as HTMLElement
   const menuUploadBtn = overlayElement?.querySelector('#menu-upload-btn') as HTMLButtonElement
@@ -1846,33 +1912,6 @@ function setupChatHandlers() {
   flashcardModeBtn?.addEventListener('click', () => {
     isFlashcardMode = !isFlashcardMode
     updateModeUI()
-  })
-
-  splitToggleBtn?.addEventListener('click', () => {
-    if (!chatAreaEl || isSplitTransitioning) return
-
-    if (isFlashcardSplitView) {
-      isSplitTransitioning = true
-      splitToggleBtn.disabled = true
-      splitToggleBtn.classList.remove('active')
-      splitToggleBtn.title = '展开闪卡面板'
-
-      chatAreaEl.classList.add('split-collapsing')
-
-      window.setTimeout(() => {
-        isFlashcardSplitView = false
-        chatAreaEl.classList.remove('split-open')
-        chatAreaEl.classList.remove('split-collapsing')
-        isSplitTransitioning = false
-        splitToggleBtn.disabled = false
-        renderMessages()
-      }, 300)
-      return
-    }
-
-    isFlashcardSplitView = true
-    updateSplitUI()
-    renderMessages()
   })
 
   // Attach Button (Toggle Menu)
@@ -2460,26 +2499,6 @@ function setupChatHandlers() {
 
   input?.addEventListener('input', () => adjustTextareaHeight(input))
 
-  // Clear Button logic
-  // Use delegation for clear button to ensure it works even if DOM slightly changes
-  overlayElement?.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement
-    const clearBtn = target.closest('#clear-history-btn')
-
-    if (clearBtn) {
-      console.log('XZZDPRO: Clear history clicked')
-      if (!currentCourseId) {
-        console.warn('XZZDPRO: No current course ID')
-        return
-      }
-
-      if (!confirm('确认要清除本课程的对话历史吗？')) return
-
-      await clearChatHistory(currentCourseId)
-      messages = []
-      renderMessages()
-    }
-  })
 }
 
 function adjustTextareaHeight(el: HTMLTextAreaElement) {

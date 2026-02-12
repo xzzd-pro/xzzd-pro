@@ -116,6 +116,29 @@ export function renderSidebar(options: SidebarOptions = {}): string {
               </div>
             </div>
           </li>
+          ${currentPage === 'assistant' ? `
+          <li class="nav-item nav-item-action assistant-sidebar-action">
+            <button id="nav-assistant-flashcard-toggle" class="nav-link nav-action-btn" type="button" title="展开闪卡">
+              <span class="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 5C3 3.9 3.9 3 5 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V5Z" stroke="currentColor" stroke-width="1.8"/>
+                  <path d="M10 3V21" stroke="currentColor" stroke-width="1.8"/>
+                </svg>
+              </span>
+              <span class="nav-text">展开闪卡</span>
+            </button>
+          </li>
+          <li class="nav-item nav-item-action assistant-sidebar-action">
+            <button id="nav-assistant-clear-history" class="nav-link nav-action-btn" type="button" title="清除历史">
+              <span class="nav-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M9 3H15M4 7H20M6 7L7 20C7.08 21.1 7.99 22 9.1 22H14.9C16.01 22 16.92 21.1 17 20L18 7M10 11V17M14 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="nav-text">清除历史</span>
+            </button>
+          </li>
+          ` : ''}
         </ul>
       </div>
       <div class="sidebar-footer">
@@ -229,6 +252,8 @@ export function setupAvatarUpload(): void {
 export function setupAssistantNavigation(): void {
   const link = document.getElementById('nav-assistant-link');
   const expandBtn = document.getElementById('nav-assistant-expand');
+  const flashcardToggleBtn = document.getElementById('nav-assistant-flashcard-toggle');
+  const clearHistoryBtn = document.getElementById('nav-assistant-clear-history');
   const navItem = link?.closest('.nav-item-expandable');
   const submenu = navItem?.querySelector('.nav-submenu') as HTMLElement;
   
@@ -257,6 +282,14 @@ export function setupAssistantNavigation(): void {
 
   // Load courses on initial setup
   loadAssistantCourses();
+
+  flashcardToggleBtn?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('xzzd:assistant-toggle-flashcard'));
+  });
+
+  clearHistoryBtn?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('xzzd:assistant-clear-history'));
+  });
 }
 
 async function loadAssistantCourses(): Promise<void> {
