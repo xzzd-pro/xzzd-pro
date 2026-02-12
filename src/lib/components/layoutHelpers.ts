@@ -1,6 +1,6 @@
 // lib/components/layoutHelpers.ts - Shared layout components for header and sidebar
 
-import { createThemeToggle } from "./themeToggle"
+import { createThemeToggle } from "./ThemeToggle"
 import { navIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
 import { createRoot } from "react-dom/client"
@@ -100,11 +100,21 @@ export function renderSidebar(options: SidebarOptions = {}): string {
               <span class="nav-text">课程</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'assistant' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link">
-              <span class="nav-icon">${navIcons.assistant}</span>
-              <span class="nav-text">学习助理</span>
-            </a>
+          <li class="nav-item nav-item-expandable ${currentPage === 'assistant' ? 'active' : ''}">
+            <div class="nav-link nav-link-expandable">
+              <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link-main" aria-label="学习助理">
+                <span class="nav-icon">${navIcons.assistant}</span>
+                <span class="nav-text">学习助理</span>
+              </a>
+              <button id="nav-assistant-expand" class="expand-toggle" type="button" aria-label="展开学习助理课程列表" title="展开课程列表">
+                <span class="expand-arrow">▼</span>
+              </button>
+            </div>
+            <div class="nav-submenu">
+              <div id="assistant-course-list" class="course-list-submenu">
+                <div class="submenu-loading">加载课程中...</div>
+              </div>
+            </div>
           </li>
         </ul>
       </div>
@@ -218,12 +228,89 @@ export function setupAvatarUpload(): void {
 
 export function setupAssistantNavigation(): void {
   const link = document.getElementById('nav-assistant-link');
-  if (link) {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Force hard navigation to bypass SPA router
-      window.location.assign('https://courses.zju.edu.cn/air');
+  const expandBtn = document.getElementById('nav-assistant-expand');
+  const navItem = link?.closest('.nav-item-expandable');
+  const submenu = navItem?.querySelector('.nav-submenu') as HTMLElement;
+  
+  if (!link || !expandBtn || !navItem || !submenu) return;
+
+  // Toggle submenu on expand button click only
+  expandBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isExpanded = navItem.classList.contains('expanded');
+    if (isExpanded) {
+      navItem.classList.remove('expanded');
+      submenu.style.display = 'none';
+    } else {
+      navItem.classList.add('expanded');
+      submenu.style.display = 'block';
+      loadAssistantCourses();
+    }
+  });
+
+  if (navItem.classList.contains('active')) {
+    navItem.classList.add('expanded');
+    submenu.style.display = 'block';
+  }
+
+  // Load courses on initial setup
+  loadAssistantCourses();
+}
+
+async function loadAssistantCourses(): Promise<void> {
+  const courseListEl = document.getElementById('assistant-course-list');
+  if (!courseListEl) return;
+
+  try {
+    const activeCourseId = new URLSearchParams(window.location.search).get('courseId');
+    // Dynamically import fetchAllCourses from assistant services
+    const { fetchAllCourses } = await import('../../assistant/services/courseDataService');
+    const courses = await fetchAllCourses();
+
+    if (courses.length === 0) {
+      courseListEl.innerHTML = '<div class="submenu-empty">暂无课程</div>';
+      return;
+    }
+
+    // Render course list
+    const courseHTML = courses
+      .map((course) => `
+        <a href="https://courses.zju.edu.cn/air?courseId=${course.id}" class="course-submenu-item ${String(course.id) === activeCourseId ? 'active' : ''}" data-course-id="${course.id}">
+          <span class="course-name">${course.displayName || course.name}</span>
+        </a>
+      `)
+      .join('');
+
+    courseListEl.innerHTML = courseHTML;
+
+    // Add click handlers for each course
+    courseListEl.querySelectorAll('.course-submenu-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const courseId = item.getAttribute('data-course-id');
+        if (courseId) {
+          const onAssistantPage = !!document.querySelector('.nav-item-expandable.active');
+          if (onAssistantPage) {
+            window.dispatchEvent(new CustomEvent('xzzd:assistant-course-select', {
+              detail: { courseId }
+            }));
+            courseListEl.querySelectorAll('.course-submenu-item').forEach((linkEl) => {
+              if (linkEl.getAttribute('data-course-id') === courseId) {
+                linkEl.classList.add('active');
+              } else {
+                linkEl.classList.remove('active');
+              }
+            });
+            return;
+          }
+          window.location.assign(`https://courses.zju.edu.cn/air?courseId=${courseId}`);
+        }
+      });
     });
+  } catch (error) {
+    console.error('XZZDPRO: Failed to load assistant courses', error);
+    courseListEl.innerHTML = '<div class="submenu-error">加载课程失败</div>';
   }
 }

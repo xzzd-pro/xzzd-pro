@@ -12,27 +12,9 @@ import { marked } from "marked";
 export function renderAssistantPage(username: string = ""): string {
   return `
     <div class="assistant-layout">
-      <div class="drawer-overlay" id="drawer-overlay"></div>
-      
-      <aside class="course-drawer" id="course-drawer">
-        <div class="sidebar-header">
-          <h2>我的课程</h2>
-        </div>
-        <div id="course-list" class="course-list">
-          <div class="xzzd-loading-state">
-            <span class="spinner">⏳</span> 正在加载课程...
-          </div>
-        </div>
-      </aside>
-      
       <main class="chat-area">
         <div class="chat-header">
           <div class="header-left-group">
-            <button id="drawer-toggle-btn" class="icon-btn drawer-toggle-btn" title="显示课程列表">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
             <button id="flashcard-split-toggle" class="icon-btn split-toggle-btn" title="展开闪卡面板">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3 5C3 3.9 3.9 3 5 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V5Z" stroke="currentColor" stroke-width="1.8"/>

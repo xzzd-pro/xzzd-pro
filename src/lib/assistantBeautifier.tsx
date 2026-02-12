@@ -1,4 +1,4 @@
-import { renderAssistantPage, renderCourseList, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
+import { renderAssistantPage, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
 import { hydrateFlashcardBubbles } from '../assistant/components/flashcardRenderer'
 import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, clearChatHistory, createChatMessage } from '../assistant/storage'
 import { fetchAllCourses, buildCourseContext } from '../assistant/services/courseDataService'
@@ -1557,15 +1557,6 @@ export async function openAssistant(): Promise<void> {
 
 function handleEscClose(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    const drawer = overlayElement?.querySelector('#course-drawer')
-    const overlay = overlayElement?.querySelector('#drawer-overlay')
-
-    if (drawer?.classList.contains('open')) {
-      drawer.classList.remove('open')
-      overlay?.classList.remove('active')
-      return
-    }
-
     if (isAssistantOpen()) {
       closeAssistant()
       document.removeEventListener('keydown', handleEscClose)
@@ -1573,46 +1564,53 @@ function handleEscClose(e: KeyboardEvent) {
   }
 }
 
+function getInitialCourseIdFromUrl(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('courseId')
+  } catch (error) {
+    console.error('XZZDPRO: Failed to parse courseId from URL', error)
+    return null
+  }
+}
+
+function syncSidebarCourseActive(courseId: string): void {
+  document.querySelectorAll('.course-submenu-item').forEach(el => {
+    if (!(el instanceof HTMLElement)) return
+    if (el.getAttribute('data-course-id') === courseId) {
+      el.classList.add('active')
+    } else {
+      el.classList.remove('active')
+    }
+  })
+}
+
+function bindSidebarCourseSelection(): void {
+  const handleCourseSelect = (event: Event) => {
+    const customEvent = event as CustomEvent<{ courseId?: string }>
+    const courseId = customEvent.detail?.courseId
+    if (!courseId) return
+    switchCourse(courseId)
+  }
+
+  window.removeEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
+  window.addEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
+}
+
 async function initAssistant() {
   try {
     currentSettings = await loadSettings()
     courses = await fetchAllCourses()
 
-    // Setup Drawer Logic
-    const drawer = overlayElement?.querySelector('#course-drawer')
-    const overlay = overlayElement?.querySelector('#drawer-overlay')
-    const toggleBtn = overlayElement?.querySelector('#drawer-toggle-btn')
-
-    function closeDrawer() {
-      drawer?.classList.remove('open')
-      overlay?.classList.remove('active')
-    }
-
-    function openDrawer() {
-      drawer?.classList.add('open')
-      overlay?.classList.add('active')
-    }
-
-    toggleBtn?.addEventListener('click', openDrawer)
-    overlay?.addEventListener('click', closeDrawer)
-
-    const courseListEl = overlayElement?.querySelector('#course-list')
-    if (courseListEl) {
-      courseListEl.innerHTML = renderCourseList(courses)
-
-      courseListEl.querySelectorAll('.course-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const id = el.getAttribute('data-id')
-          if (id) {
-            switchCourse(id)
-            closeDrawer()
-          }
-        })
-      })
-    }
+    bindSidebarCourseSelection()
 
     setupSettingsHandlers()
     setupChatHandlers()
+
+    const initialCourseId = getInitialCourseIdFromUrl()
+    if (initialCourseId) {
+      await switchCourse(initialCourseId)
+    }
 
   } catch (error) {
     console.error('XZZDPRO: Failed to init assistant', error)
@@ -1626,17 +1624,17 @@ async function switchCourse(courseId: string) {
   const course = courses.find(c => String(c.id) === courseId)
   if (!course) return
 
+  try {
+    const url = new URL(window.location.href)
+    url.searchParams.set('courseId', courseId)
+    window.history.replaceState({}, '', url.toString())
+  } catch (error) {
+    console.error('XZZDPRO: Failed to sync courseId to URL', error)
+  }
+
   currentCourseName = course.displayName
   isCoursewareLoaded = false // Reset loading state
-
-  // Update UI active state
-  overlayElement?.querySelectorAll('.course-item').forEach(el => {
-    if (el.getAttribute('data-id') === courseId) {
-      el.classList.add('active')
-    } else {
-      el.classList.remove('active')
-    }
-  })
+  syncSidebarCourseActive(courseId)
 
   // Update Header
   const headerEl = overlayElement?.querySelector('#current-course-name')
@@ -2107,12 +2105,14 @@ function setupChatHandlers() {
 
           messages = messages.slice(0, index)
           renderMessages()
-          await saveChatHistory(currentCourseId, {
-            courseId: currentCourseId,
-            courseName: currentCourseName,
-            messages,
-            updatedAt: Date.now()
-          })
+          if (currentCourseId) {
+            await saveChatHistory(currentCourseId, {
+              courseId: currentCourseId,
+              courseName: currentCourseName,
+              messages,
+              updatedAt: Date.now()
+            })
+          }
         }
       }
     }, { capture: true })
