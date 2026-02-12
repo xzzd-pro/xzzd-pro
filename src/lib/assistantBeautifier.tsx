@@ -1,10 +1,13 @@
 import { renderAssistantPage, renderCourseList, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
+import { hydrateFlashcardBubbles } from '../assistant/components/flashcardRenderer'
 import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, clearChatHistory, createChatMessage } from '../assistant/storage'
 import { fetchAllCourses, buildCourseContext } from '../assistant/services/courseDataService'
 import { preloadCourseContext } from '../assistant/services/contextBuilder'
 import { streamChat, formatErrorMessage } from '../assistant/services/chatService'
 import { PROVIDER_DEFAULTS } from '../assistant/config'
 import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment } from '../assistant/types'
+import { FLASHCARD_GENERATION_PROMPT } from '../assistant/types/flashcard'
+import type { FlashcardData } from '../assistant/types/flashcard'
 import { convertPdfToImages } from '../assistant/services/fileService'
 import { Storage } from "@plasmohq/storage"
 
@@ -20,6 +23,7 @@ let pendingAttachments: File[] = []
 let isCoursewareLoaded = false // New state for manual loading
 let overlayHost: HTMLElement | null = null
 let overlayElement: HTMLElement | null = null
+let isFlashcardMode = false
 
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
@@ -1122,7 +1126,150 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       0%, 80%, 100% { transform: scale(0); }
       40% { transform: scale(1); }
     }
-  `
+
+    /* Flashcard mode toggle */
+    #flashcard-mode-btn.active {
+      background: var(--xzzd-primary);
+      color: #fff;
+    }
+    #flashcard-mode-btn.active svg {
+      color: #fff;
+      fill: currentColor;
+    }
+    #flashcard-send-btn {
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      color: #fff;
+    }
+    #flashcard-send-btn svg { fill: currentColor; }
+    #flashcard-send-btn[disabled] { opacity: 0.6; }
+
+    /* Flashcard bubble */
+    .flashcard-session {
+      background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.05));
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+      height: 44vh;
+    }
+    .flashcard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .flashcard-topic {
+      font-weight: 700;
+      color: var(--xzzd-text-primary);
+      font-size: 16px;
+    }
+    .flashcard-progress {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      align-items: center;
+    }
+    .flashcard-stage {
+      perspective: 1200px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .flashcard-card {
+      position: relative;
+      height: 100%;
+      aspect-ratio: 3/4;
+      max-width: calc(100% - 32px);
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+      cursor: pointer;
+    }
+    .flashcard-card.flipped { transform: rotateY(180deg); }
+    .flashcard-face {
+      position: absolute;
+      inset: 0;
+      background: var(--xzzd-card-bg);
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.06);
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .flashcard-front { justify-content: center; align-items: center; text-align: center; }
+    .flashcard-back { transform: rotateY(180deg); }
+    .flashcard-type-tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      color: #4f46e5;
+      font-weight: 700;
+      font-size: 12px;
+    }
+    .flashcard-question { font-size: 18px; font-weight: 700; color: var(--xzzd-text-primary); }
+    .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: left; }
+    .flashcard-hint { color: var(--xzzd-text-secondary); font-size: 14px; }
+    .flashcard-subtle-hint { color: var(--xzzd-text-secondary); font-size: 12px; }
+    .flashcard-actions { display: flex; justify-content: center; gap: 12px; margin-top: auto; }
+    .flashcard-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .flashcard-btn:active { transform: translateY(1px) scale(0.98); }
+    .flashcard-btn.danger { background: #fee2e2; color: #b91c1c; }
+    .flashcard-btn.warning { background: #fef9c3; color: #92400e; }
+    .flashcard-btn.success { background: #dcfce7; color: #166534; }
+    .flashcard-btn.primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .flashcard-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      border-radius: 14px;
+      backdrop-filter: blur(3px);
+    }
+    .flashcard-overlay.hidden { display: none; }
+    .flashcard-overlay-card {
+      background: var(--xzzd-card-bg);
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+      text-align: center;
+      min-width: 240px;
+    }
+    .flashcard-overlay-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--xzzd-text-primary); }
+    .flashcard-overlay-subtitle { color: var(--xzzd-text-secondary); margin-bottom: 12px; }
+    .flashcard-overlay-stats { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
+    .flashcard-stat { padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+    .flashcard-stat.red { background: #fee2e2; color: #b91c1c; }
+    .flashcard-stat.yellow { background: #fef9c3; color: #92400e; }
+    .flashcard-stat.green { background: #dcfce7; color: #166534; }
+    .cloze-blank { border-bottom: 2px dotted var(--xzzd-text-secondary); padding: 0 4px; }
+    .cloze-highlight { background: #fef08a; padding: 0 4px; border-radius: 4px; }
+    .flashcard-tf-result.ok { color: #166534; }
+    .flashcard-tf-result.error { color: #b91c1c; }
+  `;
   root.appendChild(style)
 }
 
@@ -1294,9 +1441,11 @@ async function switchCourse(courseId: string) {
   const chatInput = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
   if (chatInput) chatInput.disabled = false
   if (sendBtn) sendBtn.disabled = false
   if (attachBtn) attachBtn.disabled = false
+  if (flashcardSendBtn) flashcardSendBtn.disabled = false
 
   // Load history
   const session = await loadChatHistory(courseId)
@@ -1357,13 +1506,14 @@ function renderMessages() {
           </svg>
         </div>
         <h3>${currentCourseName || '请选择课程'}</h3>
-        <p>基于课程资料回答您的问题</p>
+        <p>基于课程资料回答你的问题</p>
       </div>
     `
     return
   }
 
   container.innerHTML = messages.map(msg => renderChatMessage(msg)).join('')
+  hydrateFlashcardBubbles(container)
   scrollToBottom()
 }
 
@@ -1378,13 +1528,39 @@ function setupChatHandlers() {
   console.log('XZZDPRO: setupChatHandlers called')
   const input = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
+  const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
   const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
 
+  const updateModeUI = () => {
+    if (!input) return
+    const chatPlaceholder = '问问学习助理'
+    const flashcardPlaceholder = '生成闪卡：输入要点或上传课件'
+
+    if (isFlashcardMode) {
+      flashcardModeBtn?.classList.add('active')
+      if (flashcardSendBtn) {
+        flashcardSendBtn.style.display = ''
+        flashcardSendBtn.disabled = !currentCourseId || isGenerating
+      }
+      if (sendBtn) sendBtn.style.display = 'none'
+      input.placeholder = flashcardPlaceholder
+    } else {
+      flashcardModeBtn?.classList.remove('active')
+      if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
+      if (sendBtn) {
+        sendBtn.style.display = ''
+        sendBtn.disabled = !currentCourseId || isGenerating
+      }
+      input.placeholder = chatPlaceholder
+    }
+  }
+
   // Clear History
   clearBtn?.addEventListener('click', async () => {
-    if (confirm('确定要清空当前课程的聊天记录吗？')) {
+    if (confirm('确认要清空当前课程的聊天记录吗？')) {
       messages = []
       renderMessages()
       if (currentCourseId) {
@@ -1408,6 +1584,13 @@ function setupChatHandlers() {
     plusMenu: !!plusMenu,
     menuUploadBtn: !!menuUploadBtn,
     menuReadBtn: !!menuReadBtn
+  })
+
+  updateModeUI()
+
+  flashcardModeBtn?.addEventListener('click', () => {
+    isFlashcardMode = !isFlashcardMode
+    updateModeUI()
   })
 
   // Attach Button (Toggle Menu)
@@ -1653,70 +1836,141 @@ function setupChatHandlers() {
     console.error('[Assistant Debug] overlayElement not found!')
   }
 
+  const setInteractionDisabled = (disabled: boolean) => {
+    isGenerating = disabled
+    if (input) input.disabled = disabled
+    if (sendBtn) sendBtn.disabled = disabled || !currentCourseId
+    if (flashcardSendBtn) flashcardSendBtn.disabled = disabled || !currentCourseId
+    if (attachBtn) attachBtn.disabled = disabled
+    updateModeUI()
+  }
 
-  const sendMessage = async () => {
+  const resetInput = () => {
+    if (input) {
+      input.value = ''
+      adjustTextareaHeight(input)
+    }
+  }
+
+  const processAttachments = async (): Promise<Attachment[]> => {
+    if (pendingAttachments.length === 0) return []
+
+    const processedAttachments: Attachment[] = []
+
+    for (const file of pendingAttachments) {
+      if (file.type.startsWith('image/')) {
+        const base64 = await readFileAsBase64(file)
+        processedAttachments.push({
+          type: 'image',
+          name: file.name,
+          content: base64
+        })
+      } else if (file.type === 'application/pdf') {
+        const originalBase64 = await readFileAsBase64(file)
+        const blob = new Blob([file], { type: 'application/pdf' })
+        const images = await convertPdfToImages(blob)
+        processedAttachments.push({
+          type: 'pdf',
+          name: file.name,
+          content: images,
+          originalData: originalBase64
+        })
+      } else {
+        const textContent = await readFileAsText(file)
+        processedAttachments.push({
+          type: 'text',
+          name: file.name,
+          content: textContent
+        })
+      }
+    }
+
+    pendingAttachments = []
+    renderPreviews()
+    return processedAttachments
+  }
+
+  const appendAssistantLoading = (assistantMsg: ChatMessage) => {
+    const container = overlayElement?.querySelector('#messages-container')
+    if (!container) return
+
+    const loadingDiv = document.createElement('div')
+    loadingDiv.id = `loading-${assistantMsg.id}`
+    loadingDiv.className = 'message assistant'
+    loadingDiv.innerHTML = `
+      <div class="message-body">
+          <div class="message-text">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+      </div>
+    `
+    container.appendChild(loadingDiv)
+    scrollToBottom()
+  }
+
+  const buildFlashcardPrompt = (content: string): string => {
+    const userText = content || '请基于提供的材料生成闪卡。'
+    // 课程信息在系统消息中，附件通过 msg.attachments 传递，无需在文本中重复
+    return `${FLASHCARD_GENERATION_PROMPT}\n\n用户需求：${userText}`
+  }
+
+  const parseFlashcardResponse = (raw: string): FlashcardData | null => {
+    console.log('XZZDPRO: Raw flashcard response:', raw.substring(0, 200))
+    
+    // 移除代码块标记和多余空白
+    let cleaned = raw.trim()
+    
+    // 移除开头的代码块标记
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7)
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3)
+    }
+    
+    // 移除结尾的代码块标记
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3)
+    }
+    
+    cleaned = cleaned.trim()
+    console.log('XZZDPRO: Cleaned flashcard response:', cleaned.substring(0, 200))
+
+    try {
+      const parsed = JSON.parse(cleaned) as FlashcardData
+      console.log('XZZDPRO: Parsed flashcard data:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+      
+      if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+        console.error('XZZDPRO: Invalid flashcard data structure')
+        return null
+      }
+      return parsed
+    } catch (err) {
+      console.error('XZZDPRO: Failed to parse flashcard JSON:', err, '\nContent:', cleaned.substring(0, 500))
+      return null
+    }
+  }
+
+  const sendChatMessage = async () => {
     const content = input?.value.trim() || ''
 
     if (!content && pendingAttachments.length === 0) return
     if (!currentCourseId || isGenerating) return
 
-    // Disable inputs
-    if (input) {
-      input.value = ''
-      adjustTextareaHeight(input)
-      input.disabled = true
-    }
-    if (sendBtn) sendBtn.disabled = true
-    if (attachBtn) attachBtn.disabled = true
-    isGenerating = true
+    resetInput()
+    setInteractionDisabled(true)
 
-    // Process attachments
-    const processedAttachments: Attachment[] = []
-
-    if (pendingAttachments.length > 0) {
-      // if (showStatus) showStatus('正在处理附件...', 'info')
-
-      try {
-        for (const file of pendingAttachments) {
-          if (file.type.startsWith('image/')) {
-            const base64 = await readFileAsBase64(file)
-            processedAttachments.push({
-              type: 'image',
-              name: file.name,
-              content: base64
-            })
-          } else if (file.type === 'application/pdf') {
-            // Store both original file and converted images
-            const originalBase64 = await readFileAsBase64(file)
-            const blob = new Blob([file], { type: 'application/pdf' })
-            const images = await convertPdfToImages(blob)
-            processedAttachments.push({
-              type: 'pdf',
-              name: file.name,
-              content: images,           // Images for LLM
-              originalData: originalBase64  // Original PDF for recall
-            })
-          } else {
-            const textContent = await readFileAsText(file)
-            processedAttachments.push({
-              type: 'text',
-              name: file.name,
-              content: textContent
-            })
-          }
-        }
-      } catch (e) {
-        console.error('Attachment processing failed:', e)
-        if (showStatus) showStatus(`附件处理失败: ${String(e)}`, 'error')
-        isGenerating = false
-        if (input) input.disabled = false
-        if (sendBtn) sendBtn.disabled = false
-        if (attachBtn) attachBtn.disabled = false
-        return
-      }
-
-      pendingAttachments = []
-      renderPreviews()
+    let processedAttachments: Attachment[] = []
+    try {
+      processedAttachments = await processAttachments()
+    } catch (e) {
+      console.error('Attachment processing failed:', e)
+      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      setInteractionDisabled(false)
+      return
     }
 
     const userMsg = createChatMessage('user', content)
@@ -1729,32 +1983,13 @@ function setupChatHandlers() {
 
     const assistantMsg = createChatMessage('assistant', '')
     messages.push(assistantMsg)
-    const container = overlayElement?.querySelector('#messages-container')
-    if (container) {
-      const loadingDiv = document.createElement('div')
-      loadingDiv.id = `loading-${assistantMsg.id}`
-      loadingDiv.className = 'message assistant'
-      loadingDiv.innerHTML = `
-        <div class="message-body">
-            <div class="message-text">
-              <div class="typing-indicator">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-              </div>
-            </div>
-        </div>
-      `
-      container.appendChild(loadingDiv)
-      scrollToBottom()
-    }
+    appendAssistantLoading(assistantMsg)
 
     try {
       let context = await buildCourseContext(currentCourseId)
 
-      // If explicitly loaded, use full context; otherwise, strip materials to prevent auto-fetch
       if (!isCoursewareLoaded) {
-        context = { ...context, materials: [] } // Keep homeworks, strip files
+        context = { ...context, materials: [] }
       }
 
       const provider = currentSettings!.provider
@@ -1793,6 +2028,7 @@ function setupChatHandlers() {
           if (msgEl) {
             msgEl.outerHTML = renderChatMessage(assistantMsg)
           } else {
+            const container = overlayElement?.querySelector('#messages-container')
             container?.insertAdjacentHTML('beforeend', renderChatMessage(assistantMsg))
           }
           scrollToBottom()
@@ -1812,25 +2048,129 @@ function setupChatHandlers() {
       assistantMsg.content = `❌ ${errorMsg}`
       renderMessages()
     } finally {
-      isGenerating = false
-      if (input) {
-        input.disabled = false
-        input.focus()
-      }
-      if (sendBtn) sendBtn.disabled = false
-      if (attachBtn) attachBtn.disabled = false
-
+      setInteractionDisabled(false)
+      if (input) input.focus()
       const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
       if (loadingEl) loadingEl.remove()
     }
   }
 
-  sendBtn?.addEventListener('click', sendMessage)
+  const sendFlashcardMessage = async () => {
+    const content = input?.value.trim() || ''
+
+    if (!currentCourseId || isGenerating) return
+    if (!content && pendingAttachments.length === 0) {
+      showStatus('请输入内容或上传课件后再生成闪卡', 'error')
+      return
+    }
+
+    resetInput()
+    setInteractionDisabled(true)
+
+    let processedAttachments: Attachment[] = []
+    try {
+      processedAttachments = await processAttachments()
+    } catch (e) {
+      console.error('Attachment processing failed:', e)
+      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      setInteractionDisabled(false)
+      return
+    }
+
+    if (processedAttachments.length === 0) {
+      showStatus('未上传资料，将仅基于输入生成闪卡', 'info')
+    }
+
+    const userMsg = createChatMessage('user', content || '生成闪卡')
+    if (processedAttachments.length > 0) {
+      userMsg.attachments = processedAttachments
+    }
+
+    messages.push(userMsg)
+    renderMessages()
+
+    const assistantMsg = createChatMessage('assistant', '')
+    messages.push(assistantMsg)
+    appendAssistantLoading(assistantMsg)
+
+    const promptContent = buildFlashcardPrompt(content)
+    const modelMessages = messages.slice(0, -1).map((msg, idx, arr) => {
+      if (idx === arr.length - 1 && msg.role === 'user') {
+        return { ...msg, content: promptContent }
+      }
+      return msg
+    })
+
+    try {
+      // 闪卡模式：使用完整课程上下文，与普通模式一致
+      let context = await buildCourseContext(currentCourseId)
+
+      if (!isCoursewareLoaded) {
+        context = { ...context, materials: [] }
+      }
+
+      const provider = currentSettings!.provider
+      const config = currentSettings!.configs[provider] as ProviderConfig
+
+      let fullResponse = ''
+
+      await streamChat({
+        messages: modelMessages,
+        context,
+        provider,
+        config: {
+          apiKey: config.apiKey,
+          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
+          model: config.model
+        },
+        onProgress: (msg) => showStatus(msg, 'info'),
+        onChunk: (chunk) => {
+          fullResponse += chunk
+        }
+      })
+
+      const parsed = parseFlashcardResponse(fullResponse)
+      if (!parsed) {
+        assistantMsg.content = '未能解析闪卡，请重试或调整输入'
+        renderMessages()
+        return
+      }
+
+      assistantMsg.flashcards = parsed
+      assistantMsg.content = fullResponse
+      renderMessages()
+
+      await saveChatHistory(currentCourseId, {
+        courseId: currentCourseId,
+        courseName: currentCourseName,
+        messages,
+        updatedAt: Date.now()
+      })
+
+    } catch (error) {
+      console.error('Flashcard generation error:', error)
+      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
+      assistantMsg.content = `❌ ${errorMsg}`
+      renderMessages()
+    } finally {
+      setInteractionDisabled(false)
+      if (input) input.focus()
+      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
+      if (loadingEl) loadingEl.remove()
+    }
+  }
+
+  sendBtn?.addEventListener('click', sendChatMessage)
+  flashcardSendBtn?.addEventListener('click', sendFlashcardMessage)
 
   input?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      if (isFlashcardMode) {
+        sendFlashcardMessage()
+      } else {
+        sendChatMessage()
+      }
     }
   })
 
@@ -1849,7 +2189,7 @@ function setupChatHandlers() {
         return
       }
 
-      if (!confirm('确定要清除本课程的对话历史吗？')) return
+      if (!confirm('确认要清除本课程的对话历史吗？')) return
 
       await clearChatHistory(currentCourseId)
       messages = []

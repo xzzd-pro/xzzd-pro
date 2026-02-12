@@ -6,6 +6,7 @@ import type {
   AssistantSettings,
   Provider,
 } from "../types";
+import { renderFlashcardBubble } from "./flashcardRenderer";
 import { marked } from "marked";
 
 export function renderAssistantPage(username: string = ""): string {
@@ -83,10 +84,22 @@ export function renderAssistantPage(username: string = ""): string {
                         </button>
                     </div>
                 </div>
+                <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-btn" title="闪卡模式">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.23-.28-.62-.38-.96-.23-.35.15-.58.5-.58.89V14h8v-2.36c0-.39-.23-.74-.58-.89-.34-.14-.73-.05-.96.23z"/>
+                  </svg>
+                </button>
                 <input type="file" id="file-input" multiple style="display: none;" accept="image/*,.pdf,.txt,.md,.js,.ts,.java,.py,.json,.c,.cpp,.h">
               </div>
               
               <div class="footer-right">
+                <button id="flashcard-send-btn" class="modern-icon-btn send-btn flashcard-send-btn" title="生成闪卡" style="display: none;" disabled>
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M4 6h14v12H4z" opacity=".35"/>
+                    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h12v16z"/>
+                    <path d="M9 9h6v2H9zm0 4h4v2H9z"/>
+                  </svg>
+                </button>
                 <button id="send-btn" class="modern-icon-btn send-btn" disabled>
                   <svg viewBox="0 0 24 24" fill="currentColor">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -267,6 +280,9 @@ export function renderAttachmentCard(
 
 export function renderChatMessage(message: ChatMessage): string {
   const isUser = message.role === "user";
+  if (message.flashcards) {
+    return renderFlashcardBubble(message.flashcards, message.id);
+  }
   const contentHtml = parseMarkdown(message.content);
 
   let attachmentsHtml = "";
