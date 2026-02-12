@@ -24,6 +24,8 @@ let isCoursewareLoaded = false // New state for manual loading
 let overlayHost: HTMLElement | null = null
 let overlayElement: HTMLElement | null = null
 let isFlashcardMode = false
+let isFlashcardSplitView = false
+let isSplitTransitioning = false
 
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
@@ -103,6 +105,8 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-user-bubble-bg: #e8eaed;
       --xzzd-input-bg: #f0f4f9;
       --xzzd-input-hover: #e2e6ea;
+      --xzzd-font-base: "LXGW WenKai Screen", "Microsoft YaHei", "PingFang SC", sans-serif;
+      --xzzd-font-emoji: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
       --math-filter: none;
     }
 
@@ -116,7 +120,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-primary: #58a6ff;
       --xzzd-sidebar-bg: #1e1e1e;
       --xzzd-user-bubble-bg: #2f2f2f;
-      --xzzd-input-bg: #1e1f20;
+      --xzzd-input-bg: #26282c;
       --xzzd-input-hover: #333435;
       --xzzd-scrollbar-track: #2f2f2f;
       --xzzd-scrollbar-thumb: #555;
@@ -150,7 +154,8 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       display: flex;
       flex: 1;
       height: 100%;
-      font-family: "LXGW WenKai Screen", sans-serif;
+      font-family: var(--xzzd-font-base), var(--xzzd-font-emoji);
+      font-variant-emoji: emoji;
       overflow: hidden;
       background-color: var(--xzzd-bg-color);
     }
@@ -158,6 +163,14 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     /* Ensure all form elements inherit the custom font */
     button, input, select, textarea, label {
       font-family: inherit;
+    }
+    .empty-state-icon,
+    .flashcard-topic,
+    .flashcard-btn,
+    .flashcard-stat,
+    .status-toast span {
+      font-family: var(--xzzd-font-emoji), var(--xzzd-font-base) !important;
+      font-variant-emoji: emoji;
     }
     
     .assistant-fullpage {
@@ -366,6 +379,104 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       background-color: var(--xzzd-bg-color);
       overflow: hidden;
     }
+    .assistant-main-panels {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 0fr 1fr;
+      gap: 0;
+      padding: 16px;
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s ease;
+      position: relative;
+    }
+    .chat-panel,
+    .flashcard-panel {
+      min-height: 0;
+      background-color: var(--xzzd-card-bg);
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .chat-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .flashcard-panel {
+      display: flex;
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(-100%);
+      pointer-events: none;
+      border-color: transparent;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease, border-color 0.2s ease;
+    }
+    .chat-area.split-open .assistant-main-panels {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .chat-area.split-collapsing .assistant-main-panels {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .chat-area.split-open .chat-panel {
+      min-width: 0;
+    }
+    .chat-area.split-open .flashcard-panel {
+      min-width: 0;
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      border-color: var(--xzzd-card-border);
+    }
+    .chat-area.split-collapsing .flashcard-panel {
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(-100%);
+      pointer-events: none;
+      border-color: var(--xzzd-card-border);
+    }
+    .assistant-main-panels::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      background: var(--xzzd-card-border);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .chat-area.split-open .assistant-main-panels::after {
+      opacity: 1;
+    }
+    .chat-area.split-collapsing .assistant-main-panels::after {
+      opacity: 1;
+    }
+    .flashcard-messages-container {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .chat-area.split-open .flashcard-messages-container .message.assistant {
+      flex: 1;
+      min-height: 0;
+    }
+    .chat-area.split-open .flashcard-messages-container .message.assistant .message-body {
+      flex: 1;
+      min-height: 0;
+    }
+    .chat-area.split-open .flashcard-messages-container .flashcard-session {
+      height: 100%;
+    }
     /* Header Groups */
     .header-left-group, .header-right-group {
       display: flex;
@@ -389,6 +500,28 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       padding: 0;
     }
     .drawer-toggle-btn:hover {
+      background-color: var(--xzzd-bg-color);
+      color: var(--xzzd-text-primary);
+    }
+    .split-toggle-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--xzzd-text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+      padding: 0;
+    }
+    .split-toggle-btn:hover {
+      background-color: var(--xzzd-bg-color);
+      color: var(--xzzd-text-primary);
+    }
+    .split-toggle-btn.active {
       background-color: var(--xzzd-bg-color);
       color: var(--xzzd-text-primary);
     }
@@ -419,6 +552,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     .messages-container {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 24px;
       display: flex;
@@ -706,8 +840,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     .input-area {
       padding: 0 24px 24px 24px;
-      /* Background matches chat area to blend in */
-      background-color: var(--xzzd-bg-color); 
+      background-color: var(--xzzd-card-bg);
       border-top: none; 
     }
     .modern-input-container {
@@ -715,18 +848,20 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       width: 100%;
       margin: 0;
       background-color: var(--xzzd-input-bg, #f0f4f9);
+      border: 1px solid var(--xzzd-card-border);
       border-radius: 28px;
       padding: 12px;
       display: flex;
       flex-direction: column;
       position: relative;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, border-color 0.2s;
     }
     :host([data-theme='light']) .modern-input-container {
         background-color: #e1e5eb; /* Slightly darker than f0f4f9 for better visibility */
     }
     .modern-input-container:focus-within {
-        background-color: var(--xzzd-input-bg, #f0f4f9); 
+      background-color: var(--xzzd-input-bg, #f0f4f9);
+      border-color: var(--xzzd-primary);
     }
     
     .modern-textarea {
@@ -1004,6 +1139,11 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       padding: 40px;
     }
     .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state-icon svg {
+      width: 48px;
+      height: 48px;
+      display: inline-block;
+    }
     .form-group { margin-bottom: 20px; }
     .form-group label {
       display: block;
@@ -1088,6 +1228,12 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       max-width: 80%;
       pointer-events: none;
     }
+    .status-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
     .status-toast.show {
       opacity: 1;
       visibility: visible;
@@ -1152,8 +1298,9 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       display: flex;
       flex-direction: column;
       gap: 12px;
-      width: 100%;
-      height: 44vh;
+      flex: 1;
+      min-height: 0;
+      align-self: stretch;
     }
     .flashcard-header {
       display: flex;
@@ -1164,6 +1311,9 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       flex-shrink: 0;
     }
     .flashcard-topic {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-weight: 700;
       color: var(--xzzd-text-primary);
       font-size: 16px;
@@ -1182,6 +1332,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       align-items: center;
       justify-content: center;
       position: relative;
+      min-height: 400px;
     }
     .flashcard-card {
       position: relative;
@@ -1207,7 +1358,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       gap: 12px;
     }
     .flashcard-front { justify-content: center; align-items: center; text-align: center; }
-    .flashcard-back { transform: rotateY(180deg); }
+    .flashcard-back { transform: rotateY(180deg); justify-content: center; align-items: center; text-align: center; }
     .flashcard-type-tag {
       position: absolute;
       top: 12px;
@@ -1221,8 +1372,13 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       font-size: 12px;
     }
     .flashcard-question { font-size: 18px; font-weight: 700; color: var(--xzzd-text-primary); }
-    .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: left; }
+    .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: center; }
     .flashcard-hint { color: var(--xzzd-text-secondary); font-size: 14px; }
+    .flashcard-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
     .flashcard-subtle-hint { color: var(--xzzd-text-secondary); font-size: 12px; }
     .flashcard-actions { display: flex; justify-content: center; gap: 12px; margin-top: auto; }
     .flashcard-btn {
@@ -1262,13 +1418,66 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     .flashcard-overlay-subtitle { color: var(--xzzd-text-secondary); margin-bottom: 12px; }
     .flashcard-overlay-stats { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
     .flashcard-stat { padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+    .flashcard-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
     .flashcard-stat.red { background: #fee2e2; color: #b91c1c; }
     .flashcard-stat.yellow { background: #fef9c3; color: #92400e; }
     .flashcard-stat.green { background: #dcfce7; color: #166534; }
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .flashcard-topic .icon-svg {
+      width: 18px;
+      height: 18px;
+    }
     .cloze-blank { border-bottom: 2px dotted var(--xzzd-text-secondary); padding: 0 4px; }
     .cloze-highlight { background: #fef08a; padding: 0 4px; border-radius: 4px; }
     .flashcard-tf-result.ok { color: #166534; }
     .flashcard-tf-result.error { color: #b91c1c; }
+    .flashcard-tip-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--xzzd-card-bg);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--xzzd-card-border);
+      border-left: 4px solid #6366f1;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .flashcard-tip-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #6366f1;
+    }
+    .flashcard-tip-content {
+      flex: 1;
+    }
+    .flashcard-tip-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--xzzd-text-primary);
+      margin-bottom: 4px;
+    }
+    .flashcard-tip-subtitle {
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      margin-bottom: 8px;
+    }
+    .flashcard-tip-message {
+      font-size: 13px;
+      color: #6366f1;
+      font-weight: 500;
+    }
   `;
   root.appendChild(style)
 }
@@ -1475,8 +1684,12 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
   // Icon handling
   let icon = ''
   if (type === 'info') icon = '<div class="toast-spinner"></div>'
-  if (type === 'success') icon = '✅'
-  if (type === 'error') icon = '❌'
+  if (type === 'success') {
+    icon = '<svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 4.8 13.45l1.4-1.4 3.35 3.35 8.25-8.25 1.4 1.4-9.65 9.7z"/></svg>'
+  }
+  if (type === 'error') {
+    icon = '<svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 19 5 17.6 10.6 12 5 6.4 6.4 5l5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19z"/></svg>'
+  }
 
   toast.innerHTML = `${icon}<span>${message}</span>`
   toast.className = `status-toast show ${type}`
@@ -1493,11 +1706,15 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
 }
 
 function renderMessages() {
-  const container = overlayElement?.querySelector('#messages-container')
-  if (!container) return
+  const chatContainer = overlayElement?.querySelector('#messages-container') as HTMLElement | null
+  const flashcardContainer = overlayElement?.querySelector('#flashcard-messages-container') as HTMLElement | null
+  if (!chatContainer) return
 
-  if (messages.length === 0) {
-    container.innerHTML = `
+  const chatMessages = isFlashcardSplitView ? messages.filter(msg => !msg.flashcards) : messages
+  const flashcardMessages = messages.filter(msg => !!msg.flashcards)
+
+  if (chatMessages.length === 0) {
+    chatContainer.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
@@ -1509,11 +1726,32 @@ function renderMessages() {
         <p>基于课程资料回答你的问题</p>
       </div>
     `
-    return
+  } else {
+    chatContainer.innerHTML = chatMessages.map(msg => renderChatMessage(msg, isFlashcardSplitView)).join('')
   }
 
-  container.innerHTML = messages.map(msg => renderChatMessage(msg)).join('')
-  hydrateFlashcardBubbles(container)
+  if (flashcardContainer) {
+    if (!isFlashcardSplitView) {
+      flashcardContainer.innerHTML = ''
+    } else if (flashcardMessages.length === 0) {
+      flashcardContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
+              <path d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm2 0v12h10V5H6zm13 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1h2v1h9v-9h-1V8z"/>
+            </svg>
+          </div>
+          <h3>闪卡区域</h3>
+          <p>生成闪卡后将在这里展示</p>
+        </div>
+      `
+    } else {
+      flashcardContainer.innerHTML = flashcardMessages.map(msg => renderChatMessage(msg, true)).join('')
+      hydrateFlashcardBubbles(flashcardContainer)
+    }
+  }
+
+  hydrateFlashcardBubbles(chatContainer)
   scrollToBottom()
 }
 
@@ -1530,9 +1768,27 @@ function setupChatHandlers() {
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
   const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
+  const splitToggleBtn = overlayElement?.querySelector('#flashcard-split-toggle') as HTMLButtonElement
+  const chatAreaEl = overlayElement?.querySelector('.chat-area') as HTMLElement
   const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
+
+  const updateSplitUI = () => {
+    if (!chatAreaEl) return
+
+    if (isFlashcardSplitView) {
+      chatAreaEl.classList.add('split-open')
+      chatAreaEl.classList.remove('split-collapsing')
+      splitToggleBtn?.classList.add('active')
+      if (splitToggleBtn) splitToggleBtn.title = '收起闪卡面板'
+    } else {
+      chatAreaEl.classList.remove('split-open')
+      chatAreaEl.classList.remove('split-collapsing')
+      splitToggleBtn?.classList.remove('active')
+      if (splitToggleBtn) splitToggleBtn.title = '展开闪卡面板'
+    }
+  }
 
   const updateModeUI = () => {
     if (!input) return
@@ -1587,10 +1843,38 @@ function setupChatHandlers() {
   })
 
   updateModeUI()
+  updateSplitUI()
 
   flashcardModeBtn?.addEventListener('click', () => {
     isFlashcardMode = !isFlashcardMode
     updateModeUI()
+  })
+
+  splitToggleBtn?.addEventListener('click', () => {
+    if (!chatAreaEl || isSplitTransitioning) return
+
+    if (isFlashcardSplitView) {
+      isSplitTransitioning = true
+      splitToggleBtn.disabled = true
+      splitToggleBtn.classList.remove('active')
+      splitToggleBtn.title = '展开闪卡面板'
+
+      chatAreaEl.classList.add('split-collapsing')
+
+      window.setTimeout(() => {
+        isFlashcardSplitView = false
+        chatAreaEl.classList.remove('split-open')
+        chatAreaEl.classList.remove('split-collapsing')
+        isSplitTransitioning = false
+        splitToggleBtn.disabled = false
+        renderMessages()
+      }, 300)
+      return
+    }
+
+    isFlashcardSplitView = true
+    updateSplitUI()
+    renderMessages()
   })
 
   // Attach Button (Toggle Menu)

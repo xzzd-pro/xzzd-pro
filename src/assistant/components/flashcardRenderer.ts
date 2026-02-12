@@ -41,13 +41,51 @@ function safeJson(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c")
 }
 
+function renderIcon(name: "deck" | "dot" | "check" | "cross" | "think" | "bulb"): string {
+  if (name === "deck") {
+    return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm2 0v12h10V5H6zm13 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1h2v1h9v-9h-1V8z"/></svg>'
+  }
+  if (name === "dot") {
+    return '<svg class="icon-svg" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="currentColor"/></svg>'
+  }
+  if (name === "check") {
+    return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 4.8 13.45l1.4-1.4 3.35 3.35 8.25-8.25 1.4 1.4-9.65 9.7z"/></svg>'
+  }
+  if (name === "cross") {
+    return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 19 5 17.6 10.6 12 5 6.4 6.4 5l5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19z"/></svg>'
+  }
+  if (name === "bulb") {
+    return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>'
+  }
+  return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 17a2 2 0 1 1 2-2 2 2 0 0 1-2 2zm2-6h-4V7h4z"/></svg>'
+}
+
+export function renderFlashcardTipBubble(data: FlashcardData, messageId: string): string {
+  return `
+    <div class="message assistant" id="${messageId}">
+      <div class="message-body">
+        <div class="flashcard-tip-container">
+          <div class="flashcard-tip-icon">
+            ${renderIcon("bulb")}
+          </div>
+          <div class="flashcard-tip-content">
+            <div class="flashcard-tip-title">${escapeHtml(data.topic)}</div>
+            <div class="flashcard-tip-subtitle">共 ${data.cards.length} 张闪卡</div>
+            <div class="flashcard-tip-message">打开左侧侧栏查看完整闪卡</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
 export function renderFlashcardBubble(data: FlashcardData, messageId: string): string {
   return `
     <div class="message assistant" id="${messageId}">
       <div class="message-body">
         <div class="flashcard-session" data-message-id="${messageId}">
           <div class="flashcard-header">
-            <div class="flashcard-topic">🎴 ${escapeHtml(data.topic)}</div>
+            <div class="flashcard-topic">${renderIcon("deck")}<span>${escapeHtml(data.topic)}</span></div>
             <div class="flashcard-progress">
               <span class="flashcard-progress-value">剩余: ${data.cards.length} 张</span>
               <span class="flashcard-stats-value">红 0 · 黄 0 · 绿 0</span>
@@ -77,9 +115,9 @@ export function renderFlashcardBubble(data: FlashcardData, messageId: string): s
               <div class="flashcard-overlay-title">本次复习完成</div>
               <div class="flashcard-overlay-subtitle">继续巩固或重新开始一轮</div>
               <div class="flashcard-overlay-stats">
-                <div class="flashcard-stat red">🔴 <span class="count">0</span></div>
-                <div class="flashcard-stat yellow">🟡 <span class="count">0</span></div>
-                <div class="flashcard-stat green">🟢 <span class="count">0</span></div>
+                <div class="flashcard-stat red">${renderIcon("dot")}<span class="count">0</span></div>
+                <div class="flashcard-stat yellow">${renderIcon("dot")}<span class="count">0</span></div>
+                <div class="flashcard-stat green">${renderIcon("dot")}<span class="count">0</span></div>
               </div>
               <button class="flashcard-btn primary" data-action="restart">再练一轮</button>
             </div>
@@ -123,10 +161,10 @@ function renderCardFaces(card: Flashcard) {
 
   if (card.type === "tf") {
     const correctness = detectTfCorrectness(card.back)
-    const resultIcon = correctness === "correct" ? "✅" : "❌"
+    const resultIcon = correctness === "correct" ? renderIcon("check") : renderIcon("cross")
     const toneClass = correctness === "correct" ? "ok" : "error"
     return {
-      front: `<div class="flashcard-hint">🤔 判断正误</div><div class="flashcard-question">${safeFront}</div>`,
+      front: `<div class="flashcard-hint">${renderIcon("think")}<span>判断正误</span></div><div class="flashcard-question">${safeFront}</div>`,
       back: `<div class="flashcard-tf-result ${toneClass}">${resultIcon} ${safeBack}</div>`,
       tag: "判断"
     }

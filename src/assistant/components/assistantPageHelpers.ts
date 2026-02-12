@@ -6,7 +6,7 @@ import type {
   AssistantSettings,
   Provider,
 } from "../types";
-import { renderFlashcardBubble } from "./flashcardRenderer";
+import { renderFlashcardBubble, renderFlashcardTipBubble } from "./flashcardRenderer";
 import { marked } from "marked";
 
 export function renderAssistantPage(username: string = ""): string {
@@ -33,6 +33,12 @@ export function renderAssistantPage(username: string = ""): string {
                 <path d="M3 12H21M3 6H21M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </button>
+            <button id="flashcard-split-toggle" class="icon-btn split-toggle-btn" title="展开闪卡面板">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 5C3 3.9 3.9 3 5 3H19C20.1 3 21 3.9 21 5V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V5Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M10 3V21" stroke="currentColor" stroke-width="1.8"/>
+              </svg>
+            </button>
             <h3 id="current-course-name">请选择一门课程</h3>
           </div>
           
@@ -43,71 +49,93 @@ export function renderAssistantPage(username: string = ""): string {
             </button>
           </div>
         </div>
-        
-        <div id="messages-container" class="messages-container">
-          <div class="empty-state">
-            <div class="empty-state-icon">👋</div>
-            <h3>欢迎使用学习助理</h3>
-            <p>请在左侧选择一门课程开始提问</p>
-          </div>
-        </div>
-        
-        <div class="input-area">
-          <div class="modern-input-container">
-            <div id="file-preview-area" class="preview-cards-container" style="display: none;"></div>
-            <textarea id="chat-input" class="modern-textarea" placeholder="问问学习助理" rows="1" disabled></textarea>
-            
-            <div class="modern-input-footer">
-              <div class="footer-left">
-                <div class="plus-menu-container">
-                    <button id="attach-btn" class="modern-icon-btn plus-btn" title="更多选项">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                      </svg>
-                    </button>
-                    <div id="plus-menu" class="plus-menu" style="display: none;">
-                        <button id="menu-upload-btn" class="menu-item">
-                            <span class="menu-icon">
-                              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
-                              </svg>
-                            </span>
-                            <span>上传文件/图片</span>
-                        </button>
-                        <button id="menu-read-courseware-btn" class="menu-item">
-                            <span class="menu-icon">
-                              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
-                              </svg>
-                            </span>
-                            <span>读取课程资料</span>
-                        </button>
-                    </div>
+        <div id="assistant-main-panels" class="assistant-main-panels">
+          <section id="flashcard-panel" class="flashcard-panel">
+            <div id="flashcard-messages-container" class="flashcard-messages-container">
+              <div class="empty-state">
+                <div class="empty-state-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
+                    <path d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm2 0v12h10V5H6zm13 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1h2v1h9v-9h-1V8z"/>
+                  </svg>
                 </div>
-                <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-btn" title="闪卡模式">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.23-.28-.62-.38-.96-.23-.35.15-.58.5-.58.89V14h8v-2.36c0-.39-.23-.74-.58-.89-.34-.14-.73-.05-.96.23z"/>
-                  </svg>
-                </button>
-                <input type="file" id="file-input" multiple style="display: none;" accept="image/*,.pdf,.txt,.md,.js,.ts,.java,.py,.json,.c,.cpp,.h">
-              </div>
-              
-              <div class="footer-right">
-                <button id="flashcard-send-btn" class="modern-icon-btn send-btn flashcard-send-btn" title="生成闪卡" style="display: none;" disabled>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M4 6h14v12H4z" opacity=".35"/>
-                    <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h12v16z"/>
-                    <path d="M9 9h6v2H9zm0 4h4v2H9z"/>
-                  </svg>
-                </button>
-                <button id="send-btn" class="modern-icon-btn send-btn" disabled>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-                  </svg>
-                </button>
+                <h3>闪卡区域</h3>
+                <p>生成闪卡后将在这里展示</p>
               </div>
             </div>
-          </div>
+          </section>
+
+          <section id="chat-panel" class="chat-panel">
+            <div id="messages-container" class="messages-container">
+              <div class="empty-state">
+                <div class="empty-state-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                    <path d="M7 9h10v2H7zm0-3h10v2H7zm0 6h7v2H7z"/>
+                  </svg>
+                </div>
+                <h3>欢迎使用学习助理</h3>
+                <p>请在左侧选择一门课程开始提问</p>
+              </div>
+            </div>
+
+            <div class="input-area">
+              <div class="modern-input-container">
+                <div id="file-preview-area" class="preview-cards-container" style="display: none;"></div>
+                <textarea id="chat-input" class="modern-textarea" placeholder="问问学习助理" rows="1" disabled></textarea>
+                
+                <div class="modern-input-footer">
+                  <div class="footer-left">
+                    <div class="plus-menu-container">
+                        <button id="attach-btn" class="modern-icon-btn plus-btn" title="更多选项">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                          </svg>
+                        </button>
+                        <div id="plus-menu" class="plus-menu" style="display: none;">
+                            <button id="menu-upload-btn" class="menu-item">
+                                <span class="menu-icon">
+                                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                    <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/>
+                                  </svg>
+                                </span>
+                                <span>上传文件/图片</span>
+                            </button>
+                            <button id="menu-read-courseware-btn" class="menu-item">
+                                <span class="menu-icon">
+                                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                                    <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>
+                                  </svg>
+                                </span>
+                                <span>读取课程资料</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-btn" title="闪卡模式">
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.23-.28-.62-.38-.96-.23-.35.15-.58.5-.58.89V14h8v-2.36c0-.39-.23-.74-.58-.89-.34-.14-.73-.05-.96.23z"/>
+                      </svg>
+                    </button>
+                    <input type="file" id="file-input" multiple style="display: none;" accept="image/*,.pdf,.txt,.md,.js,.ts,.java,.py,.json,.c,.cpp,.h">
+                  </div>
+                  
+                  <div class="footer-right">
+                    <button id="flashcard-send-btn" class="modern-icon-btn send-btn flashcard-send-btn" title="生成闪卡" style="display: none;" disabled>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M4 6h14v12H4z" opacity=".35"/>
+                        <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H6V4h12v16z"/>
+                        <path d="M9 9h6v2H9zm0 4h4v2H9z"/>
+                      </svg>
+                    </button>
+                    <button id="send-btn" class="modern-icon-btn send-btn" disabled>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
       
@@ -138,16 +166,12 @@ export function renderCourseList(
     .join("");
 }
 
-/**
- * Get file type info (badge text, color class, description) based on filename and mime type
- */
 function getFileTypeInfo(
   name: string,
   type: string,
 ): { badge: string; colorClass: string; description: string } {
   const ext = name.split(".").pop()?.toLowerCase() || "";
 
-  // PDF
   if (type === "pdf" || type === "application/pdf" || ext === "pdf") {
     return {
       badge: "PDF",
@@ -156,7 +180,6 @@ function getFileTypeInfo(
     };
   }
 
-  // Code files
   const codeExtensions: Record<string, { badge: string; desc: string }> = {
     js: { badge: "JS", desc: "JavaScript" },
     jsx: { badge: "JSX", desc: "React JSX" },
@@ -187,7 +210,6 @@ function getFileTypeInfo(
     };
   }
 
-  // Markup/Config files
   const markupExtensions: Record<string, { badge: string; desc: string }> = {
     html: { badge: "HTML", desc: "HTML Document" },
     css: { badge: "CSS", desc: "Stylesheet" },
@@ -207,7 +229,6 @@ function getFileTypeInfo(
     };
   }
 
-  // Document files
   const docExtensions: Record<string, { badge: string; desc: string }> = {
     md: { badge: "MD", desc: "Markdown" },
     txt: { badge: "TXT", desc: "Text File" },
@@ -227,7 +248,6 @@ function getFileTypeInfo(
     };
   }
 
-  // Archive files
   const archiveExtensions = ["zip", "rar", "7z", "tar", "gz", "bz2"];
   if (archiveExtensions.includes(ext)) {
     return {
@@ -237,7 +257,6 @@ function getFileTypeInfo(
     };
   }
 
-  // Unknown/Other files
   return {
     badge: ext.toUpperCase() || "FILE",
     colorClass: "file-badge-gray",
@@ -278,10 +297,10 @@ export function renderAttachmentCard(
           </div>`;
 }
 
-export function renderChatMessage(message: ChatMessage): string {
+export function renderChatMessage(message: ChatMessage, showFlashcard: boolean = true): string {
   const isUser = message.role === "user";
   if (message.flashcards) {
-    return renderFlashcardBubble(message.flashcards, message.id);
+    return showFlashcard ? renderFlashcardBubble(message.flashcards, message.id) : renderFlashcardTipBubble(message.flashcards, message.id);
   }
   const contentHtml = parseMarkdown(message.content);
 
