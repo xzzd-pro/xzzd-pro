@@ -1,11 +1,42 @@
 import type { FlashcardData, Flashcard } from "../types/flashcard"
 
+type PackType = "favorite" | "fuzzy" | "mastered"
+const PACK_DRAW_SIZE = 10
+const DRAW_ID_SEPARATOR = "::draw::"
+
+interface PackEntry {
+  card: Flashcard
+  addedAt: number
+}
+
 interface FlashcardSessionState {
   queue: Flashcard[]
   original: Flashcard[]
+  defaultTitle: string
+  currentTitle: string
   status: Map<string, number>
   counts: { red: number; yellow: number; green: number }
+  archived: boolean
+  packs: {
+    favorite: PackEntry[]
+    fuzzy: PackEntry[]
+    mastered: PackEntry[]
+  }
+  deletedIds: Set<string>
+  selectedPack: PackType
 }
+
+interface PersistentFlashcardStore {
+  packs: {
+    favorite: PackEntry[]
+    fuzzy: PackEntry[]
+    mastered: PackEntry[]
+  }
+  deletedIds: string[]
+}
+
+const flashcardSessionStore = new Map<string, FlashcardSessionState>()
+const FLASHCARD_PACK_STORAGE_KEY = "xzzdpro:flashcard-pack-store:v1"
 
 const clampText = (text: string): string => text ?? ""
 
@@ -91,6 +122,71 @@ function renderIcon(name: "deck" | "dot" | "check" | "cross" | "think" | "bulb")
   return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 17a2 2 0 1 1 2-2 2 2 0 0 1-2 2zm2-6h-4V7h4z"/></svg>'
 }
 
+function getPackLabel(pack: PackType): string {
+  if (pack === "favorite") return "收藏卡包"
+  if (pack === "fuzzy") return "模糊卡包"
+  return "掌握卡包"
+}
+
+function getBaseCardId(cardId: string): string {
+  return cardId.split(DRAW_ID_SEPARATOR)[0]
+}
+
+function createEmptyPacks(): PersistentFlashcardStore["packs"] {
+  return {
+    favorite: [],
+    fuzzy: [],
+    mastered: []
+  }
+}
+
+function loadPersistentStore(): PersistentFlashcardStore {
+  try {
+    const storage = globalThis.localStorage
+    if (!storage) {
+      return { packs: createEmptyPacks(), deletedIds: [] }
+    }
+
+    const raw = storage.getItem(FLASHCARD_PACK_STORAGE_KEY)
+    if (!raw) {
+      return { packs: createEmptyPacks(), deletedIds: [] }
+    }
+
+    const parsed = JSON.parse(raw) as Partial<PersistentFlashcardStore>
+    const packs = parsed.packs || createEmptyPacks()
+
+    return {
+      packs: {
+        favorite: Array.isArray(packs.favorite) ? packs.favorite : [],
+        fuzzy: Array.isArray(packs.fuzzy) ? packs.fuzzy : [],
+        mastered: Array.isArray(packs.mastered) ? packs.mastered : []
+      },
+      deletedIds: Array.isArray(parsed.deletedIds)
+        ? parsed.deletedIds.map(id => getBaseCardId(String(id)))
+        : []
+    }
+  } catch {
+    return { packs: createEmptyPacks(), deletedIds: [] }
+  }
+}
+
+function savePersistentStore(store: PersistentFlashcardStore) {
+  try {
+    const storage = globalThis.localStorage
+    if (!storage) return
+    storage.setItem(FLASHCARD_PACK_STORAGE_KEY, JSON.stringify(store))
+  } catch {
+    return
+  }
+}
+
+function persistState(state: FlashcardSessionState) {
+  savePersistentStore({
+    packs: state.packs,
+    deletedIds: Array.from(state.deletedIds)
+  })
+}
+
 export function renderFlashcardTipBubble(data: FlashcardData, messageId: string): string {
   return `
     <div class="message assistant" id="${messageId}">
@@ -115,42 +211,68 @@ export function renderFlashcardBubble(data: FlashcardData, messageId: string): s
     <div class="message assistant" id="${messageId}">
       <div class="message-body">
         <div class="flashcard-session" data-message-id="${messageId}">
-          <div class="flashcard-header">
-            <div class="flashcard-topic">${renderIcon("deck")}<span>${escapeHtml(data.topic)}</span></div>
-            <div class="flashcard-progress">
-              <span class="flashcard-progress-value">剩余: ${data.cards.length} 张</span>
-              <span class="flashcard-stats-value">红 0 · 黄 0 · 绿 0</span>
-            </div>
+          <div class="flashcard-pack-tabs" role="tablist" aria-label="闪卡卡包">
+            <button type="button" class="flashcard-pack-btn active" data-pack="favorite">收藏 <span class="flashcard-pack-count" data-pack-count="favorite">0</span></button>
+            <button type="button" class="flashcard-pack-btn" data-pack="fuzzy">模糊 <span class="flashcard-pack-count" data-pack-count="fuzzy">0</span></button>
+            <button type="button" class="flashcard-pack-btn" data-pack="mastered">掌握 <span class="flashcard-pack-count" data-pack-count="mastered">0</span></button>
           </div>
 
-          <div class="flashcard-stage">
-            <div class="flashcard-card" data-side="front">
-              <div class="flashcard-face flashcard-front">
-                <div class="flashcard-type-tag"></div>
-                <div class="flashcard-front-content"></div>
-                <div class="flashcard-subtle-hint">点击卡片翻转</div>
+          <div class="flashcard-pack-background-hint hidden" aria-live="polite">
+            <div class="flashcard-pack-background-icon">${renderIcon("bulb")}</div>
+            <div class="flashcard-pack-background-title">当前暂无可练习闪卡</div>
+            <div class="flashcard-pack-background-subtitle">点击上方卡包按钮随机抽取一张进行练习</div>
+          </div>
+
+          <div class="flashcard-session-body">
+            <div class="flashcard-header">
+              <div class="flashcard-topic">${renderIcon("deck")}<span>${escapeHtml(data.topic)}</span></div>
+              <div class="flashcard-progress">
+                <span class="flashcard-progress-value">剩余: ${data.cards.length} 张</span>
+                <span class="flashcard-stats-value">红 0 · 黄 0 · 绿 0</span>
               </div>
-              <div class="flashcard-face flashcard-back">
-                <div class="flashcard-back-content"></div>
-                <div class="flashcard-actions">
-                  <button class="flashcard-btn danger" data-quality="1">不会</button>
-                  <button class="flashcard-btn warning" data-quality="2">模糊</button>
-                  <button class="flashcard-btn success" data-quality="3">掌握</button>
+            </div>
+
+            <div class="flashcard-stage">
+              <div class="flashcard-card" data-side="front">
+                <div class="flashcard-face flashcard-front">
+                  <div class="flashcard-face-tools">
+                    <button type="button" class="flashcard-tool-btn" data-action="favorite-card" data-side="front">收藏</button>
+                    <button type="button" class="flashcard-tool-btn danger" data-action="delete-card" data-side="front">删除</button>
+                  </div>
+                  <div class="flashcard-type-tag"></div>
+                  <div class="flashcard-front-content"></div>
+                  <div class="flashcard-subtle-hint">点击卡片翻转</div>
+                </div>
+                <div class="flashcard-face flashcard-back">
+                  <div class="flashcard-face-tools">
+                    <button type="button" class="flashcard-tool-btn" data-action="favorite-card" data-side="back">收藏</button>
+                    <button type="button" class="flashcard-tool-btn danger" data-action="delete-card" data-side="back">删除</button>
+                  </div>
+                  <div class="flashcard-back-content"></div>
+                  <div class="flashcard-actions">
+                    <button class="flashcard-btn danger" data-quality="1">不会</button>
+                    <button class="flashcard-btn warning" data-quality="2">模糊</button>
+                    <button class="flashcard-btn success" data-quality="3">掌握</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div class="flashcard-overlay hidden">
-            <div class="flashcard-overlay-card">
-              <div class="flashcard-overlay-title">本次复习完成</div>
-              <div class="flashcard-overlay-subtitle">继续巩固或重新开始一轮</div>
-              <div class="flashcard-overlay-stats">
-                <div class="flashcard-stat red">${renderIcon("dot")}<span class="count">0</span></div>
-                <div class="flashcard-stat yellow">${renderIcon("dot")}<span class="count">0</span></div>
-                <div class="flashcard-stat green">${renderIcon("dot")}<span class="count">0</span></div>
+            <div class="flashcard-overlay hidden">
+              <div class="flashcard-overlay-card">
+                <div class="flashcard-overlay-title">本次复习完成</div>
+                <div class="flashcard-overlay-subtitle">继续巩固或重新开始一轮</div>
+                <div class="flashcard-overlay-stats">
+                  <div class="flashcard-stat red">${renderIcon("dot")}<span class="count">0</span></div>
+                  <div class="flashcard-stat yellow">${renderIcon("dot")}<span class="count">0</span></div>
+                  <div class="flashcard-stat green">${renderIcon("dot")}<span class="count">0</span></div>
+                </div>
+                <div class="flashcard-overlay-actions">
+                  <button class="flashcard-btn primary" data-action="restart">再来一次</button>
+                  <button class="flashcard-btn success" data-action="save-pack">存入卡包</button>
+                </div>
+                <div class="flashcard-overlay-note">无当前闪卡时，点击上方卡包按钮可随机抽取一张继续练习</div>
               </div>
-              <button class="flashcard-btn primary" data-action="restart">再练一轮</button>
             </div>
           </div>
 
@@ -237,11 +359,16 @@ function setCardContent(sessionEl: HTMLElement, card: Flashcard | undefined) {
 function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
   const remainingEl = sessionEl.querySelector<HTMLElement>(".flashcard-progress-value")
   const statsEl = sessionEl.querySelector<HTMLElement>(".flashcard-stats-value")
+  const topicTitleEl = sessionEl.querySelector<HTMLElement>(".flashcard-topic span")
   const overlayEl = sessionEl.querySelector<HTMLElement>(".flashcard-overlay")
   const overlayCounts = overlayEl?.querySelectorAll<HTMLElement>(".flashcard-stat .count")
+  const packBackgroundHintEl = sessionEl.querySelector<HTMLElement>(".flashcard-pack-background-hint")
+  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>(".flashcard-pack-btn")
+
+  if (topicTitleEl) topicTitleEl.textContent = state.currentTitle
 
   if (remainingEl) remainingEl.textContent = `剩余: ${state.queue.length} 张`
-  if (statsEl) statsEl.textContent = `红 ${state.counts.red} · 黄 ${state.counts.yellow} · 绿 ${state.counts.green}`
+  if (statsEl) statsEl.textContent = `不会 ${state.counts.red} · 模糊 ${state.counts.yellow} · 掌握 ${state.counts.green}`
 
   if (overlayCounts && overlayCounts.length === 3) {
     overlayCounts[0].textContent = String(state.counts.red)
@@ -250,21 +377,189 @@ function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
   }
 
   if (overlayEl) {
-    if (state.queue.length === 0) {
+    if (state.queue.length === 0 && !state.archived) {
       overlayEl.classList.remove("hidden")
     } else {
       overlayEl.classList.add("hidden")
     }
   }
+
+  if (state.archived && state.queue.length === 0) {
+    sessionEl.classList.add("archived-only")
+    packBackgroundHintEl?.classList.remove("hidden")
+  } else {
+    sessionEl.classList.remove("archived-only")
+    packBackgroundHintEl?.classList.add("hidden")
+  }
+
+  const shouldDisablePackSwitch = state.queue.length > 0
+  packButtons.forEach(btn => {
+    const isCurrent = btn.getAttribute("data-pack") === state.selectedPack
+    btn.disabled = shouldDisablePackSwitch
+    if (isCurrent) {
+      btn.classList.add("active")
+    } else {
+      btn.classList.remove("active")
+    }
+  })
+
+  updateCardToolButtons(sessionEl, state)
+
+  const packCounts = sessionEl.querySelectorAll<HTMLElement>("[data-pack-count]")
+  packCounts.forEach(el => {
+    const pack = el.getAttribute("data-pack-count") as PackType | null
+    if (!pack) return
+    el.textContent = String(state.packs[pack].length)
+  })
+
+  const overlayTitle = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-title")
+  const overlaySubtitle = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-subtitle")
+  const overlayActions = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-actions")
+
+  if (!overlayTitle || !overlaySubtitle || !overlayActions) return
+
+  if (state.queue.length > 0) {
+    overlayActions.style.display = "none"
+    return
+  }
+
+  if (state.archived) {
+    overlayTitle.textContent = "本套闪卡已存入卡包"
+    overlaySubtitle.textContent = "已隐藏当前套题，可从收藏/模糊/掌握中继续抽题"
+    overlayActions.style.display = "none"
+    return
+  }
+
+  overlayTitle.textContent = "本次复习完成"
+  overlaySubtitle.textContent = "继续巩固或存入卡包"
+  overlayActions.style.display = "grid"
 }
 
 function createState(data: FlashcardData): FlashcardSessionState {
+  const persisted = loadPersistentStore()
   return {
     queue: [...data.cards],
     original: [...data.cards],
+    defaultTitle: data.topic,
+    currentTitle: data.topic,
     status: new Map(),
-    counts: { red: 0, yellow: 0, green: 0 }
+    counts: { red: 0, yellow: 0, green: 0 },
+    archived: false,
+    packs: {
+      favorite: [...persisted.packs.favorite],
+      fuzzy: [...persisted.packs.fuzzy],
+      mastered: [...persisted.packs.mastered]
+    },
+    deletedIds: new Set(persisted.deletedIds),
+    selectedPack: "favorite"
   }
+}
+
+function upsertPackEntry(state: FlashcardSessionState, pack: PackType, card: Flashcard) {
+  const baseId = getBaseCardId(card.id)
+  if (state.deletedIds.has(baseId)) return
+  const normalizedCard: Flashcard = { ...card, id: baseId }
+  const withoutCurrent = state.packs[pack].filter(entry => getBaseCardId(entry.card.id) !== baseId)
+  withoutCurrent.push({ card: normalizedCard, addedAt: Date.now() })
+  withoutCurrent.sort((a, b) => b.addedAt - a.addedAt)
+  state.packs[pack] = withoutCurrent
+  persistState(state)
+}
+
+function removeFromAllPacks(state: FlashcardSessionState, cardId: string) {
+  const baseId = getBaseCardId(cardId)
+  state.packs.favorite = state.packs.favorite.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+  state.packs.fuzzy = state.packs.fuzzy.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+  state.packs.mastered = state.packs.mastered.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+}
+
+function isCurrentCardFavorited(state: FlashcardSessionState): boolean {
+  const current = getCurrentCard(state)
+  if (!current) return false
+  const currentBaseId = getBaseCardId(current.id)
+  return state.packs.favorite.some(entry => getBaseCardId(entry.card.id) === currentBaseId)
+}
+
+function updateCardToolButtons(sessionEl: HTMLElement, state: FlashcardSessionState) {
+  const current = getCurrentCard(state)
+  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="favorite-card"]')
+  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="delete-card"]')
+
+  if (!current) {
+    favoriteButtons.forEach(btn => {
+      btn.textContent = "收藏"
+      btn.classList.remove("is-favorited")
+      btn.disabled = true
+    })
+    deleteButtons.forEach(btn => {
+      btn.disabled = true
+    })
+    return
+  }
+
+  const favorited = isCurrentCardFavorited(state)
+  favoriteButtons.forEach(btn => {
+    btn.textContent = favorited ? "已收藏" : "收藏"
+    btn.classList.toggle("is-favorited", favorited)
+    btn.disabled = false
+  })
+  deleteButtons.forEach(btn => {
+    btn.disabled = false
+  })
+}
+
+function saveCurrentSessionToPacks(state: FlashcardSessionState) {
+  const cardById = new Map<string, Flashcard>()
+  state.original.forEach(card => {
+    cardById.set(card.id, card)
+  })
+
+  state.status.forEach((quality, cardId) => {
+    const card = cardById.get(cardId)
+    if (!card || state.deletedIds.has(getBaseCardId(card.id))) return
+    if (quality === 2) upsertPackEntry(state, "fuzzy", card)
+    if (quality === 3) upsertPackEntry(state, "mastered", card)
+  })
+
+  state.queue = []
+  state.original = []
+  state.status.clear()
+  state.counts = { red: 0, yellow: 0, green: 0 }
+  state.archived = true
+  persistState(state)
+}
+
+function drawRandomCardsFromPack(state: FlashcardSessionState, pack: PackType): Flashcard[] {
+  const source = state.packs[pack]
+  if (!source.length) return []
+
+  const drawCount = Math.max(PACK_DRAW_SIZE, 1)
+  const result: Flashcard[] = []
+
+  const shuffled = [...source]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = shuffled[i]
+    shuffled[i] = shuffled[j]
+    shuffled[j] = tmp
+  }
+
+  const now = Date.now()
+  if (shuffled.length >= drawCount) {
+    for (let i = 0; i < drawCount; i++) {
+      const card = shuffled[i].card
+      result.push({ ...card, id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}` })
+    }
+    return result
+  }
+
+  for (let i = 0; i < drawCount; i++) {
+    const randomEntry = source[Math.floor(Math.random() * source.length)]
+    const card = randomEntry.card
+    result.push({ ...card, id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}` })
+  }
+
+  return result
 }
 
 function handleMark(sessionEl: HTMLElement, state: FlashcardSessionState, quality: number) {
@@ -282,9 +577,74 @@ function handleMark(sessionEl: HTMLElement, state: FlashcardSessionState, qualit
 }
 
 function restartSession(sessionEl: HTMLElement, state: FlashcardSessionState) {
+  if (state.original.length === 0) return
+  state.archived = false
+  state.currentTitle = state.defaultTitle
   state.queue = [...state.original]
   state.status.clear()
   state.counts = { red: 0, yellow: 0, green: 0 }
+  setCardContent(sessionEl, getCurrentCard(state))
+  updateProgress(sessionEl, state)
+}
+
+function deleteCurrentCard(sessionEl: HTMLElement, state: FlashcardSessionState) {
+  const current = getCurrentCard(state)
+  if (!current) return
+
+  const baseId = getBaseCardId(current.id)
+
+  state.queue = state.queue.filter(card => getBaseCardId(card.id) !== baseId)
+  state.original = state.original.filter(card => getBaseCardId(card.id) !== baseId)
+  Array.from(state.status.keys()).forEach(id => {
+    if (getBaseCardId(id) === baseId) state.status.delete(id)
+  })
+  state.deletedIds.add(baseId)
+  removeFromAllPacks(state, baseId)
+  persistState(state)
+
+  setCardContent(sessionEl, getCurrentCard(state))
+  updateProgress(sessionEl, state)
+}
+
+function favoriteCurrentCard(state: FlashcardSessionState) {
+  const current = getCurrentCard(state)
+  if (!current) return
+  upsertPackEntry(state, "favorite", current)
+}
+
+function selectPack(sessionEl: HTMLElement, state: FlashcardSessionState, pack: PackType) {
+  if (state.queue.length > 0 && pack !== state.selectedPack) {
+    updateProgress(sessionEl, state)
+    return
+  }
+
+  state.selectedPack = pack
+  sessionEl.querySelectorAll<HTMLButtonElement>(".flashcard-pack-btn").forEach(btn => {
+    if (btn.getAttribute("data-pack") === pack) {
+      btn.classList.add("active")
+    } else {
+      btn.classList.remove("active")
+    }
+  })
+
+  if (state.queue.length > 0) {
+    updateProgress(sessionEl, state)
+    return
+  }
+
+  const drawnCards = drawRandomCardsFromPack(state, pack)
+  if (drawnCards.length === 0) {
+    updateProgress(sessionEl, state)
+    return
+  }
+
+  state.archived = false
+  state.currentTitle = getPackLabel(pack)
+  state.queue = [...drawnCards]
+  state.original = [...drawnCards]
+  state.status.clear()
+  state.counts = { red: 0, yellow: 0, green: 0 }
+
   setCardContent(sessionEl, getCurrentCard(state))
   updateProgress(sessionEl, state)
 }
@@ -293,6 +653,10 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState) {
   const cardEl = sessionEl.querySelector<HTMLElement>(".flashcard-card")
   const actionButtons = sessionEl.querySelectorAll<HTMLButtonElement>('.flashcard-actions [data-quality]')
   const restartBtn = sessionEl.querySelector<HTMLButtonElement>('[data-action="restart"]')
+  const savePackBtn = sessionEl.querySelector<HTMLButtonElement>('[data-action="save-pack"]')
+  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="favorite-card"]')
+  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="delete-card"]')
+  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>('.flashcard-pack-btn[data-pack]')
 
   if (cardEl) {
     cardEl.addEventListener("click", () => {
@@ -317,12 +681,47 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState) {
       restartSession(sessionEl, state)
     })
   }
+
+  if (savePackBtn) {
+    savePackBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      saveCurrentSessionToPacks(state)
+      setCardContent(sessionEl, undefined)
+      updateProgress(sessionEl, state)
+    })
+  }
+
+  favoriteButtons.forEach(favoriteBtn => {
+    favoriteBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      favoriteCurrentCard(state)
+      updateProgress(sessionEl, state)
+    })
+  })
+
+  deleteButtons.forEach(deleteBtn => {
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      deleteCurrentCard(sessionEl, state)
+    })
+  })
+
+  packButtons.forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      if (btn.disabled) return
+      const pack = btn.getAttribute("data-pack") as PackType | null
+      if (!pack) return
+      selectPack(sessionEl, state, pack)
+    })
+  })
 }
 
 export function hydrateFlashcardBubbles(root: HTMLElement | Document = document): void {
   const sessions = Array.from(root.querySelectorAll<HTMLElement>(".flashcard-session")).filter(el => !el.dataset.ready)
 
   sessions.forEach(sessionEl => {
+    const messageId = sessionEl.dataset.messageId || ""
     const dataScript = sessionEl.querySelector<HTMLScriptElement>(".flashcard-data")
     if (!dataScript) return
 
@@ -334,8 +733,16 @@ export function hydrateFlashcardBubbles(root: HTMLElement | Document = document)
     }
     if (!data || !Array.isArray(data.cards) || data.cards.length === 0) return
 
-    const state = createState(data)
+    const state = messageId && flashcardSessionStore.has(messageId)
+      ? flashcardSessionStore.get(messageId)!
+      : createState(data)
+
+    if (messageId && !flashcardSessionStore.has(messageId)) {
+      flashcardSessionStore.set(messageId, state)
+    }
+
     setCardContent(sessionEl, getCurrentCard(state))
+    selectPack(sessionEl, state, state.selectedPack)
     updateProgress(sessionEl, state)
     wireEvents(sessionEl, state)
 

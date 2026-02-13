@@ -1366,6 +1366,97 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       color: var(--xzzd-text-secondary);
       align-items: center;
     }
+    .flashcard-pack-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .flashcard-pack-btn {
+      border: 1px solid var(--xzzd-card-border);
+      background: var(--xzzd-card-bg);
+      color: var(--xzzd-text-secondary);
+      border-radius: 10px;
+      height: 34px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .flashcard-pack-btn:hover {
+      background: var(--xzzd-input-bg);
+      color: var(--xzzd-text-primary);
+    }
+    .flashcard-pack-btn.active {
+      background: var(--xzzd-primary);
+      color: #fff;
+      border-color: var(--xzzd-primary);
+    }
+    .flashcard-pack-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .flashcard-pack-count {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.95;
+    }
+    .flashcard-pack-background-hint {
+      min-height: 260px;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      color: var(--xzzd-text-secondary);
+      background: transparent;
+    }
+    .flashcard-pack-background-hint.hidden {
+      display: none;
+    }
+    .flashcard-pack-background-icon {
+      width: 36px;
+      height: 36px;
+      opacity: 0.7;
+      color: var(--xzzd-text-secondary);
+    }
+    .flashcard-pack-background-icon .icon-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .flashcard-pack-background-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--xzzd-text-primary);
+    }
+    .flashcard-pack-background-subtitle {
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      line-height: 1.5;
+      max-width: 70%;
+    }
+    .flashcard-session-body {
+      display: contents;
+    }
+    .flashcard-session.archived-only {
+      min-height: 360px;
+      padding: 12px;
+      justify-content: flex-start;
+    }
+    .flashcard-session.archived-only .flashcard-pack-background-hint {
+      flex: 1;
+    }
+    .flashcard-session.archived-only .flashcard-session-body {
+      display: none;
+    }
     .flashcard-stage {
       perspective: 1200px;
       flex: 1;
@@ -1383,6 +1474,51 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       transform-style: preserve-3d;
       transition: transform 0.5s ease;
       cursor: pointer;
+    }
+    .flashcard-face-tools {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      display: inline-flex;
+      gap: 6px;
+    }
+    .flashcard-tool-btn {
+      height: auto;
+      min-width: 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 158, 11, 0.34);
+      background: rgba(245, 158, 11, 0.16);
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    .flashcard-tool-btn:hover {
+      background: rgba(245, 158, 11, 0.24);
+      color: #78350f;
+    }
+    .flashcard-tool-btn.is-favorited {
+      border-color: rgba(245, 158, 11, 0.48);
+      background: rgba(245, 158, 11, 0.28);
+      color: #78350f;
+    }
+    .flashcard-tool-btn.danger {
+      color: #b91c1c;
+      border-color: rgba(239, 68, 68, 0.38);
+      background: rgba(239, 68, 68, 0.14);
+    }
+    .flashcard-tool-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.22);
+      color: #991b1b;
+    }
+    .flashcard-tool-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
     .flashcard-card.flipped { transform: rotateY(180deg); }
     .flashcard-face {
@@ -1416,12 +1552,23 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       top: 12px;
       left: 12px;
       display: inline-flex;
+      align-items: center;
+      box-sizing: border-box;
+      height: 26px;
       padding: 6px 10px;
       border-radius: 999px;
       background: rgba(99, 102, 241, 0.12);
       color: #4f46e5;
       font-weight: 700;
       font-size: 12px;
+      line-height: 1;
+    }
+    .flashcard-face-tools .flashcard-tool-btn {
+      height: 26px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .flashcard-question { font-size: 18px; font-weight: 700; color: var(--xzzd-text-primary); }
     .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: center; }
@@ -1483,6 +1630,17 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     .flashcard-overlay-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--xzzd-text-primary); }
     .flashcard-overlay-subtitle { color: var(--xzzd-text-secondary); margin-bottom: 12px; }
     .flashcard-overlay-stats { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
+    .flashcard-overlay-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .flashcard-overlay-note {
+      font-size: 12px;
+      color: var(--xzzd-text-secondary);
+      line-height: 1.5;
+    }
     .flashcard-stat { padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; }
     .flashcard-stat {
       display: inline-flex;
@@ -1820,6 +1978,7 @@ function renderMessages() {
 
   const chatMessages = isFlashcardSplitView ? messages.filter(msg => !msg.flashcards) : messages
   const flashcardMessages = messages.filter(msg => !!msg.flashcards)
+  const latestFlashcardMessage = flashcardMessages.length > 0 ? flashcardMessages[flashcardMessages.length - 1] : null
 
   if (courseSubtitleEl) {
     if (currentCourseName) {
@@ -1863,8 +2022,8 @@ function renderMessages() {
           <p>生成闪卡后将在这里展示</p>
         </div>
       `
-    } else {
-      flashcardContainer.innerHTML = flashcardMessages.map(msg => renderChatMessage(msg, true)).join('')
+    } else if (latestFlashcardMessage) {
+      flashcardContainer.innerHTML = renderChatMessage(latestFlashcardMessage, true)
       hydrateFlashcardBubbles(flashcardContainer)
     }
   }
