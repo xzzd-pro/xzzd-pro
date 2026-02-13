@@ -37,6 +37,7 @@ interface PersistentFlashcardStore {
 
 const flashcardSessionStore = new Map<string, FlashcardSessionState>()
 const FLASHCARD_PACK_STORAGE_KEY = "xzzdpro:flashcard-pack-store:v1"
+const FLASHCARD_ARCHIVED_SESSIONS_KEY = "xzzdpro:flashcard-archived-sessions:v1"
 
 const clampText = (text: string): string => text ?? ""
 
@@ -185,6 +186,37 @@ function persistState(state: FlashcardSessionState) {
     packs: state.packs,
     deletedIds: Array.from(state.deletedIds)
   })
+}
+
+function loadArchivedSessionIds(): Set<string> {
+  try {
+    const storage = globalThis.localStorage
+    if (!storage) return new Set()
+    const raw = storage.getItem(FLASHCARD_ARCHIVED_SESSIONS_KEY)
+    if (!raw) return new Set()
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return new Set()
+    return new Set(parsed.map(id => String(id)).filter(Boolean))
+  } catch {
+    return new Set()
+  }
+}
+
+function saveArchivedSessionIds(ids: Set<string>) {
+  try {
+    const storage = globalThis.localStorage
+    if (!storage) return
+    storage.setItem(FLASHCARD_ARCHIVED_SESSIONS_KEY, JSON.stringify(Array.from(ids)))
+  } catch {
+    return
+  }
+}
+
+function markSessionArchived(messageId: string) {
+  if (!messageId) return
+  const ids = loadArchivedSessionIds()
+  ids.add(messageId)
+  saveArchivedSessionIds(ids)
 }
 
 export function renderFlashcardTipBubble(data: FlashcardData, messageId: string): string {
@@ -435,16 +467,19 @@ function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
   overlayActions.style.display = "grid"
 }
 
-function createState(data: FlashcardData): FlashcardSessionState {
+function createState(data: FlashcardData, messageId: string): FlashcardSessionState {
+  const archivedSessionIds = loadArchivedSessionIds()
+  const isArchivedSession = !!messageId && archivedSessionIds.has(messageId)
+
   const persisted = loadPersistentStore()
   return {
-    queue: [...data.cards],
-    original: [...data.cards],
+    queue: isArchivedSession ? [] : [...data.cards],
+    original: isArchivedSession ? [] : [...data.cards],
     defaultTitle: data.topic,
     currentTitle: data.topic,
     status: new Map(),
     counts: { red: 0, yellow: 0, green: 0 },
-    archived: false,
+    archived: isArchivedSession,
     packs: {
       favorite: [...persisted.packs.favorite],
       fuzzy: [...persisted.packs.fuzzy],
@@ -609,6 +644,16 @@ function deleteCurrentCard(sessionEl: HTMLElement, state: FlashcardSessionState)
 function favoriteCurrentCard(state: FlashcardSessionState) {
   const current = getCurrentCard(state)
   if (!current) return
+
+  const baseId = getBaseCardId(current.id)
+  const isFavorited = state.packs.favorite.some(entry => getBaseCardId(entry.card.id) === baseId)
+
+  if (isFavorited) {
+    state.packs.favorite = state.packs.favorite.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+    persistState(state)
+    return
+  }
+
   upsertPackEntry(state, "favorite", current)
 }
 
@@ -649,7 +694,7 @@ function selectPack(sessionEl: HTMLElement, state: FlashcardSessionState, pack: 
   updateProgress(sessionEl, state)
 }
 
-function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState) {
+function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState, messageId: string) {
   const cardEl = sessionEl.querySelector<HTMLElement>(".flashcard-card")
   const actionButtons = sessionEl.querySelectorAll<HTMLButtonElement>('.flashcard-actions [data-quality]')
   const restartBtn = sessionEl.querySelector<HTMLButtonElement>('[data-action="restart"]')
@@ -686,6 +731,7 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState) {
     savePackBtn.addEventListener("click", (e) => {
       e.stopPropagation()
       saveCurrentSessionToPacks(state)
+      markSessionArchived(messageId)
       setCardContent(sessionEl, undefined)
       updateProgress(sessionEl, state)
     })
@@ -735,16 +781,15 @@ export function hydrateFlashcardBubbles(root: HTMLElement | Document = document)
 
     const state = messageId && flashcardSessionStore.has(messageId)
       ? flashcardSessionStore.get(messageId)!
-      : createState(data)
+      : createState(data, messageId)
 
     if (messageId && !flashcardSessionStore.has(messageId)) {
       flashcardSessionStore.set(messageId, state)
     }
 
     setCardContent(sessionEl, getCurrentCard(state))
-    selectPack(sessionEl, state, state.selectedPack)
     updateProgress(sessionEl, state)
-    wireEvents(sessionEl, state)
+    wireEvents(sessionEl, state, messageId)
 
     sessionEl.dataset.ready = "true"
   })

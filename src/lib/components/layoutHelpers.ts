@@ -604,7 +604,7 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       return;
     }
 
-    materialListEl.innerHTML = files.map((file) => {
+    const materialItemsHtml = files.map((file) => {
       const checked = selectedSidebarMaterialUrls.has(file.downloadUrl) ? 'checked' : '';
       return `
         <label class="material-submenu-item" title="${escapeHtml(file.materialTitle)}">
@@ -626,7 +626,35 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       `;
     }).join('');
 
-    materialListEl.querySelectorAll('.material-submenu-checkbox').forEach((checkboxEl) => {
+    materialListEl.innerHTML = `
+      <div class="material-submenu-actions">
+        <button id="assistant-material-clear-all" class="material-action-btn material-action-left" type="button">清除</button>
+        <button id="assistant-material-invert" class="material-action-btn material-action-center" type="button">反选</button>
+        <button id="assistant-material-select-all" class="material-action-btn material-action-right" type="button">全选</button>
+      </div>
+      ${materialItemsHtml}
+    `;
+
+    const checkboxes = Array.from(materialListEl.querySelectorAll<HTMLInputElement>('.material-submenu-checkbox'));
+    const clearAllBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-clear-all');
+    const invertBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-invert');
+    const selectAllBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-select-all');
+
+    const updateSelectAllState = () => {
+      const anyChecked = checkboxes.some(input => input.checked);
+      if (!selectAllBtn) return;
+      const allChecked = checkboxes.length > 0 && checkboxes.every(input => input.checked);
+      selectAllBtn.disabled = allChecked;
+      selectAllBtn.textContent = allChecked ? '已全选' : '全选';
+      if (clearAllBtn) {
+        clearAllBtn.disabled = !anyChecked;
+      }
+      if (invertBtn) {
+        invertBtn.disabled = checkboxes.length === 0;
+      }
+    };
+
+    checkboxes.forEach((checkboxEl) => {
       checkboxEl.addEventListener('change', (event) => {
         const input = event.currentTarget as HTMLInputElement;
         const checked = input.checked;
@@ -652,8 +680,38 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
             }
           }
         }));
+
+        updateSelectAllState();
       });
     });
+
+    selectAllBtn?.addEventListener('click', () => {
+      checkboxes.forEach((input) => {
+        if (input.checked) return;
+        input.checked = true;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      updateSelectAllState();
+    });
+
+    clearAllBtn?.addEventListener('click', () => {
+      checkboxes.forEach((input) => {
+        if (!input.checked) return;
+        input.checked = false;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      updateSelectAllState();
+    });
+
+    invertBtn?.addEventListener('click', () => {
+      checkboxes.forEach((input) => {
+        input.checked = !input.checked;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      updateSelectAllState();
+    });
+
+    updateSelectAllState();
   } catch (error) {
     console.error('XZZDPRO: Failed to load assistant materials', error);
     materialListEl.innerHTML = '<div class="submenu-error">加载资料失败</div>';
