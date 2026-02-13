@@ -22,6 +22,37 @@ function formatMultiline(text: string): string {
   return escapeHtml(text).replace(/\n/g, "<br>")
 }
 
+function formatWithLatex(text: string): string {
+  const blockMath: string[] = []
+  const inlineMath: string[] = []
+
+  let processed = clampText(text).replace(/\$\$\s*([\s\S]+?)\s*\$\$/g, (_, formula: string) => {
+    blockMath.push(formula)
+    return `@@BLOCK_MATH_${blockMath.length - 1}@@`
+  })
+
+  processed = processed.replace(/\$([^$\n]+?)\$/g, (_, formula: string) => {
+    inlineMath.push(formula)
+    return `@@INLINE_MATH_${inlineMath.length - 1}@@`
+  })
+
+  let html = escapeHtml(processed).replace(/\n/g, "<br>")
+
+  html = html.replace(/@@BLOCK_MATH_(\d+)@@/g, (_, index: string) => {
+    const formula = blockMath[Number(index)]
+    const encoded = encodeURIComponent((formula || "").trim())
+    return `<div class="flashcard-math-block"><img src="https://latex.codecogs.com/svg.latex?\\Large&space;${encoded}" alt="math" style="filter: var(--math-filter);"></div>`
+  })
+
+  html = html.replace(/@@INLINE_MATH_(\d+)@@/g, (_, index: string) => {
+    const formula = inlineMath[Number(index)]
+    const encoded = encodeURIComponent((formula || "").trim())
+    return `<img src="https://latex.codecogs.com/svg.latex?${encoded}" alt="math" class="flashcard-math-inline" style="filter: var(--math-filter);">`
+  })
+
+  return html
+}
+
 function renderClozeMasked(text: string): string {
   return escapeHtml(text).replace(/{{\s*(.+?)\s*}}/g, '<span class="cloze-blank">_____</span>')
 }
@@ -148,13 +179,16 @@ function updateStatusCounts(state: FlashcardSessionState, cardId: string, qualit
 }
 
 function renderCardFaces(card: Flashcard) {
-  const safeFront = escapeHtml(card.front)
-  const safeBack = formatMultiline(card.back)
+  const safeFront = formatWithLatex(card.front)
+  const safeBack = formatWithLatex(card.back)
 
   if (card.type === "cloze") {
+    const hasClozeInBack = /{{\s*.+?\s*}}/.test(card.back)
+    const highlightedAnswer = hasClozeInBack ? renderClozeHighlighted(card.back) : renderClozeHighlighted(card.front)
+    const extraAnswer = hasClozeInBack ? "" : `<div class="flashcard-cloze-extra">${safeBack}</div>`
     return {
-      front: renderClozeMasked(card.front),
-      back: renderClozeHighlighted(card.back),
+      front: `<div class="flashcard-hint">${renderIcon("think")}<span>填空题</span></div><div class="flashcard-question">${renderClozeMasked(card.front)}</div>`,
+      back: `<div class="flashcard-hint">${renderIcon("check")}<span>参考答案</span></div><div class="flashcard-answer">${highlightedAnswer}</div>${extraAnswer}`,
       tag: "填空"
     }
   }
@@ -171,8 +205,8 @@ function renderCardFaces(card: Flashcard) {
   }
 
   return {
-    front: `<div class="flashcard-question">${safeFront}</div>`,
-    back: `<div class="flashcard-answer">${safeBack}</div>`,
+    front: `<div class="flashcard-hint">${renderIcon("think")}<span>问答题</span></div><div class="flashcard-question">${safeFront}</div>`,
+    back: `<div class="flashcard-hint">${renderIcon("check")}<span>参考答案</span></div><div class="flashcard-answer">${safeBack}</div>`,
     tag: "问答"
   }
 }

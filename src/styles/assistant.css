@@ -6,7 +6,7 @@
     grid-template-areas:
         "header header"
         "sidebar main";
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: var(--xzzd-sidebar-width, 320px) 1fr;
     grid-template-rows: auto 1fr;
     min-height: 100vh;
     transition: grid-template-columns 0.3s ease;

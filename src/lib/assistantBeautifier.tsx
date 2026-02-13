@@ -5,7 +5,7 @@ import { fetchAllCourses, buildCourseContext } from '../assistant/services/cours
 import { preloadCourseContext } from '../assistant/services/contextBuilder'
 import { streamChat, formatErrorMessage } from '../assistant/services/chatService'
 import { PROVIDER_DEFAULTS } from '../assistant/config'
-import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment } from '../assistant/types'
+import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment, MaterialFile, CourseContext } from '../assistant/types'
 import { FLASHCARD_GENERATION_PROMPT } from '../assistant/types/flashcard'
 import type { FlashcardData } from '../assistant/types/flashcard'
 import { convertPdfToImages } from '../assistant/services/fileService'
@@ -20,7 +20,7 @@ let isGenerating: boolean = false
 let courses: CourseInfo[] = []
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
-let isCoursewareLoaded = false // New state for manual loading
+const selectedCourseMaterials = new Map<string, { file: MaterialFile; materialTitle: string }>()
 let overlayHost: HTMLElement | null = null
 let overlayElement: HTMLElement | null = null
 let isFlashcardMode = false
@@ -28,6 +28,7 @@ let isFlashcardSplitView = false
 let isSplitTransitioning = false
 let externalSplitToggleHandler: ((event: Event) => void) | null = null
 let externalClearHistoryHandler: ((event: Event) => void) | null = null
+let externalMaterialToggleHandler: ((event: Event) => void) | null = null
 
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
@@ -41,6 +42,10 @@ export function closeAssistant(): void {
   if (externalClearHistoryHandler) {
     window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
     externalClearHistoryHandler = null
+  }
+  if (externalMaterialToggleHandler) {
+    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+    externalMaterialToggleHandler = null
   }
   if (overlayHost && document.body.contains(overlayHost)) {
     overlayHost.remove()
@@ -1381,7 +1386,18 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       gap: 12px;
     }
     .flashcard-front { justify-content: center; align-items: center; text-align: center; }
-    .flashcard-back { transform: rotateY(180deg); justify-content: center; align-items: center; text-align: center; }
+    .flashcard-back { transform: rotateY(180deg); justify-content: space-between; align-items: stretch; text-align: center; }
+    .flashcard-back-content {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+    }
     .flashcard-type-tag {
       position: absolute;
       top: 12px;
@@ -1396,6 +1412,10 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     .flashcard-question { font-size: 18px; font-weight: 700; color: var(--xzzd-text-primary); }
     .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: center; }
+    .flashcard-cloze-extra { font-size: 13px; color: var(--xzzd-text-secondary); line-height: 1.6; }
+    .flashcard-math-block { margin: 8px 0; text-align: center; }
+    .flashcard-math-block img { max-width: 100%; }
+    .flashcard-math-inline { vertical-align: middle; margin: 0 2px; max-width: 100%; }
     .flashcard-hint { color: var(--xzzd-text-secondary); font-size: 14px; }
     .flashcard-hint {
       display: inline-flex;
@@ -1403,7 +1423,13 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       gap: 6px;
     }
     .flashcard-subtle-hint { color: var(--xzzd-text-secondary); font-size: 12px; }
-    .flashcard-actions { display: flex; justify-content: center; gap: 12px; margin-top: auto; }
+    .flashcard-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      margin-top: auto;
+    }
     .flashcard-btn {
       border: none;
       border-radius: 10px;
@@ -1412,6 +1438,10 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.2s ease;
       box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .flashcard-actions .flashcard-btn {
+      width: 100%;
+      padding: 10px 0;
     }
     .flashcard-btn:active { transform: translateY(1px) scale(0.98); }
     .flashcard-btn.danger { background: #fee2e2; color: #b91c1c; }
@@ -1620,6 +1650,54 @@ function bindSidebarCourseSelection(): void {
   window.addEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
 }
 
+function filterContextBySelectedMaterials(context: CourseContext): CourseContext {
+  if (selectedCourseMaterials.size === 0) {
+    return {
+      ...context,
+      materials: []
+    }
+  }
+
+  const selectedByUrl = new Map<string, MaterialFile>()
+  selectedCourseMaterials.forEach(({ file }, downloadUrl) => {
+    selectedByUrl.set(downloadUrl, file)
+  })
+
+  const filteredMaterials = context.materials
+    .map((material) => {
+      const filteredFiles = (material.files || []).filter(file => selectedByUrl.has(file.downloadUrl))
+      return {
+        ...material,
+        files: filteredFiles
+      }
+    })
+    .filter(material => (material.files || []).length > 0)
+
+  return {
+    ...context,
+    materials: filteredMaterials
+  }
+}
+
+async function preloadSelectedMaterial(file: MaterialFile, materialTitle: string): Promise<void> {
+  if (!currentCourseId) return
+
+  const context: CourseContext = {
+    courseId: currentCourseId,
+    courseName: currentCourseName || `Course ${currentCourseId}`,
+    materials: [
+      {
+        id: file.id,
+        title: materialTitle,
+        files: [file]
+      }
+    ],
+    homeworks: []
+  }
+
+  await preloadCourseContext(context, (msg, type) => showStatus(msg, type || 'info'))
+}
+
 async function initAssistant() {
   try {
     currentSettings = await loadSettings()
@@ -1656,8 +1734,11 @@ async function switchCourse(courseId: string) {
   }
 
   currentCourseName = course.displayName
-  isCoursewareLoaded = false // Reset loading state
+  selectedCourseMaterials.clear()
   syncSidebarCourseActive(courseId)
+  window.dispatchEvent(new CustomEvent('xzzd:assistant-course-changed', {
+    detail: { courseId }
+  }))
 
   // Enable inputs
   const chatInput = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
@@ -1896,14 +1977,12 @@ function setupChatHandlers() {
   const previewArea = overlayElement?.querySelector('#file-preview-area') as HTMLElement
   const plusMenu = overlayElement?.querySelector('#plus-menu') as HTMLElement
   const menuUploadBtn = overlayElement?.querySelector('#menu-upload-btn') as HTMLButtonElement
-  const menuReadBtn = overlayElement?.querySelector('#menu-read-courseware-btn') as HTMLButtonElement
 
   console.log('XZZDPRO: Elements found:', {
     input: !!input,
     attachBtn: !!attachBtn,
     plusMenu: !!plusMenu,
-    menuUploadBtn: !!menuUploadBtn,
-    menuReadBtn: !!menuReadBtn
+    menuUploadBtn: !!menuUploadBtn
   })
 
   updateModeUI()
@@ -1940,32 +2019,44 @@ function setupChatHandlers() {
     if (plusMenu) plusMenu.style.display = 'none'
   })
 
-  // Menu Read Courseware Item
-  menuReadBtn?.addEventListener('click', async (e) => {
-    e.stopPropagation()
-    if (plusMenu) plusMenu.style.display = 'none'
+  if (externalMaterialToggleHandler) {
+    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+  }
+  externalMaterialToggleHandler = async (event: Event) => {
+    const customEvent = event as CustomEvent<{
+      courseId?: string
+      checked?: boolean
+      file?: MaterialFile & { materialTitle?: string }
+    }>
+    const courseId = customEvent.detail?.courseId
+    const checked = !!customEvent.detail?.checked
+    const file = customEvent.detail?.file
 
-    if (!currentCourseId) {
-      showStatus('请先选择课程', 'error')
+    if (!courseId || !currentCourseId || courseId !== currentCourseId || !file?.downloadUrl) return
+
+    const materialTitle = file.materialTitle || '课程资料'
+    if (checked) {
+      selectedCourseMaterials.set(file.downloadUrl, {
+        file: {
+          id: file.id,
+          name: file.name,
+          size: file.size,
+          downloadUrl: file.downloadUrl
+        },
+        materialTitle
+      })
+      try {
+        await preloadSelectedMaterial(file, materialTitle)
+      } catch (error) {
+        console.error('Failed to preload selected material:', error)
+        showStatus(`读取失败: ${file.name}`, 'error')
+      }
       return
     }
 
-    if (isCoursewareLoaded) {
-      showStatus('课程资料已加载', 'success')
-      return
-    }
-
-    try {
-      // Temporarily fetch context just for preloading
-      const context = await buildCourseContext(currentCourseId)
-      await preloadCourseContext(context, (msg, type) => showStatus(msg, type || 'info'))
-      isCoursewareLoaded = true
-      showStatus('课程资料阅读完成', 'success')
-    } catch (error) {
-      console.error('Failed to load courseware:', error)
-      showStatus('加载失败: ' + String(error), 'error')
-    }
-  })
+    selectedCourseMaterials.delete(file.downloadUrl)
+  }
+  window.addEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
 
 
   // Close menu when clicking outside
@@ -2236,12 +2327,57 @@ function setupChatHandlers() {
   }
 
   const buildFlashcardPrompt = (content: string): string => {
-    const userText = content || '请基于提供的材料生成闪卡。'
+    const selectedCount = selectedCourseMaterials.size
+    const userText = content || (selectedCount > 0
+      ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
+      : '请基于提供的材料生成闪卡。')
     // 课程信息在系统消息中，附件通过 msg.attachments 传递，无需在文本中重复
     return `${FLASHCARD_GENERATION_PROMPT}\n\n用户需求：${userText}`
   }
 
   const parseFlashcardResponse = (raw: string): FlashcardData | null => {
+    const sanitizeInvalidJsonBackslashes = (input: string): string => {
+      let output = ''
+      let inString = false
+      let escaped = false
+
+      for (let i = 0; i < input.length; i++) {
+        const ch = input[i]
+
+        if (!inString) {
+          if (ch === '"') inString = true
+          output += ch
+          continue
+        }
+
+        if (escaped) {
+          output += ch
+          escaped = false
+          continue
+        }
+
+        if (ch === '\\') {
+          const next = input[i + 1]
+          const validEscape = next === '"' || next === '\\' || next === '/' || next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't' || next === 'u'
+          if (validEscape) {
+            output += ch
+            escaped = true
+          } else {
+            output += '\\\\'
+          }
+          continue
+        }
+
+        if (ch === '"') {
+          inString = false
+        }
+
+        output += ch
+      }
+
+      return output
+    }
+
     console.log('XZZDPRO: Raw flashcard response:', raw.substring(0, 200))
     
     // 移除代码块标记和多余空白
@@ -2272,8 +2408,20 @@ function setupChatHandlers() {
       }
       return parsed
     } catch (err) {
-      console.error('XZZDPRO: Failed to parse flashcard JSON:', err, '\nContent:', cleaned.substring(0, 500))
-      return null
+      const sanitized = sanitizeInvalidJsonBackslashes(cleaned)
+      try {
+        const parsed = JSON.parse(sanitized) as FlashcardData
+        console.log('XZZDPRO: Parsed flashcard data after backslash sanitization:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+
+        if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+          console.error('XZZDPRO: Invalid flashcard data structure after sanitization')
+          return null
+        }
+        return parsed
+      } catch (sanitizeErr) {
+        console.error('XZZDPRO: Failed to parse flashcard JSON:', sanitizeErr, '\nContent:', cleaned.substring(0, 500))
+        return null
+      }
     }
   }
 
@@ -2310,10 +2458,7 @@ function setupChatHandlers() {
 
     try {
       let context = await buildCourseContext(currentCourseId)
-
-      if (!isCoursewareLoaded) {
-        context = { ...context, materials: [] }
-      }
+      context = filterContextBySelectedMaterials(context)
 
       const provider = currentSettings!.provider
       const config = currentSettings!.configs[provider] as ProviderConfig
@@ -2380,10 +2525,11 @@ function setupChatHandlers() {
 
   const sendFlashcardMessage = async () => {
     const content = input?.value.trim() || ''
+    const selectedMaterialCount = selectedCourseMaterials.size
 
     if (!currentCourseId || isGenerating) return
-    if (!content && pendingAttachments.length === 0) {
-      showStatus('请输入内容或上传课件后再生成闪卡', 'error')
+    if (!content && pendingAttachments.length === 0 && selectedMaterialCount === 0) {
+      showStatus('请输入内容、上传课件，或在侧边栏勾选资料后再生成闪卡', 'error')
       return
     }
 
@@ -2401,10 +2547,14 @@ function setupChatHandlers() {
     }
 
     if (processedAttachments.length === 0) {
-      showStatus('未上传资料，将仅基于输入生成闪卡', 'info')
+      if (selectedMaterialCount > 0) {
+        showStatus(`将基于已勾选的 ${selectedMaterialCount} 份课程资料生成闪卡`, 'info')
+      } else {
+        showStatus('未上传资料，将仅基于输入生成闪卡', 'info')
+      }
     }
 
-    const userMsg = createChatMessage('user', content || '生成闪卡')
+    const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成闪卡' : '生成闪卡'))
     if (processedAttachments.length > 0) {
       userMsg.attachments = processedAttachments
     }
@@ -2427,10 +2577,7 @@ function setupChatHandlers() {
     try {
       // 闪卡模式：使用完整课程上下文，与普通模式一致
       let context = await buildCourseContext(currentCourseId)
-
-      if (!isCoursewareLoaded) {
-        context = { ...context, materials: [] }
-      }
+      context = filterContextBySelectedMaterials(context)
 
       const provider = currentSettings!.provider
       const config = currentSettings!.configs[provider] as ProviderConfig

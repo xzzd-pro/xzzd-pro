@@ -66,12 +66,13 @@
 }
 
 .xzzdpro-root {
+  --xzzd-sidebar-width: 280px;
   font-family: "LXGW WenKai Screen", sans-serif !important;
   display: grid;
   grid-template-areas:
     "header header"
     "sidebar main";
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: var(--xzzd-sidebar-width) 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
   overflow: hidden;
@@ -136,6 +137,7 @@
 /* sidebar style - shadcn mail style */
 .xzzdpro-sidebar {
   grid-area: sidebar;
+  position: relative;
   background-color: hsl(var(--background));
   border-right: 1px solid hsl(var(--border));
   padding: 16px 12px;
@@ -304,6 +306,38 @@
   min-height: auto;
 }
 
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+}
+
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
+}
+
+.sidebar-resize-handle:hover::after,
+.xzzdpro-root.sidebar-resizing .sidebar-resize-handle::after {
+  background-color: hsl(var(--primary));
+}
+
+.xzzdpro-root.sidebar-resizing,
+.xzzdpro-root.sidebar-resizing * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+
 /* Toggle button */
 .sidebar-toggle-btn {
   width: 100%;
@@ -424,6 +458,22 @@
   overflow: hidden;
 }
 
+.nav-item-expandable.expanded .nav-submenu.nav-submenu-materials {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-link-secondary-expandable {
+  min-height: 38px;
+}
+
+.nav-link-main-button {
+  border: none;
+  background: transparent;
+  width: 100%;
+  cursor: pointer;
+}
+
 /* Course submenu list */
 .course-list-submenu {
   display: flex;
@@ -433,6 +483,18 @@
   margin: 0;
   height: 100%;
   min-height: 0;
+  overflow-y: auto;
+}
+
+.material-list-submenu {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+  padding: 4px 0;
+  margin: 0;
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -482,6 +544,52 @@
 }
 
 .course-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.material-submenu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid hsl(var(--border));
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.material-submenu-item:hover {
+  background-color: hsl(var(--accent));
+}
+
+.material-submenu-checkbox {
+  margin-top: 2px;
+  width: 14px;
+  height: 14px;
+  accent-color: hsl(var(--primary));
+  flex-shrink: 0;
+}
+
+.material-submenu-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+
+.material-submenu-name {
+  font-size: 13px;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.material-submenu-meta {
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
