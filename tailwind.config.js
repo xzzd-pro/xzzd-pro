@@ -14,6 +14,10 @@ module.exports = {
   		}
   	},
   	extend: {
+  		fontFamily: {
+  			sans: ['LXGW WenKai Screen', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+  			'wenkai': ['LXGW WenKai Screen', 'sans-serif']
+  		},
   		colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',

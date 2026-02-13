@@ -4,7 +4,7 @@ import { mountAirPage } from "../lib/airPageBeautifier"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://courses.zju.edu.cn/air*"],
-    css: ["../styles/global.css", "../styles/assistant.css"], // global.css needed for header/sidebar
+    css: ["../styles/global.css"],
     run_at: "document_end"
 }
 

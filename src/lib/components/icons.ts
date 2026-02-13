@@ -48,38 +48,44 @@ export const navIcons = {
 
 // 课程详情页图标
 export const courseDetailIcons = {
-  overview: `<svg width="26" height="24" viewBox="0 0 26 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-<path d="M7 0C6.446 0 6 0.446 6 1V19C6 19.554 6.446 20 7 20H9C9.554 20 10 19.554 10 19V1C10 0.446 9.554 0 9 0H7ZM13 2C12.446 2 12 2.446 12 3V19C12 19.554 12.446 20 13 20H15C15.554 20 16 19.554 16 19V3C16 2.446 15.554 2 15 2H13ZM20.098 3.98C20.0289 3.98491 19.9606 3.99697 19.894 4.016L17.964 4.532C17.8371 4.5661 17.7182 4.62487 17.614 4.70495C17.5099 4.78503 17.4225 4.88485 17.357 4.9987C17.2914 5.11256 17.2489 5.23822 17.2319 5.36851C17.2149 5.49879 17.2238 5.63114 17.258 5.758L20.878 19.282C20.9121 19.4091 20.9709 19.5282 21.0511 19.6325C21.1314 19.7369 21.2314 19.8243 21.3455 19.8899C21.4595 19.9555 21.5854 19.9979 21.7159 20.0148C21.8465 20.0316 21.979 20.0225 22.106 19.988L24.036 19.468C24.2914 19.3991 24.509 19.2318 24.6413 19.0028C24.7737 18.7738 24.8099 18.5016 24.742 18.246L21.122 4.722C21.0625 4.49965 20.9282 4.30462 20.7417 4.16981C20.5551 4.035 20.3278 3.96666 20.098 3.98ZM1 4C0.446 4 0 4.446 0 5V19C0 19.554 0.446 20 1 20H3C3.554 20 4 19.554 4 19V5C4 4.446 3.554 4 3 4H1ZM1 22C0.734784 22 0.48043 22.1054 0.292893 22.2929C0.105357 22.4804 0 22.7348 0 23C0 23.2652 0.105357 23.5196 0.292893 23.7071C0.48043 23.8946 0.734784 24 1 24H25C25.2652 24 25.5196 23.8946 25.7071 23.7071C25.8946 23.5196 26 23.2652 26 23C26 22.7348 25.8946 22.4804 25.7071 22.2929C25.5196 22.1054 25.2652 22 25 22H1Z"/>
+  overview: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M3 13H11L13 9H21L19 13H13L11 17H3L5 13Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M13 13H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3 7H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M3 17H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
-  courseware: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M28 20V25.3333C28 26.0406 27.719 26.7189 27.219 27.219C26.7189 27.719 26.0406 28 25.3333 28H6.66667C5.95942 28 5.28115 27.719 4.78105 27.219C4.28095 26.7189 4 26.0406 4 25.3333V20M9.33333 13.3333L16 20M16 20L22.6667 13.3333M16 20V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  courseware: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 2.58579 20.4142C2.21071 20.0391 2 19.5304 2 19V15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 15V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
-  homework: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_168_14)">
-<path d="M14.1667 2.50005C14.3855 2.28118 14.6454 2.10756 14.9313 1.98911C15.2173 1.87066 15.5238 1.80969 15.8333 1.80969C16.1429 1.80969 16.4493 1.87066 16.7353 1.98911C17.0213 2.10756 17.2811 2.28118 17.5 2.50005C17.7189 2.71892 17.8925 2.97875 18.0109 3.26472C18.1294 3.55069 18.1903 3.85719 18.1903 4.16671C18.1903 4.47624 18.1294 4.78274 18.0109 5.06871C17.8925 5.35468 17.7189 5.61451 17.5 5.83338L6.24999 17.0834L1.66666 18.3334L2.91666 13.75L14.1667 2.50005Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
-</g>
-<defs>
-<clipPath id="clip0_168_14">
-<rect width="20" height="20" fill="white"/>
-</clipPath>
-</defs>
+  homework: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 11H15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 15H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16.5 3.5C16.8978 3.10218 17.4374 2.87868 18 2.87868C18.5626 2.87868 19.1022 3.10218 19.5 3.5C19.8978 3.89782 20.1213 4.43739 20.1213 5C20.1213 5.56261 19.8978 6.10218 19.5 6.5L7 19L3 20L4 16L16.5 3.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
-  quiz: `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M24 14C24 11.8783 23.1571 9.84344 21.6569 8.34315C20.1566 6.84285 18.1217 6 16 6H4V36H18C19.5913 36 21.1174 36.6321 22.2426 37.7574C23.3679 38.8826 24 40.4087 24 42M24 14V42M24 14C24 11.8783 24.8429 9.84344 26.3431 8.34315C27.8434 6.84285 29.8783 6 32 6H44V36H30C28.4087 36 26.8826 36.6321 25.7574 37.7574C24.6321 38.8826 24 40.4087 24 42" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  quiz: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9 11H15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 15H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M9 7H13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M16 3H8L6 5V19C6 19.5304 6.21071 20.0391 6.58579 20.4142C6.96086 20.7893 7.46957 21 8 21H16C16.5304 21 17.0391 20.7893 17.4142 20.4142C17.7893 20.0391 18 19.5304 18 19V5C18 4.46957 17.7893 3.96086 17.4142 3.58579C17.0391 3.21071 16.5304 3 16 3Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
-  discussion: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M19.08 10.6667L26.7333 23.92M12.92 10.6667H28.2267M9.84 16L17.4933 2.74669M12.92 21.3334L5.26667 8.08002M19.08 21.3334H3.77333M22.16 16L14.5067 29.2534M29.3333 16C29.3333 23.3638 23.3638 29.3334 16 29.3334C8.6362 29.3334 2.66667 23.3638 2.66667 16C2.66667 8.63622 8.6362 2.66669 16 2.66669C23.3638 2.66669 29.3333 8.63622 29.3333 16Z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+  discussion: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 9H16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8 13H14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
-  grades: `<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M14 22L22 4C23.5913 4 25.1174 4.63214 26.2426 5.75736C27.3679 6.88258 28 8.4087 28 10V18H39.32C39.8998 17.9934 40.4741 18.113 41.0031 18.3504C41.5322 18.5879 42.0032 18.9375 42.3837 19.375C42.7642 19.8126 43.045 20.3276 43.2067 20.8845C43.3683 21.4414 43.407 22.0267 43.32 22.6L40.56 40.6C40.4154 41.5538 39.9309 42.4232 39.1958 43.048C38.4608 43.6728 37.5247 44.0109 36.56 44H14M14 22V44M14 22H8C6.93913 22 5.92172 22.4214 5.17157 23.1716C4.42143 23.9217 4 24.9391 4 26V40C4 41.0609 4.42143 42.0783 5.17157 42.8284C5.92172 43.5786 6.93913 44 8 44H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  grades: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`,
 
   back: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19 12H5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>`
 }

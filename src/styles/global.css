@@ -18,7 +18,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 215.4 16.3% 46.9%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -62,6 +62,20 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "LXGW WenKai Screen", sans-serif !important;
+  }
+
+  /* 强制应用字体到所有元素 */
+  * {
+    font-family: "LXGW WenKai Screen", sans-serif !important;
+  }
+
+  /* 特别针对常见的文本元素 */
+  h1, h2, h3, h4, h5, h6,
+  p, span, div, a, button,
+  input, textarea, select,
+  label, li, td, th {
+    font-family: "LXGW WenKai Screen", sans-serif !important;
   }
 }
 
@@ -72,7 +86,7 @@
   grid-template-areas:
     "header header"
     "sidebar main";
-  grid-template-columns: var(--xzzd-sidebar-width) 1fr;
+  grid-template-columns: var(--xzzd-sidebar-width, 320px) 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
   overflow: hidden;
@@ -225,6 +239,12 @@
   color: hsl(var(--accent-foreground));
 }
 
+.xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-weight: 600;
+}
+
 .xzzdpro-sidebar .sidebar-nav > li.active > a {
   background-color: hsl(var(--primary));
   color: hsl(var(--primary-foreground));
@@ -310,10 +330,11 @@
   position: absolute;
   top: 0;
   right: -4px;
-  width: 8px;
+  width: 12px;
   height: 100%;
   cursor: col-resize;
   z-index: 20;
+  background-color: transparent;
 }
 
 .sidebar-resize-handle::after {
@@ -321,15 +342,17 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 3px;
-  width: 2px;
-  background-color: transparent;
-  transition: background-color 0.15s ease;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  background-color: hsl(var(--primary));
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .sidebar-resize-handle:hover::after,
 .xzzdpro-root.sidebar-resizing .sidebar-resize-handle::after {
-  background-color: hsl(var(--primary));
+  opacity: 0.5;
 }
 
 .xzzdpro-root.sidebar-resizing,
@@ -422,8 +445,12 @@
 
 .sidebar-nav > li.active > .nav-link-expandable .nav-link-main,
 .sidebar-nav > li.active > .nav-link-expandable .expand-toggle {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.sidebar-nav > li.active > .nav-link-expandable .nav-link-main {
+  font-weight: 600;
 }
 
 .expand-arrow {
@@ -600,8 +627,8 @@
 }
 
 .course-submenu-item.active {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
   border-color: hsl(var(--border));
   font-weight: 500;
 }
@@ -698,12 +725,17 @@
 }
 
 .icon-btn:hover {
-  background-color: hsl(var(--accent));
+  background-color: transparent;
   color: hsl(var(--foreground));
 }
 
 .icon-btn:focus {
   outline: none;
+  background-color: transparent;
+}
+
+.icon-btn:active {
+  background-color: transparent;
 }
 
 .theme-icon {
@@ -819,10 +851,16 @@
 
 .help-btn:hover {
   color: hsl(var(--foreground));
+  background-color: transparent;
 }
 
 .help-btn:focus {
   outline: none;
+  background-color: transparent;
+}
+
+.help-btn:active {
+  background-color: transparent;
 }
 
 /* --- modal style --- */

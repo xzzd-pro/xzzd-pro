@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -59,19 +60,21 @@ function CoursewareSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-muted rounded-lg overflow-hidden border-l-4 border-l-border p-5">
-          <div className="flex items-center gap-3">
-            <Skeleton className="w-6 h-6 rounded" />
-            <div className="flex-1">
-              <Skeleton className="h-5 w-3/4 max-w-[300px] mb-3" />
-              <div className="flex gap-3">
-                <Skeleton className="h-6 w-16 rounded-full" />
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-16" />
+        <Card key={i} className="overflow-hidden">
+          <CardHeader className="p-5">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-6 h-6 rounded" />
+              <div className="flex-1">
+                <Skeleton className="h-5 w-3/4 max-w-[300px] mb-3" />
+                <div className="flex gap-3">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          </CardHeader>
+        </Card>
       ))}
     </div>
   )
@@ -133,44 +136,40 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
         const statusText = section.isClosed ? '已关闭' : (section.isStarted ? '进行中' : '未开始')
 
         return (
-          <AccordionItem
-            key={section.id}
-            value={section.id.toString()}
-            className={cn(
-              "bg-muted rounded-lg overflow-hidden border-l-4 transition-shadow duration-200",
-              "hover:shadow-md",
-              section.isClosed ? "border-l-muted-foreground opacity-85" :
-                section.isStarted ? "border-l-primary" : "border-l-yellow-500"
-            )}
-          >
-            <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-border/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
-                  {section.title}
-                </h3>
-                <div className="flex gap-4 flex-wrap text-[13px]">
-                  <Badge
-                    variant={statusVariant}
-                    className={cn(
-                      section.isClosed && "bg-muted-foreground text-white border-transparent",
-                      !section.isStarted && !section.isClosed && "bg-yellow-500 text-gray-900 border-transparent"
-                    )}
-                  >
-                    {statusText}
-                  </Badge>
-                  <span className="text-muted-foreground flex items-center">
-                    {section.completionCriterion}
-                  </span>
-                  <span className="text-muted-foreground flex items-center">
-                    {section.files.length} 个文件
-                  </span>
+          <Card key={section.id} className="overflow-hidden">
+            <AccordionItem
+              value={section.id.toString()}
+              className="border-none"
+            >
+              <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
+                    {section.title}
+                  </h3>
+                  <div className="flex gap-4 flex-wrap text-[13px]">
+                    <Badge
+                      variant={statusVariant}
+                      className={cn(
+                        section.isClosed && "bg-muted-foreground text-white border-transparent",
+                        !section.isStarted && !section.isClosed && "bg-yellow-500 text-gray-900 border-transparent"
+                      )}
+                    >
+                      {statusText}
+                    </Badge>
+                    <span className="text-muted-foreground flex items-center">
+                      {section.completionCriterion}
+                    </span>
+                    <span className="text-muted-foreground flex items-center">
+                      {section.files.length} 个文件
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-5 pb-5 pl-14">
-              <CoursewareContent section={section} />
-            </AccordionContent>
-          </AccordionItem>
+              </AccordionTrigger>
+              <AccordionContent className="px-5 pb-5 pl-14">
+                <CoursewareContent section={section} />
+              </AccordionContent>
+            </AccordionItem>
+          </Card>
         )
       })}
     </Accordion>

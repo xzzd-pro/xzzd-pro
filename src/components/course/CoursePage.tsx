@@ -18,7 +18,7 @@ export function CoursePage({ courses, loading = false, onSearch }: CoursePagePro
         <CardHeader>
           <CardTitle>课程搜索</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           <CourseSearchForm onSearch={onSearch} />
         </CardContent>
       </Card>

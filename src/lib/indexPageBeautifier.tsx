@@ -521,6 +521,7 @@ export async function indexPageBeautifier(): Promise<void> {
   setupHelpModal()
   setupAvatarUpload()
   setupAssistantNavigation()
+  await setupSidebarToggle()
 
   console.log("XZZDPRO: 页面骨架渲染完成，开始异步加载数据...")
 

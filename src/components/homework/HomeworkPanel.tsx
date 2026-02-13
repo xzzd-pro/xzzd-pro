@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -48,23 +49,25 @@ function HomeworkSkeleton() {
   return (
     <div className="flex flex-col gap-4">
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="bg-muted rounded-lg overflow-hidden border-l-4 border-l-border p-6">
-          <div className="flex items-start gap-3">
-            <Skeleton className="w-6 h-6 rounded" />
-            <div className="flex-1">
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <Skeleton className="h-6 w-3/4 max-w-[300px]" />
-                <div className="flex gap-2">
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-16 rounded-full" />
+        <Card key={i} className="overflow-hidden">
+          <CardHeader className="p-6">
+            <div className="flex items-start gap-3">
+              <Skeleton className="w-6 h-6 rounded" />
+              <div className="flex-1">
+                <div className="flex justify-between items-start gap-4 mb-4">
+                  <Skeleton className="h-6 w-3/4 max-w-[300px]" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
+                  </div>
+                </div>
+                <div className="pt-3 border-t border-border">
+                  <Skeleton className="h-4 w-48" />
                 </div>
               </div>
-              <div className="pt-3 border-t border-border">
-                <Skeleton className="h-4 w-48" />
-              </div>
             </div>
-          </div>
-        </div>
+          </CardHeader>
+        </Card>
       ))}
     </div>
   )
@@ -144,62 +147,59 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
   return (
     <Accordion type="multiple" className="w-full space-y-4">
       {homeworks.map(homework => (
-        <AccordionItem
-          key={homework.id}
-          value={homework.id.toString()}
-          className={cn(
-            "bg-muted rounded-lg overflow-hidden border-l-4 shadow-sm transition-all duration-200",
-            "hover:translate-x-1 hover:shadow-md",
-            homework.isClosed ? "border-l-muted-foreground opacity-85" : "border-l-primary"
-          )}
-        >
-          <AccordionTrigger className="flex items-start gap-3 p-6 hover:bg-border/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <h3 className="flex-1 min-w-0">
-                  <a
-                    href={homework.link}
-                    className="text-xl font-semibold text-foreground hover:text-primary transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {homework.title}
-                  </a>
-                </h3>
-                <div className="flex gap-2 flex-shrink-0">
-                  <Badge variant={homework.isClosed ? "secondary" : "default"}>
-                    {homework.isClosed ? '已结束' : '进行中'}
-                  </Badge>
-                  <Badge
-                    variant={homework.submitted ? "default" : "outline"}
-                    className={cn(!homework.submitted && "bg-yellow-500 text-gray-900 border-transparent")}
-                  >
-                    {homework.submitted ? '已提交' : '未提交'}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex gap-6 flex-wrap pt-3 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">截止时间:</span>
-                  <span className={cn(
-                    "text-[15px] font-semibold",
-                    !homework.isClosed && "text-destructive animate-pulse"
-                  )}>
-                    {formatDeadline(homework.deadline, homework.isClosed)}
-                  </span>
-                </div>
-                {homework.scorePublished && homework.submitted && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">成绩:</span>
-                    <span className="text-lg font-bold text-primary">{homework.score}</span>
+        <Card key={homework.id} className="overflow-hidden transition-all duration-200 hover:shadow-md">
+          <AccordionItem
+            value={homework.id.toString()}
+            className="border-none"
+          >
+            <AccordionTrigger className="flex items-start gap-3 p-6 hover:bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+              <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-start gap-4 mb-4">
+                  <h3 className="flex-1 min-w-0">
+                    <a
+                      href={homework.link}
+                      className="text-xl font-semibold text-foreground hover:text-primary transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {homework.title}
+                    </a>
+                  </h3>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Badge variant={homework.isClosed ? "secondary" : "default"}>
+                      {homework.isClosed ? '已结束' : '进行中'}
+                    </Badge>
+                    <Badge
+                      variant={homework.submitted ? "default" : "outline"}
+                      className={cn(!homework.submitted && "bg-yellow-500 text-gray-900 border-transparent")}
+                    >
+                      {homework.submitted ? '已提交' : '未提交'}
+                    </Badge>
                   </div>
-                )}
+                </div>
+                <div className="flex gap-6 flex-wrap pt-3 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">截止时间:</span>
+                    <span className={cn(
+                      "text-[15px] font-semibold",
+                      !homework.isClosed && "text-destructive animate-pulse"
+                    )}>
+                      {formatDeadline(homework.deadline, homework.isClosed)}
+                    </span>
+                  </div>
+                  {homework.scorePublished && homework.submitted && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">成绩:</span>
+                      <span className="text-lg font-bold text-primary">{homework.score}</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6 pl-[60px]">
-            <HomeworkContent homework={homework} userId={userId!} />
-          </AccordionContent>
-        </AccordionItem>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6 pl-[60px]">
+              <HomeworkContent homework={homework} userId={userId!} />
+            </AccordionContent>
+          </AccordionItem>
+        </Card>
       ))}
     </Accordion>
   )
