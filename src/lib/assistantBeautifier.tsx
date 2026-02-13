@@ -1,10 +1,13 @@
-import { renderAssistantPage, renderCourseList, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
-import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, clearChatHistory, createChatMessage } from '../assistant/storage'
+import { renderAssistantPage, renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
+import { hydrateFlashcardBubbles } from '../assistant/components/flashcardRenderer'
+import { loadSettings, saveSettings, loadChatHistory, saveChatHistory, createChatMessage } from '../assistant/storage'
 import { fetchAllCourses, buildCourseContext } from '../assistant/services/courseDataService'
 import { preloadCourseContext } from '../assistant/services/contextBuilder'
 import { streamChat, formatErrorMessage } from '../assistant/services/chatService'
-import { PROVIDER_DEFAULTS, PROVIDER_CONFIGS } from '../assistant/config'
-import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment } from '../assistant/types'
+import { PROVIDER_DEFAULTS } from '../assistant/config'
+import type { AssistantSettings, ChatMessage, CourseInfo, Provider, ProviderConfig, Attachment, MaterialFile, CourseContext } from '../assistant/types'
+import { FLASHCARD_GENERATION_PROMPT } from '../assistant/types/flashcard'
+import type { FlashcardData } from '../assistant/types/flashcard'
 import { convertPdfToImages } from '../assistant/services/fileService'
 import { Storage } from "@plasmohq/storage"
 
@@ -17,15 +20,33 @@ let isGenerating: boolean = false
 let courses: CourseInfo[] = []
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
-let isCoursewareLoaded = false // New state for manual loading
+const selectedCourseMaterials = new Map<string, { file: MaterialFile; materialTitle: string }>()
 let overlayHost: HTMLElement | null = null
 let overlayElement: HTMLElement | null = null
+let isFlashcardMode = false
+let isFlashcardSplitView = false
+let isSplitTransitioning = false
+let externalSplitToggleHandler: ((event: Event) => void) | null = null
+let externalClearHistoryHandler: ((event: Event) => void) | null = null
+let externalMaterialToggleHandler: ((event: Event) => void) | null = null
 
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
 }
 
 export function closeAssistant(): void {
+  if (externalSplitToggleHandler) {
+    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+    externalSplitToggleHandler = null
+  }
+  if (externalClearHistoryHandler) {
+    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+    externalClearHistoryHandler = null
+  }
+  if (externalMaterialToggleHandler) {
+    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+    externalMaterialToggleHandler = null
+  }
   if (overlayHost && document.body.contains(overlayHost)) {
     overlayHost.remove()
     overlayHost = null
@@ -54,7 +75,7 @@ export async function createAssistantHost(): Promise<HTMLElement> {
   overlayElement.className = 'assistant-fullpage'
   overlayElement.innerHTML = `
     <div class="assistant-content-container">
-      ${renderAssistantPage('', true)}
+      ${renderAssistantPage('')}
     </div>
   `
 
@@ -99,6 +120,9 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-user-bubble-bg: #e8eaed;
       --xzzd-input-bg: #f0f4f9;
       --xzzd-input-hover: #e2e6ea;
+      --xzzd-font-base: "LXGW WenKai Screen", "Microsoft YaHei", "PingFang SC", sans-serif;
+      --xzzd-font-emoji: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+      --math-filter: none;
     }
 
     :host([data-theme='dark']) {
@@ -111,11 +135,12 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       --xzzd-primary: #58a6ff;
       --xzzd-sidebar-bg: #1e1e1e;
       --xzzd-user-bubble-bg: #2f2f2f;
-      --xzzd-input-bg: #1e1f20;
+      --xzzd-input-bg: #26282c;
       --xzzd-input-hover: #333435;
       --xzzd-scrollbar-track: #2f2f2f;
       --xzzd-scrollbar-thumb: #555;
       --xzzd-scrollbar-thumb-hover: #777;
+      --math-filter: invert(1) hue-rotate(180deg);
     }
 
     /* Scrollbar Styling */
@@ -144,7 +169,8 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       display: flex;
       flex: 1;
       height: 100%;
-      font-family: "LXGW WenKai Screen", sans-serif;
+      font-family: var(--xzzd-font-base), var(--xzzd-font-emoji);
+      font-variant-emoji: emoji;
       overflow: hidden;
       background-color: var(--xzzd-bg-color);
     }
@@ -152,6 +178,14 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     /* Ensure all form elements inherit the custom font */
     button, input, select, textarea, label {
       font-family: inherit;
+    }
+    .empty-state-icon,
+    .flashcard-topic,
+    .flashcard-btn,
+    .flashcard-stat,
+    .status-toast span {
+      font-family: var(--xzzd-font-emoji), var(--xzzd-font-base) !important;
+      font-variant-emoji: emoji;
     }
     
     .assistant-fullpage {
@@ -360,6 +394,104 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       background-color: var(--xzzd-bg-color);
       overflow: hidden;
     }
+    .assistant-main-panels {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 0fr 1fr;
+      gap: 0;
+      padding: 16px;
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1), gap 0.3s ease;
+      position: relative;
+    }
+    .chat-panel,
+    .flashcard-panel {
+      min-height: 0;
+      background-color: var(--xzzd-card-bg);
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .chat-panel {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .flashcard-panel {
+      display: flex;
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(-100%);
+      pointer-events: none;
+      border-color: transparent;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease, border-color 0.2s ease;
+    }
+    .chat-area.split-open .assistant-main-panels {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .chat-area.split-collapsing .assistant-main-panels {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .chat-area.split-open .chat-panel {
+      min-width: 0;
+    }
+    .chat-area.split-open .flashcard-panel {
+      min-width: 0;
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      border-color: var(--xzzd-card-border);
+    }
+    .chat-area.split-collapsing .flashcard-panel {
+      min-width: 0;
+      opacity: 0;
+      transform: translateX(-100%);
+      pointer-events: none;
+      border-color: var(--xzzd-card-border);
+    }
+    .assistant-main-panels::after {
+      content: '';
+      position: absolute;
+      top: 16px;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      background: var(--xzzd-card-border);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .chat-area.split-open .assistant-main-panels::after {
+      opacity: 1;
+    }
+    .chat-area.split-collapsing .assistant-main-panels::after {
+      opacity: 1;
+    }
+    .flashcard-messages-container {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .chat-area.split-open .flashcard-messages-container .message.assistant {
+      flex: 1;
+      min-height: 0;
+    }
+    .chat-area.split-open .flashcard-messages-container .message.assistant .message-body {
+      flex: 1;
+      min-height: 0;
+    }
+    .chat-area.split-open .flashcard-messages-container .flashcard-session {
+      height: 100%;
+    }
     /* Header Groups */
     .header-left-group, .header-right-group {
       display: flex;
@@ -383,6 +515,28 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       padding: 0;
     }
     .drawer-toggle-btn:hover {
+      background-color: var(--xzzd-bg-color);
+      color: var(--xzzd-text-primary);
+    }
+    .split-toggle-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--xzzd-text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+      padding: 0;
+    }
+    .split-toggle-btn:hover {
+      background-color: var(--xzzd-bg-color);
+      color: var(--xzzd-text-primary);
+    }
+    .split-toggle-btn.active {
       background-color: var(--xzzd-bg-color);
       color: var(--xzzd-text-primary);
     }
@@ -413,11 +567,21 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     .messages-container {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 24px;
       display: flex;
       flex-direction: column;
       gap: 24px;
+    }
+    .chat-course-subtitle {
+      flex-shrink: 0;
+      padding: 10px 24px 8px 24px;
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      border-bottom: 1px solid var(--xzzd-card-border);
+      background: var(--xzzd-card-bg);
+      text-align: left;
     }
     .message {
       display: flex;
@@ -498,7 +662,8 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
         flex-direction: column;
         gap: 8px;
         max-width: 100%;
-        align-items: flex-start;
+        width: 100%;
+        align-items: stretch;
     }
     .message.user .message-body {
         align-items: flex-end;
@@ -506,14 +671,20 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
 
     .message-text {
         background-color: var(--xzzd-card-bg);
-        padding: 10px 16px;
+        padding: 8px 16px;
         border-radius: 12px;
-        line-height: 1.6;
+        line-height: 1.5;
         color: var(--xzzd-text-primary);
         font-size: 15px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         position: relative; /* Anchor for Copy Button */
         z-index: 1; /* Establish stacking context */
+    }
+    .message-text p {
+        margin: 0;
+    }
+    .message-text p + p {
+        margin-top: 8px;
     }
     .message.user .message-text {
         background-color: var(--xzzd-user-bubble-bg);
@@ -693,8 +864,7 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     .input-area {
       padding: 0 24px 24px 24px;
-      /* Background matches chat area to blend in */
-      background-color: var(--xzzd-bg-color); 
+      background-color: var(--xzzd-card-bg);
       border-top: none; 
     }
     .modern-input-container {
@@ -702,18 +872,20 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       width: 100%;
       margin: 0;
       background-color: var(--xzzd-input-bg, #f0f4f9);
+      border: 1px solid var(--xzzd-card-border);
       border-radius: 28px;
       padding: 12px;
       display: flex;
       flex-direction: column;
       position: relative;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, border-color 0.2s;
     }
     :host([data-theme='light']) .modern-input-container {
         background-color: #e1e5eb; /* Slightly darker than f0f4f9 for better visibility */
     }
     .modern-input-container:focus-within {
-        background-color: var(--xzzd-input-bg, #f0f4f9); 
+      background-color: var(--xzzd-input-bg, #f0f4f9);
+      border-color: var(--xzzd-primary);
     }
     
     .modern-textarea {
@@ -881,16 +1053,37 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       width: 24px;
       height: 24px;
     }
+    .flashcard-mode-toggle-btn {
+      width: auto;
+      min-width: 92px;
+      height: 40px;
+      border-radius: 20px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    #flashcard-mode-btn-text {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
+    .settings-inline-btn svg {
+      width: 22px;
+      height: 22px;
+    }
     .modern-icon-btn:disabled {
         opacity: 0.3;
         cursor: not-allowed;
     }
     
     .plus-btn {
-        background-color: rgba(0,0,0,0.05);
+      background-color: transparent;
     }
-    :host([data-theme='dark']) .plus-btn {
-        background-color: #2f2f2f; 
+    .plus-btn svg {
+      width: 22px;
+      height: 22px;
     }
 
     .plus-menu-container {
@@ -991,6 +1184,11 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       padding: 40px;
     }
     .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+    .empty-state-icon svg {
+      width: 48px;
+      height: 48px;
+      display: inline-block;
+    }
     .form-group { margin-bottom: 20px; }
     .form-group label {
       display: block;
@@ -1075,6 +1273,12 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       max-width: 80%;
       pointer-events: none;
     }
+    .status-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
     .status-toast.show {
       opacity: 1;
       visibility: visible;
@@ -1113,7 +1317,392 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       0%, 80%, 100% { transform: scale(0); }
       40% { transform: scale(1); }
     }
-  `
+
+    /* Flashcard mode toggle */
+    #flashcard-mode-btn.active {
+      background: var(--xzzd-primary);
+      color: #fff;
+    }
+    #flashcard-send-btn {
+      background: linear-gradient(135deg, #f59e0b, #f97316);
+      color: #fff;
+    }
+    #flashcard-send-btn svg { fill: currentColor; }
+    #flashcard-send-btn[disabled] { opacity: 0.6; }
+
+    /* Flashcard bubble */
+    .flashcard-session {
+      background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.05));
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+      align-self: stretch;
+    }
+    .flashcard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+    .flashcard-topic {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      color: var(--xzzd-text-primary);
+      font-size: 16px;
+    }
+    .flashcard-progress {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      align-items: center;
+    }
+    .flashcard-pack-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .flashcard-pack-btn {
+      border: 1px solid var(--xzzd-card-border);
+      background: var(--xzzd-card-bg);
+      color: var(--xzzd-text-secondary);
+      border-radius: 10px;
+      height: 34px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .flashcard-pack-btn:hover {
+      background: var(--xzzd-input-bg);
+      color: var(--xzzd-text-primary);
+    }
+    .flashcard-pack-btn.active {
+      background: var(--xzzd-primary);
+      color: #fff;
+      border-color: var(--xzzd-primary);
+    }
+    .flashcard-pack-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .flashcard-pack-count {
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.95;
+    }
+    .flashcard-pack-background-hint {
+      min-height: 260px;
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-align: center;
+      color: var(--xzzd-text-secondary);
+      background: transparent;
+    }
+    .flashcard-pack-background-hint.hidden {
+      display: none;
+    }
+    .flashcard-pack-background-icon {
+      width: 36px;
+      height: 36px;
+      opacity: 0.7;
+      color: var(--xzzd-text-secondary);
+    }
+    .flashcard-pack-background-icon .icon-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .flashcard-pack-background-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--xzzd-text-primary);
+    }
+    .flashcard-pack-background-subtitle {
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      line-height: 1.5;
+      max-width: 70%;
+    }
+    .flashcard-session-body {
+      display: contents;
+    }
+    .flashcard-session.archived-only {
+      min-height: 360px;
+      padding: 12px;
+      justify-content: flex-start;
+    }
+    .flashcard-session.archived-only .flashcard-pack-background-hint {
+      flex: 1;
+    }
+    .flashcard-session.archived-only .flashcard-session-body {
+      display: none;
+    }
+    .flashcard-stage {
+      perspective: 1200px;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 400px;
+    }
+    .flashcard-card {
+      position: relative;
+      height: 100%;
+      aspect-ratio: 3/4;
+      max-width: calc(100% - 32px);
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+      cursor: pointer;
+    }
+    .flashcard-face-tools {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      display: inline-flex;
+      gap: 6px;
+    }
+    .flashcard-tool-btn {
+      height: auto;
+      min-width: 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(245, 158, 11, 0.34);
+      background: rgba(245, 158, 11, 0.16);
+      color: #92400e;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    .flashcard-tool-btn:hover {
+      background: rgba(245, 158, 11, 0.24);
+      color: #78350f;
+    }
+    .flashcard-tool-btn.is-favorited {
+      border-color: rgba(245, 158, 11, 0.48);
+      background: rgba(245, 158, 11, 0.28);
+      color: #78350f;
+    }
+    .flashcard-tool-btn.danger {
+      color: #b91c1c;
+      border-color: rgba(239, 68, 68, 0.38);
+      background: rgba(239, 68, 68, 0.14);
+    }
+    .flashcard-tool-btn.danger:hover {
+      background: rgba(239, 68, 68, 0.22);
+      color: #991b1b;
+    }
+    .flashcard-tool-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .flashcard-card.flipped { transform: rotateY(180deg); }
+    .flashcard-face {
+      position: absolute;
+      inset: 0;
+      background: var(--xzzd-card-bg);
+      border: 1px solid var(--xzzd-card-border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.06);
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .flashcard-front { justify-content: center; align-items: center; text-align: center; }
+    .flashcard-back { transform: rotateY(180deg); justify-content: space-between; align-items: stretch; text-align: center; }
+    .flashcard-back-content {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-align: center;
+    }
+    .flashcard-type-tag {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: inline-flex;
+      align-items: center;
+      box-sizing: border-box;
+      height: 26px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(99, 102, 241, 0.12);
+      color: #4f46e5;
+      font-weight: 700;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .flashcard-face-tools .flashcard-tool-btn {
+      height: 26px;
+      padding: 0 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .flashcard-question { font-size: 18px; font-weight: 700; color: var(--xzzd-text-primary); }
+    .flashcard-answer { font-size: 16px; color: var(--xzzd-text-primary); line-height: 1.6; text-align: center; }
+    .flashcard-cloze-extra { font-size: 13px; color: var(--xzzd-text-secondary); line-height: 1.6; }
+    .flashcard-math-block { margin: 8px 0; text-align: center; }
+    .flashcard-math-block img { max-width: 100%; }
+    .flashcard-math-inline { vertical-align: middle; margin: 0 2px; max-width: 100%; }
+    .flashcard-hint { color: var(--xzzd-text-secondary); font-size: 14px; }
+    .flashcard-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .flashcard-subtle-hint { color: var(--xzzd-text-secondary); font-size: 12px; }
+    .flashcard-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      margin-top: auto;
+    }
+    .flashcard-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .flashcard-actions .flashcard-btn {
+      width: 100%;
+      padding: 10px 0;
+    }
+    .flashcard-btn:active { transform: translateY(1px) scale(0.98); }
+    .flashcard-btn.danger { background: #fee2e2; color: #b91c1c; }
+    .flashcard-btn.warning { background: #fef9c3; color: #92400e; }
+    .flashcard-btn.success { background: #dcfce7; color: #166534; }
+    .flashcard-btn.primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+    .flashcard-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.45);
+      border-radius: 14px;
+      backdrop-filter: blur(3px);
+    }
+    .flashcard-overlay.hidden { display: none; }
+    .flashcard-overlay-card {
+      background: var(--xzzd-card-bg);
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+      text-align: center;
+      min-width: 240px;
+    }
+    .flashcard-overlay-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--xzzd-text-primary); }
+    .flashcard-overlay-subtitle { color: var(--xzzd-text-secondary); margin-bottom: 12px; }
+    .flashcard-overlay-stats { display: flex; justify-content: center; gap: 12px; margin-bottom: 12px; }
+    .flashcard-overlay-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .flashcard-overlay-note {
+      font-size: 12px;
+      color: var(--xzzd-text-secondary);
+      line-height: 1.5;
+    }
+    .flashcard-stat { padding: 8px 12px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+    .flashcard-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .flashcard-stat.red { background: #fee2e2; color: #b91c1c; }
+    .flashcard-stat.yellow { background: #fef9c3; color: #92400e; }
+    .flashcard-stat.green { background: #dcfce7; color: #166534; }
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+    .flashcard-topic .icon-svg {
+      width: 18px;
+      height: 18px;
+    }
+    .cloze-blank { border-bottom: 2px dotted var(--xzzd-text-secondary); padding: 0 4px; }
+    .cloze-highlight { background: #fef08a; padding: 0 4px; border-radius: 4px; }
+    .flashcard-tf-result.ok { color: #166534; }
+    .flashcard-tf-result.error { color: #b91c1c; }
+    .flashcard-tip-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--xzzd-card-bg);
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--xzzd-card-border);
+      border-left: 4px solid #6366f1;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .flashcard-tip-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #6366f1;
+    }
+    .flashcard-tip-content {
+      flex: 1;
+    }
+    .flashcard-tip-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--xzzd-text-primary);
+      margin-bottom: 4px;
+    }
+    .flashcard-tip-subtitle {
+      font-size: 13px;
+      color: var(--xzzd-text-secondary);
+      margin-bottom: 8px;
+    }
+    .flashcard-tip-message {
+      font-size: 13px;
+      color: #6366f1;
+      font-weight: 500;
+    }
+  `;
   root.appendChild(style)
 }
 
@@ -1192,15 +1781,6 @@ export async function openAssistant(): Promise<void> {
 
 function handleEscClose(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    const drawer = overlayElement?.querySelector('#course-drawer')
-    const overlay = overlayElement?.querySelector('#drawer-overlay')
-
-    if (drawer?.classList.contains('open')) {
-      drawer.classList.remove('open')
-      overlay?.classList.remove('active')
-      return
-    }
-
     if (isAssistantOpen()) {
       closeAssistant()
       document.removeEventListener('keydown', handleEscClose)
@@ -1208,46 +1788,101 @@ function handleEscClose(e: KeyboardEvent) {
   }
 }
 
+function getInitialCourseIdFromUrl(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('courseId')
+  } catch (error) {
+    console.error('XZZDPRO: Failed to parse courseId from URL', error)
+    return null
+  }
+}
+
+function syncSidebarCourseActive(courseId: string): void {
+  document.querySelectorAll('.course-submenu-item').forEach(el => {
+    if (!(el instanceof HTMLElement)) return
+    if (el.getAttribute('data-course-id') === courseId) {
+      el.classList.add('active')
+    } else {
+      el.classList.remove('active')
+    }
+  })
+}
+
+function bindSidebarCourseSelection(): void {
+  const handleCourseSelect = (event: Event) => {
+    const customEvent = event as CustomEvent<{ courseId?: string }>
+    const courseId = customEvent.detail?.courseId
+    if (!courseId) return
+    switchCourse(courseId)
+  }
+
+  window.removeEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
+  window.addEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
+}
+
+function filterContextBySelectedMaterials(context: CourseContext): CourseContext {
+  if (selectedCourseMaterials.size === 0) {
+    return {
+      ...context,
+      materials: []
+    }
+  }
+
+  const selectedByUrl = new Map<string, MaterialFile>()
+  selectedCourseMaterials.forEach(({ file }, downloadUrl) => {
+    selectedByUrl.set(downloadUrl, file)
+  })
+
+  const filteredMaterials = context.materials
+    .map((material) => {
+      const filteredFiles = (material.files || []).filter(file => selectedByUrl.has(file.downloadUrl))
+      return {
+        ...material,
+        files: filteredFiles
+      }
+    })
+    .filter(material => (material.files || []).length > 0)
+
+  return {
+    ...context,
+    materials: filteredMaterials
+  }
+}
+
+async function preloadSelectedMaterial(file: MaterialFile, materialTitle: string): Promise<void> {
+  if (!currentCourseId) return
+
+  const context: CourseContext = {
+    courseId: currentCourseId,
+    courseName: currentCourseName || `Course ${currentCourseId}`,
+    materials: [
+      {
+        id: file.id,
+        title: materialTitle,
+        files: [file]
+      }
+    ],
+    homeworks: []
+  }
+
+  await preloadCourseContext(context, (msg, type) => showStatus(msg, type || 'info'))
+}
+
 async function initAssistant() {
   try {
     currentSettings = await loadSettings()
     courses = await fetchAllCourses()
 
-    // Setup Drawer Logic
-    const drawer = overlayElement?.querySelector('#course-drawer')
-    const overlay = overlayElement?.querySelector('#drawer-overlay')
-    const toggleBtn = overlayElement?.querySelector('#drawer-toggle-btn')
-
-    function closeDrawer() {
-      drawer?.classList.remove('open')
-      overlay?.classList.remove('active')
-    }
-
-    function openDrawer() {
-      drawer?.classList.add('open')
-      overlay?.classList.add('active')
-    }
-
-    toggleBtn?.addEventListener('click', openDrawer)
-    overlay?.addEventListener('click', closeDrawer)
-
-    const courseListEl = overlayElement?.querySelector('#course-list')
-    if (courseListEl) {
-      courseListEl.innerHTML = renderCourseList(courses)
-
-      courseListEl.querySelectorAll('.course-item').forEach(el => {
-        el.addEventListener('click', () => {
-          const id = el.getAttribute('data-id')
-          if (id) {
-            switchCourse(id)
-            closeDrawer()
-          }
-        })
-      })
-    }
+    bindSidebarCourseSelection()
 
     setupSettingsHandlers()
     setupChatHandlers()
+
+    const initialCourseId = getInitialCourseIdFromUrl()
+    if (initialCourseId) {
+      await switchCourse(initialCourseId)
+    }
 
   } catch (error) {
     console.error('XZZDPRO: Failed to init assistant', error)
@@ -1261,33 +1896,30 @@ async function switchCourse(courseId: string) {
   const course = courses.find(c => String(c.id) === courseId)
   if (!course) return
 
+  try {
+    const url = new URL(window.location.href)
+    url.searchParams.set('courseId', courseId)
+    window.history.replaceState({}, '', url.toString())
+  } catch (error) {
+    console.error('XZZDPRO: Failed to sync courseId to URL', error)
+  }
+
   currentCourseName = course.displayName
-  isCoursewareLoaded = false // Reset loading state
-
-  // Update UI active state
-  overlayElement?.querySelectorAll('.course-item').forEach(el => {
-    if (el.getAttribute('data-id') === courseId) {
-      el.classList.add('active')
-    } else {
-      el.classList.remove('active')
-    }
-  })
-
-  // Update Header
-  const headerEl = overlayElement?.querySelector('#current-course-name')
-  if (headerEl) headerEl.textContent = currentCourseName
-
-  // Show clear button
-  const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLElement
-  if (clearBtn) clearBtn.style.display = ''
+  selectedCourseMaterials.clear()
+  syncSidebarCourseActive(courseId)
+  window.dispatchEvent(new CustomEvent('xzzd:assistant-course-changed', {
+    detail: { courseId }
+  }))
 
   // Enable inputs
   const chatInput = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
   if (chatInput) chatInput.disabled = false
   if (sendBtn) sendBtn.disabled = false
   if (attachBtn) attachBtn.disabled = false
+  if (flashcardSendBtn) flashcardSendBtn.disabled = false
 
   // Load history
   const session = await loadChatHistory(courseId)
@@ -1317,8 +1949,12 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
   // Icon handling
   let icon = ''
   if (type === 'info') icon = '<div class="toast-spinner"></div>'
-  if (type === 'success') icon = '✅'
-  if (type === 'error') icon = '❌'
+  if (type === 'success') {
+    icon = '<svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.55 18.2 4.8 13.45l1.4-1.4 3.35 3.35 8.25-8.25 1.4 1.4-9.65 9.7z"/></svg>'
+  }
+  if (type === 'error') {
+    icon = '<svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.4 19 5 17.6 10.6 12 5 6.4 6.4 5l5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19z"/></svg>'
+  }
 
   toast.innerHTML = `${icon}<span>${message}</span>`
   toast.className = `status-toast show ${type}`
@@ -1335,11 +1971,27 @@ function showStatus(message: string, type: 'success' | 'error' | 'info' = 'info'
 }
 
 function renderMessages() {
-  const container = overlayElement?.querySelector('#messages-container')
-  if (!container) return
+  const chatContainer = overlayElement?.querySelector('#messages-container') as HTMLElement | null
+  const flashcardContainer = overlayElement?.querySelector('#flashcard-messages-container') as HTMLElement | null
+  const courseSubtitleEl = overlayElement?.querySelector('#chat-course-subtitle') as HTMLElement | null
+  if (!chatContainer) return
 
-  if (messages.length === 0) {
-    container.innerHTML = `
+  const chatMessages = isFlashcardSplitView ? messages.filter(msg => !msg.flashcards) : messages
+  const flashcardMessages = messages.filter(msg => !!msg.flashcards)
+  const latestFlashcardMessage = flashcardMessages.length > 0 ? flashcardMessages[flashcardMessages.length - 1] : null
+
+  if (courseSubtitleEl) {
+    if (currentCourseName) {
+      courseSubtitleEl.textContent = currentCourseName
+      courseSubtitleEl.style.display = 'block'
+    } else {
+      courseSubtitleEl.textContent = ''
+      courseSubtitleEl.style.display = 'none'
+    }
+  }
+
+  if (chatMessages.length === 0) {
+    chatContainer.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">
           <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48">
@@ -1348,13 +2000,35 @@ function renderMessages() {
           </svg>
         </div>
         <h3>${currentCourseName || '请选择课程'}</h3>
-        <p>基于课程资料回答您的问题</p>
+        <p>基于课程资料回答你的问题</p>
       </div>
     `
-    return
+  } else {
+    chatContainer.innerHTML = chatMessages.map(msg => renderChatMessage(msg, isFlashcardSplitView)).join('')
   }
 
-  container.innerHTML = messages.map(msg => renderChatMessage(msg)).join('')
+  if (flashcardContainer) {
+    if (!isFlashcardSplitView) {
+      flashcardContainer.innerHTML = ''
+    } else if (flashcardMessages.length === 0) {
+      flashcardContainer.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
+              <path d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm2 0v12h10V5H6zm13 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1h2v1h9v-9h-1V8z"/>
+            </svg>
+          </div>
+          <h3>闪卡区域</h3>
+          <p>生成闪卡后将在这里展示</p>
+        </div>
+      `
+    } else if (latestFlashcardMessage) {
+      flashcardContainer.innerHTML = renderChatMessage(latestFlashcardMessage, true)
+      hydrateFlashcardBubbles(flashcardContainer)
+    }
+  }
+
+  hydrateFlashcardBubbles(chatContainer)
   scrollToBottom()
 }
 
@@ -1365,117 +2039,135 @@ function scrollToBottom() {
   }
 }
 
-function setupSettingsHandlers() {
-  const settingsBtn = overlayElement?.querySelector('.settings-btn') as HTMLButtonElement
-  const closeSettingsBtn = overlayElement?.querySelector('#close-settings-btn') as HTMLButtonElement
-  const settingsPanel = overlayElement?.querySelector('#settings-panel') as HTMLElement
-  const saveBtn = overlayElement?.querySelector('#save-settings-btn') as HTMLButtonElement
-
-  const providerSelect = overlayElement?.querySelector('#provider-select') as HTMLSelectElement
-  const apiKeyInput = overlayElement?.querySelector('#api-key-input') as HTMLInputElement
-  const modelInput = overlayElement?.querySelector('#model-input') as HTMLInputElement
-  const baseUrlInput = overlayElement?.querySelector('#base-url-input') as HTMLInputElement
-
-  function openSettings() {
-    if (settingsPanel) {
-      settingsPanel.classList.add('open')
-      // Populate fields
-      if (currentSettings) {
-        const provider = currentSettings.provider
-        const config = currentSettings.configs[provider]
-
-        if (providerSelect) providerSelect.value = provider
-        if (apiKeyInput) apiKeyInput.value = config?.apiKey || ''
-        if (modelInput) modelInput.value = config?.model || ''
-        if (baseUrlInput) baseUrlInput.value = config?.baseUrl || ''
-      }
-    }
-  }
-
-  function closeSettings() {
-    if (settingsPanel) settingsPanel.classList.remove('open')
-  }
-
-  settingsBtn?.addEventListener('click', openSettings)
-  closeSettingsBtn?.addEventListener('click', closeSettings)
-
-  // Auto-fill defaults or load saved config when provider changes
-  providerSelect?.addEventListener('change', () => {
-    const provider = providerSelect.value as Provider
-    const savedConfig = currentSettings?.configs[provider]
-    const defaults = PROVIDER_CONFIGS[provider]
-
-    // Priority: Saved Config > Defaults
-    if (savedConfig) {
-      if (apiKeyInput) apiKeyInput.value = savedConfig.apiKey || ''
-      if (modelInput) modelInput.value = savedConfig.model || ''
-      if (baseUrlInput) baseUrlInput.value = savedConfig.baseUrl || ''
-    } else if (defaults) {
-      if (apiKeyInput) apiKeyInput.value = '' // Don't auto-fill API key from defaults usually, unless it's empty/public? actually defaults don't have sensitive keys.
-      if (modelInput) modelInput.value = defaults.defaultModel
-      if (baseUrlInput) baseUrlInput.value = defaults.defaultBaseUrl || ''
-    }
-  })
-
-  saveBtn?.addEventListener('click', async () => {
-    const provider = (providerSelect?.value as Provider) || 'openai'
-
-    // Construct new settings object preserving other providers
-    const newSettings: AssistantSettings = {
-      provider,
-      configs: {
-        ...currentSettings?.configs,
-        [provider]: {
-          apiKey: apiKeyInput?.value.trim(),
-          model: modelInput?.value.trim(),
-          baseUrl: baseUrlInput?.value.trim()
-        }
-      }
-    }
-
-    await saveSettings(newSettings)
-    currentSettings = newSettings
-    showStatus('设置已保存', 'success')
-    closeSettings()
-
-    // Refresh chat if needed (or just let next message use new settings)
-  })
-}
-
 function setupChatHandlers() {
   console.log('XZZDPRO: setupChatHandlers called')
   const input = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
-  const clearBtn = overlayElement?.querySelector('#clear-history-btn') as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
+  const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
+  const chatAreaEl = overlayElement?.querySelector('.chat-area') as HTMLElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
+  const sidebarSplitToggleBtn = document.getElementById('nav-assistant-flashcard-toggle') as HTMLButtonElement | null
 
-  // Clear History
-  clearBtn?.addEventListener('click', async () => {
-    if (confirm('确定要清空当前课程的聊天记录吗？')) {
+  const updateSplitUI = () => {
+    if (!chatAreaEl) return
+
+    if (isFlashcardSplitView) {
+      chatAreaEl.classList.add('split-open')
+      chatAreaEl.classList.remove('split-collapsing')
+      sidebarSplitToggleBtn?.classList.add('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '收起闪卡面板'
+    } else {
+      chatAreaEl.classList.remove('split-open')
+      chatAreaEl.classList.remove('split-collapsing')
+      sidebarSplitToggleBtn?.classList.remove('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+    }
+  }
+
+  const toggleSplitView = () => {
+    if (!chatAreaEl || isSplitTransitioning) return
+
+    if (isFlashcardSplitView) {
+      isSplitTransitioning = true
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = true
+      sidebarSplitToggleBtn?.classList.remove('active')
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+
+      chatAreaEl.classList.add('split-collapsing')
+
+      window.setTimeout(() => {
+        isFlashcardSplitView = false
+        chatAreaEl.classList.remove('split-open')
+        chatAreaEl.classList.remove('split-collapsing')
+        isSplitTransitioning = false
+        if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = false
+        renderMessages()
+      }, 300)
+      return
+    }
+
+    isFlashcardSplitView = true
+    updateSplitUI()
+    renderMessages()
+  }
+
+  const clearCurrentHistory = async () => {
+    if (!currentCourseId) return
+    if (confirm('确认要清空当前课程的聊天记录吗？')) {
       messages = []
       renderMessages()
-      if (currentCourseId) {
-        await saveChatHistory(currentCourseId, {
-          courseId: currentCourseId,
-          courseName: currentCourseName,
-          messages: [],
-          updatedAt: Date.now()
-        })
-      }
+      await saveChatHistory(currentCourseId, {
+        courseId: currentCourseId,
+        courseName: currentCourseName,
+        messages: [],
+        updatedAt: Date.now()
+      })
     }
-  })
+  }
+
+  const updateModeUI = () => {
+    if (!input) return
+    const chatPlaceholder = '问问学习助理'
+    const flashcardPlaceholder = '生成闪卡：输入要点或上传课件'
+    const flashcardModeBtnText = overlayElement?.querySelector('#flashcard-mode-btn-text') as HTMLElement | null
+
+    if (isFlashcardMode) {
+      flashcardModeBtn?.classList.add('active')
+      flashcardModeBtn?.setAttribute('title', '当前为闪卡模式，点击切换到聊天模式')
+      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '闪卡模式'
+      if (flashcardSendBtn) {
+        flashcardSendBtn.style.display = ''
+        flashcardSendBtn.disabled = !currentCourseId || isGenerating
+      }
+      if (sendBtn) sendBtn.style.display = 'none'
+      input.placeholder = flashcardPlaceholder
+    } else {
+      flashcardModeBtn?.classList.remove('active')
+      flashcardModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到闪卡模式')
+      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '聊天模式'
+      if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
+      if (sendBtn) {
+        sendBtn.style.display = ''
+        sendBtn.disabled = !currentCourseId || isGenerating
+      }
+      input.placeholder = chatPlaceholder
+    }
+  }
+
+  if (externalSplitToggleHandler) {
+    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+  }
+  externalSplitToggleHandler = () => {
+    toggleSplitView()
+  }
+  window.addEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+
+  if (externalClearHistoryHandler) {
+    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+  }
+  externalClearHistoryHandler = () => {
+    void clearCurrentHistory()
+  }
+  window.addEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
   const previewArea = overlayElement?.querySelector('#file-preview-area') as HTMLElement
   const plusMenu = overlayElement?.querySelector('#plus-menu') as HTMLElement
   const menuUploadBtn = overlayElement?.querySelector('#menu-upload-btn') as HTMLButtonElement
-  const menuReadBtn = overlayElement?.querySelector('#menu-read-courseware-btn') as HTMLButtonElement
 
   console.log('XZZDPRO: Elements found:', {
     input: !!input,
     attachBtn: !!attachBtn,
     plusMenu: !!plusMenu,
-    menuUploadBtn: !!menuUploadBtn,
-    menuReadBtn: !!menuReadBtn
+    menuUploadBtn: !!menuUploadBtn
+  })
+
+  updateModeUI()
+  updateSplitUI()
+
+  flashcardModeBtn?.addEventListener('click', () => {
+    isFlashcardMode = !isFlashcardMode
+    updateModeUI()
   })
 
   // Attach Button (Toggle Menu)
@@ -1504,32 +2196,44 @@ function setupChatHandlers() {
     if (plusMenu) plusMenu.style.display = 'none'
   })
 
-  // Menu Read Courseware Item
-  menuReadBtn?.addEventListener('click', async (e) => {
-    e.stopPropagation()
-    if (plusMenu) plusMenu.style.display = 'none'
+  if (externalMaterialToggleHandler) {
+    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+  }
+  externalMaterialToggleHandler = async (event: Event) => {
+    const customEvent = event as CustomEvent<{
+      courseId?: string
+      checked?: boolean
+      file?: MaterialFile & { materialTitle?: string }
+    }>
+    const courseId = customEvent.detail?.courseId
+    const checked = !!customEvent.detail?.checked
+    const file = customEvent.detail?.file
 
-    if (!currentCourseId) {
-      showStatus('请先选择课程', 'error')
+    if (!courseId || !currentCourseId || courseId !== currentCourseId || !file?.downloadUrl) return
+
+    const materialTitle = file.materialTitle || '课程资料'
+    if (checked) {
+      selectedCourseMaterials.set(file.downloadUrl, {
+        file: {
+          id: file.id,
+          name: file.name,
+          size: file.size,
+          downloadUrl: file.downloadUrl
+        },
+        materialTitle
+      })
+      try {
+        await preloadSelectedMaterial(file, materialTitle)
+      } catch (error) {
+        console.error('Failed to preload selected material:', error)
+        showStatus(`读取失败: ${file.name}`, 'error')
+      }
       return
     }
 
-    if (isCoursewareLoaded) {
-      showStatus('课程资料已加载', 'success')
-      return
-    }
-
-    try {
-      // Temporarily fetch context just for preloading
-      const context = await buildCourseContext(currentCourseId)
-      await preloadCourseContext(context, (msg, type) => showStatus(msg, type || 'info'))
-      isCoursewareLoaded = true
-      showStatus('课程资料阅读完成', 'success')
-    } catch (error) {
-      console.error('Failed to load courseware:', error)
-      showStatus('加载失败: ' + String(error), 'error')
-    }
-  })
+    selectedCourseMaterials.delete(file.downloadUrl)
+  }
+  window.addEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
 
 
   // Close menu when clicking outside
@@ -1708,12 +2412,14 @@ function setupChatHandlers() {
 
           messages = messages.slice(0, index)
           renderMessages()
-          await saveChatHistory(currentCourseId, {
-            courseId: currentCourseId,
-            courseName: currentCourseName,
-            messages,
-            updatedAt: Date.now()
-          })
+          if (currentCourseId) {
+            await saveChatHistory(currentCourseId, {
+              courseId: currentCourseId,
+              courseName: currentCourseName,
+              messages,
+              updatedAt: Date.now()
+            })
+          }
         }
       }
     }, { capture: true })
@@ -1721,70 +2427,198 @@ function setupChatHandlers() {
     console.error('[Assistant Debug] overlayElement not found!')
   }
 
+  const setInteractionDisabled = (disabled: boolean) => {
+    isGenerating = disabled
+    if (input) input.disabled = disabled
+    if (sendBtn) sendBtn.disabled = disabled || !currentCourseId
+    if (flashcardSendBtn) flashcardSendBtn.disabled = disabled || !currentCourseId
+    if (attachBtn) attachBtn.disabled = disabled
+    updateModeUI()
+  }
 
-  const sendMessage = async () => {
+  const resetInput = () => {
+    if (input) {
+      input.value = ''
+      adjustTextareaHeight(input)
+    }
+  }
+
+  const processAttachments = async (): Promise<Attachment[]> => {
+    if (pendingAttachments.length === 0) return []
+
+    const processedAttachments: Attachment[] = []
+
+    for (const file of pendingAttachments) {
+      if (file.type.startsWith('image/')) {
+        const base64 = await readFileAsBase64(file)
+        processedAttachments.push({
+          type: 'image',
+          name: file.name,
+          content: base64
+        })
+      } else if (file.type === 'application/pdf') {
+        const originalBase64 = await readFileAsBase64(file)
+        const blob = new Blob([file], { type: 'application/pdf' })
+        const images = await convertPdfToImages(blob)
+        processedAttachments.push({
+          type: 'pdf',
+          name: file.name,
+          content: images,
+          originalData: originalBase64
+        })
+      } else {
+        const textContent = await readFileAsText(file)
+        processedAttachments.push({
+          type: 'text',
+          name: file.name,
+          content: textContent
+        })
+      }
+    }
+
+    pendingAttachments = []
+    renderPreviews()
+    return processedAttachments
+  }
+
+  const appendAssistantLoading = (assistantMsg: ChatMessage) => {
+    const container = overlayElement?.querySelector('#messages-container')
+    if (!container) return
+
+    const loadingDiv = document.createElement('div')
+    loadingDiv.id = `loading-${assistantMsg.id}`
+    loadingDiv.className = 'message assistant'
+    loadingDiv.innerHTML = `
+      <div class="message-body">
+          <div class="message-text">
+            <div class="typing-indicator">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          </div>
+      </div>
+    `
+    container.appendChild(loadingDiv)
+    scrollToBottom()
+  }
+
+  const buildFlashcardPrompt = (content: string): string => {
+    const selectedCount = selectedCourseMaterials.size
+    const userText = content || (selectedCount > 0
+      ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
+      : '请基于提供的材料生成闪卡。')
+    // 课程信息在系统消息中，附件通过 msg.attachments 传递，无需在文本中重复
+    return `${FLASHCARD_GENERATION_PROMPT}\n\n用户需求：${userText}`
+  }
+
+  const parseFlashcardResponse = (raw: string): FlashcardData | null => {
+    const sanitizeInvalidJsonBackslashes = (input: string): string => {
+      let output = ''
+      let inString = false
+      let escaped = false
+
+      for (let i = 0; i < input.length; i++) {
+        const ch = input[i]
+
+        if (!inString) {
+          if (ch === '"') inString = true
+          output += ch
+          continue
+        }
+
+        if (escaped) {
+          output += ch
+          escaped = false
+          continue
+        }
+
+        if (ch === '\\') {
+          const next = input[i + 1]
+          const validEscape = next === '"' || next === '\\' || next === '/' || next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't' || next === 'u'
+          if (validEscape) {
+            output += ch
+            escaped = true
+          } else {
+            output += '\\\\'
+          }
+          continue
+        }
+
+        if (ch === '"') {
+          inString = false
+        }
+
+        output += ch
+      }
+
+      return output
+    }
+
+    console.log('XZZDPRO: Raw flashcard response:', raw.substring(0, 200))
+    
+    // 移除代码块标记和多余空白
+    let cleaned = raw.trim()
+    
+    // 移除开头的代码块标记
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.substring(7)
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.substring(3)
+    }
+    
+    // 移除结尾的代码块标记
+    if (cleaned.endsWith('```')) {
+      cleaned = cleaned.substring(0, cleaned.length - 3)
+    }
+    
+    cleaned = cleaned.trim()
+    console.log('XZZDPRO: Cleaned flashcard response:', cleaned.substring(0, 200))
+
+    try {
+      const parsed = JSON.parse(cleaned) as FlashcardData
+      console.log('XZZDPRO: Parsed flashcard data:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+      
+      if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+        console.error('XZZDPRO: Invalid flashcard data structure')
+        return null
+      }
+      return parsed
+    } catch (err) {
+      const sanitized = sanitizeInvalidJsonBackslashes(cleaned)
+      try {
+        const parsed = JSON.parse(sanitized) as FlashcardData
+        console.log('XZZDPRO: Parsed flashcard data after backslash sanitization:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+
+        if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
+          console.error('XZZDPRO: Invalid flashcard data structure after sanitization')
+          return null
+        }
+        return parsed
+      } catch (sanitizeErr) {
+        console.error('XZZDPRO: Failed to parse flashcard JSON:', sanitizeErr, '\nContent:', cleaned.substring(0, 500))
+        return null
+      }
+    }
+  }
+
+  const sendChatMessage = async () => {
     const content = input?.value.trim() || ''
 
     if (!content && pendingAttachments.length === 0) return
     if (!currentCourseId || isGenerating) return
 
-    // Disable inputs
-    if (input) {
-      input.value = ''
-      adjustTextareaHeight(input)
-      input.disabled = true
-    }
-    if (sendBtn) sendBtn.disabled = true
-    if (attachBtn) attachBtn.disabled = true
-    isGenerating = true
+    resetInput()
+    setInteractionDisabled(true)
 
-    // Process attachments
-    const processedAttachments: Attachment[] = []
-
-    if (pendingAttachments.length > 0) {
-      // if (showStatus) showStatus('正在处理附件...', 'info')
-
-      try {
-        for (const file of pendingAttachments) {
-          if (file.type.startsWith('image/')) {
-            const base64 = await readFileAsBase64(file)
-            processedAttachments.push({
-              type: 'image',
-              name: file.name,
-              content: base64
-            })
-          } else if (file.type === 'application/pdf') {
-            // Store both original file and converted images
-            const originalBase64 = await readFileAsBase64(file)
-            const blob = new Blob([file], { type: 'application/pdf' })
-            const images = await convertPdfToImages(blob)
-            processedAttachments.push({
-              type: 'pdf',
-              name: file.name,
-              content: images,           // Images for LLM
-              originalData: originalBase64  // Original PDF for recall
-            })
-          } else {
-            const textContent = await readFileAsText(file)
-            processedAttachments.push({
-              type: 'text',
-              name: file.name,
-              content: textContent
-            })
-          }
-        }
-      } catch (e) {
-        console.error('Attachment processing failed:', e)
-        if (showStatus) showStatus(`附件处理失败: ${String(e)}`, 'error')
-        isGenerating = false
-        if (input) input.disabled = false
-        if (sendBtn) sendBtn.disabled = false
-        if (attachBtn) attachBtn.disabled = false
-        return
-      }
-
-      pendingAttachments = []
-      renderPreviews()
+    let processedAttachments: Attachment[] = []
+    try {
+      processedAttachments = await processAttachments()
+    } catch (e) {
+      console.error('Attachment processing failed:', e)
+      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      setInteractionDisabled(false)
+      return
     }
 
     const userMsg = createChatMessage('user', content)
@@ -1797,33 +2631,11 @@ function setupChatHandlers() {
 
     const assistantMsg = createChatMessage('assistant', '')
     messages.push(assistantMsg)
-    const container = overlayElement?.querySelector('#messages-container')
-    if (container) {
-      const loadingDiv = document.createElement('div')
-      loadingDiv.id = `loading-${assistantMsg.id}`
-      loadingDiv.className = 'message assistant'
-      loadingDiv.innerHTML = `
-        <div class="message-body">
-            <div class="message-text">
-              <div class="typing-indicator">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-              </div>
-            </div>
-        </div>
-      `
-      container.appendChild(loadingDiv)
-      scrollToBottom()
-    }
+    appendAssistantLoading(assistantMsg)
 
     try {
       let context = await buildCourseContext(currentCourseId)
-
-      // If explicitly loaded, use full context; otherwise, strip materials to prevent auto-fetch
-      if (!isCoursewareLoaded) {
-        context = { ...context, materials: [] } // Keep homeworks, strip files
-      }
+      context = filterContextBySelectedMaterials(context)
 
       const provider = currentSettings!.provider
       const config = currentSettings!.configs[provider] as ProviderConfig
@@ -1861,6 +2673,7 @@ function setupChatHandlers() {
           if (msgEl) {
             msgEl.outerHTML = renderChatMessage(assistantMsg)
           } else {
+            const container = overlayElement?.querySelector('#messages-container')
             container?.insertAdjacentHTML('beforeend', renderChatMessage(assistantMsg))
           }
           scrollToBottom()
@@ -1880,50 +2693,136 @@ function setupChatHandlers() {
       assistantMsg.content = `❌ ${errorMsg}`
       renderMessages()
     } finally {
-      isGenerating = false
-      if (input) {
-        input.disabled = false
-        input.focus()
-      }
-      if (sendBtn) sendBtn.disabled = false
-      if (attachBtn) attachBtn.disabled = false
-
+      setInteractionDisabled(false)
+      if (input) input.focus()
       const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
       if (loadingEl) loadingEl.remove()
     }
   }
 
-  sendBtn?.addEventListener('click', sendMessage)
+  const sendFlashcardMessage = async () => {
+    const content = input?.value.trim() || ''
+    const selectedMaterialCount = selectedCourseMaterials.size
+
+    if (!currentCourseId || isGenerating) return
+    if (!content && pendingAttachments.length === 0 && selectedMaterialCount === 0) {
+      showStatus('请输入内容、上传课件，或在侧边栏勾选资料后再生成闪卡', 'error')
+      return
+    }
+
+    resetInput()
+    setInteractionDisabled(true)
+
+    let processedAttachments: Attachment[] = []
+    try {
+      processedAttachments = await processAttachments()
+    } catch (e) {
+      console.error('Attachment processing failed:', e)
+      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      setInteractionDisabled(false)
+      return
+    }
+
+    if (processedAttachments.length === 0) {
+      if (selectedMaterialCount > 0) {
+        showStatus(`将基于已勾选的 ${selectedMaterialCount} 份课程资料生成闪卡`, 'info')
+      } else {
+        showStatus('未上传资料，将仅基于输入生成闪卡', 'info')
+      }
+    }
+
+    const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成闪卡' : '生成闪卡'))
+    if (processedAttachments.length > 0) {
+      userMsg.attachments = processedAttachments
+    }
+
+    messages.push(userMsg)
+    renderMessages()
+
+    const assistantMsg = createChatMessage('assistant', '')
+    messages.push(assistantMsg)
+    appendAssistantLoading(assistantMsg)
+
+    const promptContent = buildFlashcardPrompt(content)
+    const modelMessages = messages.slice(0, -1).map((msg, idx, arr) => {
+      if (idx === arr.length - 1 && msg.role === 'user') {
+        return { ...msg, content: promptContent }
+      }
+      return msg
+    })
+
+    try {
+      // 闪卡模式：使用完整课程上下文，与普通模式一致
+      let context = await buildCourseContext(currentCourseId)
+      context = filterContextBySelectedMaterials(context)
+
+      const provider = currentSettings!.provider
+      const config = currentSettings!.configs[provider] as ProviderConfig
+
+      let fullResponse = ''
+
+      await streamChat({
+        messages: modelMessages,
+        context,
+        provider,
+        config: {
+          apiKey: config.apiKey,
+          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
+          model: config.model
+        },
+        onProgress: (msg) => showStatus(msg, 'info'),
+        onChunk: (chunk) => {
+          fullResponse += chunk
+        }
+      })
+
+      const parsed = parseFlashcardResponse(fullResponse)
+      if (!parsed) {
+        assistantMsg.content = '未能解析闪卡，请重试或调整输入'
+        renderMessages()
+        return
+      }
+
+      assistantMsg.flashcards = parsed
+      assistantMsg.content = fullResponse
+      renderMessages()
+
+      await saveChatHistory(currentCourseId, {
+        courseId: currentCourseId,
+        courseName: currentCourseName,
+        messages,
+        updatedAt: Date.now()
+      })
+
+    } catch (error) {
+      console.error('Flashcard generation error:', error)
+      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
+      assistantMsg.content = `❌ ${errorMsg}`
+      renderMessages()
+    } finally {
+      setInteractionDisabled(false)
+      if (input) input.focus()
+      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
+      if (loadingEl) loadingEl.remove()
+    }
+  }
+
+  sendBtn?.addEventListener('click', sendChatMessage)
+  flashcardSendBtn?.addEventListener('click', sendFlashcardMessage)
 
   input?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      sendMessage()
+      if (isFlashcardMode) {
+        sendFlashcardMessage()
+      } else {
+        sendChatMessage()
+      }
     }
   })
 
   input?.addEventListener('input', () => adjustTextareaHeight(input))
 
-  // Clear Button logic
-  // Use delegation for clear button to ensure it works even if DOM slightly changes
-  overlayElement?.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement
-    const clearBtn = target.closest('#clear-history-btn')
-
-    if (clearBtn) {
-      console.log('XZZDPRO: Clear history clicked')
-      if (!currentCourseId) {
-        console.warn('XZZDPRO: No current course ID')
-        return
-      }
-
-      if (!confirm('确定要清除本课程的对话历史吗？')) return
-
-      await clearChatHistory(currentCourseId)
-      messages = []
-      renderMessages()
-    }
-  })
 }
 
 function adjustTextareaHeight(el: HTMLTextAreaElement) {
@@ -1969,20 +2868,35 @@ function setupSettingsHandlers() {
 
     try {
       const provider = providerSelect.value as Provider
+      const apiKey = apiKeyInput.value.trim()
+      const baseUrl = baseUrlInput.value.trim()
+      const model = modelInput.value.trim()
+      
+      // 验证必填字段
+      if (!apiKey) {
+        alert('❌ API Key 不能为空')
+        return
+      }
+      if (!model) {
+        alert('❌ 模型名称不能为空（如：gpt-4, gpt-4-vision 等）')
+        return
+      }
+      
       const config = {
-        apiKey: apiKeyInput.value.trim(),
-        baseUrl: baseUrlInput.value.trim(),
-        model: modelInput.value.trim()
+        apiKey,
+        baseUrl,
+        model
       }
 
       currentSettings.provider = provider
       currentSettings.configs[provider] = config
 
       await saveSettings(currentSettings)
+      showStatus('设置已保存', 'success')
       closeSettings()
     } catch (error) {
       console.error('Failed to save settings:', error)
-      alert('保存失败，请重试')
+      alert('❌ 保存失败，请重试')
     } finally {
       (saveBtn as HTMLButtonElement).disabled = false;
       (saveBtn as HTMLButtonElement).textContent = '保存设置'

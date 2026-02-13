@@ -1,3 +1,5 @@
+import type { FlashcardData } from "./types/flashcard"
+
 export type Provider =
     | 'openai'
     | 'anthropic'
@@ -31,6 +33,7 @@ export interface ChatMessage {
     content: string
     timestamp: number
     attachments?: Attachment[]
+    flashcards?: FlashcardData
 }
 
 export interface ChatSession {
