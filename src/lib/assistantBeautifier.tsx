@@ -1053,6 +1053,22 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
       width: 24px;
       height: 24px;
     }
+    .flashcard-mode-toggle-btn {
+      width: auto;
+      min-width: 92px;
+      height: 40px;
+      border-radius: 20px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1;
+    }
+    #flashcard-mode-btn-text {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+    }
     .settings-inline-btn svg {
       width: 22px;
       height: 22px;
@@ -1063,10 +1079,11 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     }
     
     .plus-btn {
-        background-color: rgba(0,0,0,0.05);
+      background-color: transparent;
     }
-    :host([data-theme='dark']) .plus-btn {
-        background-color: #2f2f2f; 
+    .plus-btn svg {
+      width: 22px;
+      height: 22px;
     }
 
     .plus-menu-container {
@@ -1305,10 +1322,6 @@ function injectOverlayStyles(root: ShadowRoot, isFullPage: boolean = false): voi
     #flashcard-mode-btn.active {
       background: var(--xzzd-primary);
       color: #fff;
-    }
-    #flashcard-mode-btn.active svg {
-      color: #fff;
-      fill: currentColor;
     }
     #flashcard-send-btn {
       background: linear-gradient(135deg, #f59e0b, #f97316);
@@ -1939,9 +1952,12 @@ function setupChatHandlers() {
     if (!input) return
     const chatPlaceholder = '问问学习助理'
     const flashcardPlaceholder = '生成闪卡：输入要点或上传课件'
+    const flashcardModeBtnText = overlayElement?.querySelector('#flashcard-mode-btn-text') as HTMLElement | null
 
     if (isFlashcardMode) {
       flashcardModeBtn?.classList.add('active')
+      flashcardModeBtn?.setAttribute('title', '当前为闪卡模式，点击切换到聊天模式')
+      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '闪卡模式'
       if (flashcardSendBtn) {
         flashcardSendBtn.style.display = ''
         flashcardSendBtn.disabled = !currentCourseId || isGenerating
@@ -1950,6 +1966,8 @@ function setupChatHandlers() {
       input.placeholder = flashcardPlaceholder
     } else {
       flashcardModeBtn?.classList.remove('active')
+      flashcardModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到闪卡模式')
+      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '聊天模式'
       if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
       if (sendBtn) {
         sendBtn.style.display = ''

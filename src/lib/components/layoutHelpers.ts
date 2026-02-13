@@ -157,14 +157,14 @@ export function renderSidebar(options: SidebarOptions = {}): string {
           ` : ''}
           ${currentPage === 'assistant' ? `
           <li class="nav-item nav-item-action assistant-sidebar-action">
-            <button id="nav-assistant-flashcard-toggle" class="nav-link nav-action-btn" type="button" title="展开闪卡">
+            <button id="nav-assistant-flashcard-toggle" class="nav-link nav-action-btn" type="button" title="展开侧栏">
               <span class="nav-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
                   <path d="M12 6V18" stroke="currentColor" stroke-width="1.8"/>
                 </svg>
               </span>
-              <span class="nav-text">展开闪卡</span>
+              <span class="nav-text">展开侧栏</span>
             </button>
           </li>
           <li class="nav-item nav-item-action assistant-sidebar-action">

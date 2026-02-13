@@ -70,10 +70,8 @@ export function renderAssistantPage(username: string = ""): string {
                     <button id="settings-btn" class="modern-icon-btn settings-inline-btn" title="设置">
                       ${navIcons.settings}
                     </button>
-                    <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-btn" title="闪卡模式">
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-2.16-2.66c-.23-.28-.62-.38-.96-.23-.35.15-.58.5-.58.89V14h8v-2.36c0-.39-.23-.74-.58-.89-.34-.14-.73-.05-.96.23z"/>
-                      </svg>
+                    <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-mode-toggle-btn" title="切换到闪卡模式">
+                      <span id="flashcard-mode-btn-text">闪卡模式</span>
                     </button>
                     <input type="file" id="file-input" multiple style="display: none;" accept="image/*,.pdf,.txt,.md,.js,.ts,.java,.py,.json,.c,.cpp,.h">
                   </div>
