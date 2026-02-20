@@ -1,8 +1,8 @@
 import * as React from "react"
-import { Upload, X, FileText, Eye, Download } from "lucide-react"
+import { Upload, X, FileText, Eye, Download, FileDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
-import type { ProcessedHomework, HomeworkSubmission, SubmissionUpload } from "@/types"
+import type { ProcessedHomework, HomeworkSubmission, SubmissionUpload, HomeworkDetailResponse, HomeworkDetailUpload } from "@/types"
 
 // Format file size
 function formatFileSize(bytes: number): string {
@@ -11,6 +11,21 @@ function formatFileSize(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
+}
+
+// Fetch homework detail
+async function fetchHomeworkDetail(activityId: number): Promise<HomeworkDetailResponse | null> {
+  try {
+    const response = await fetch(
+      `https://courses.zju.edu.cn/api/activities/${activityId}`
+    )
+    if (!response.ok) return null
+    const data = await response.json()
+    return data
+  } catch (error) {
+    console.error('XZZDPRO: 获取作业详情时出错', error)
+    return null
+  }
 }
 
 // Fetch submissions
@@ -132,6 +147,61 @@ function SubmittedFileItem({ upload }: { upload: SubmissionUpload }) {
   )
 }
 
+// Teacher uploaded file item component
+function TeacherFileItem({ upload }: { upload: HomeworkDetailUpload }) {
+  const [showPreview, setShowPreview] = React.useState(false)
+
+  // Construct download URL for teacher files
+  const downloadUrl = `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`
+
+  return (
+    <>
+      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border">
+        <FileDown className="w-7 h-7 text-blue-600 flex-shrink-0" />
+        <div className="flex-1">
+          <div className="text-sm font-medium">{upload.name}</div>
+          <div className="text-xs text-muted-foreground">{formatFileSize(upload.size)}</div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            onClick={() => setShowPreview(true)}
+          >
+            <Eye className="w-4 h-4" />
+            <span>预览</span>
+          </Button>
+          <Button
+            asChild
+            size="sm"
+            className="gap-1.5"
+          >
+            <a
+              href={downloadUrl}
+              download={upload.name}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="w-4 h-4" />
+              <span>下载</span>
+            </a>
+          </Button>
+        </div>
+      </div>
+
+      <FilePreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        fileName={upload.name}
+        fileUrl={downloadUrl}
+        fileSize={formatFileSize(upload.size)}
+        canDownload={true}
+      />
+    </>
+  )
+}
+
 interface HomeworkContentProps {
   homework: ProcessedHomework
   userId: string
@@ -140,16 +210,25 @@ interface HomeworkContentProps {
 export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
   const [submissions, setSubmissions] = React.useState<HomeworkSubmission[] | null>(null)
   const [submissionsLoading, setSubmissionsLoading] = React.useState(false)
+  const [homeworkDetail, setHomeworkDetail] = React.useState<HomeworkDetailResponse | null>(null)
+  const [detailLoading, setDetailLoading] = React.useState(false)
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([])
   const [submitStatus, setSubmitStatus] = React.useState<'idle' | 'uploading' | 'submitting' | 'success' | 'error'>('idle')
   const [isSubmitted, setIsSubmitted] = React.useState(homework.submitted)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Load submissions on mount
+  // Load homework detail and submissions on mount
   React.useEffect(() => {
+    setDetailLoading(true)
     setSubmissionsLoading(true)
-    fetchSubmissionList(homework.id, userId).then(data => {
-      setSubmissions(data)
+
+    Promise.all([
+      fetchHomeworkDetail(homework.id),
+      fetchSubmissionList(homework.id, userId)
+    ]).then(([detail, submissionData]) => {
+      setHomeworkDetail(detail)
+      setSubmissions(submissionData)
+      setDetailLoading(false)
       setSubmissionsLoading(false)
     })
   }, [homework.id, userId])
@@ -207,6 +286,41 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
 
   return (
     <div className="space-y-6">
+      {/* Homework Description and Attachments */}
+      {detailLoading ? (
+        <div className="text-muted-foreground text-sm">正在加载作业详情...</div>
+      ) : homeworkDetail && (homeworkDetail.data.description || homeworkDetail.uploads.length > 0) ? (
+        <div className="space-y-4">
+          {/* Description */}
+          {homeworkDetail.data.description && (
+            <div>
+              <h4 className="text-[15px] font-semibold mb-3 pb-2 border-b border-border">作业说明</h4>
+              <div
+                className="text-sm text-foreground leading-relaxed whitespace-pre-wrap bg-muted/30 p-4 rounded-lg"
+                dangerouslySetInnerHTML={{ __html: homeworkDetail.data.description }}
+              />
+            </div>
+          )}
+
+          {/* Teacher Attachments */}
+          {homeworkDetail.uploads.length > 0 && (
+            <div>
+              <h4 className="text-[15px] font-semibold mb-3 pb-2 border-b border-border">
+                作业附件 ({homeworkDetail.uploads.length})
+              </h4>
+              <div className="flex flex-col gap-2">
+                {homeworkDetail.uploads.map(upload => (
+                  <TeacherFileItem
+                    key={upload.id}
+                    upload={upload}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* Submissions */}
       <div>
         <h4 className="text-[15px] font-semibold mb-4 pb-2 border-b border-border">已提交文件</h4>

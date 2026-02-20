@@ -3,6 +3,7 @@ import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useRef } from "react"
 
 import { homeworkBeautifier } from "../lib/homeworkBeautifier"
+import { storage } from "@/lib/storage"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/homework*"],
@@ -11,14 +12,29 @@ export const config: PlasmoCSConfig = {
 }
 
 const HomeworkPageInjector = () => {
-  const [theme] = useStorage("theme", "light")
+  const [theme] = useStorage({
+    key: "theme",
+    instance: storage
+  }, "light")
+  const [beautifyEnabled, , { isLoading }] = useStorage({
+    key: "beautify-enabled",
+    instance: storage
+  }, true)
   const rootClassName = "xzzdpro"
   const isBeautifying = useRef(false)
 
   useEffect(() => {
+    if (isLoading) return
+
     const rootElement = document.documentElement
     rootElement.classList.add(rootClassName)
     rootElement.setAttribute("data-theme", theme)
+
+    if (beautifyEnabled === false) {
+      console.log('XZZDPRO: beautification is disabled')
+      document.body.classList.add('xzzdpro-disabled')
+      return
+    }
 
     if (document.querySelector('.xzzdpro-root')) {
       console.log('XZZDPRO: beautification already applied, skipping...')
@@ -34,7 +50,7 @@ const HomeworkPageInjector = () => {
     console.log('XZZDPRO: starting homework page beautification...')
 
     homeworkBeautifier()
-  }, [theme])
+  }, [theme, beautifyEnabled, isLoading])
 
   return null
 }

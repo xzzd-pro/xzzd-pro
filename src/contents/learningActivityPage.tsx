@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react"
 import { homeworkBeautifier } from "../lib/homeworkBeautifier"
 import { coursewareBeautifier } from "../lib/coursewareBeautifier"
 import { getUserId, detectActivityType, getActivityIdFromUrl } from "../lib/components/courseDetailHelpers"
+import { storage } from "@/lib/storage"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/learning-activity*"],
@@ -14,14 +15,29 @@ export const config: PlasmoCSConfig = {
 }
 
 const LearningActivityPageInjector = () => {
-  const [theme] = useStorage("theme", "light")
+  const [theme] = useStorage({
+    key: "theme",
+    instance: storage
+  }, "light")
+  const [beautifyEnabled, , { isLoading }] = useStorage({
+    key: "beautify-enabled",
+    instance: storage
+  }, true)
   const rootClassName = "xzzdpro"
   const isBeautifying = useRef(false)
 
   useEffect(() => {
+    if (isLoading) return
+
     const rootElement = document.documentElement
     rootElement.classList.add(rootClassName)
     rootElement.setAttribute("data-theme", theme)
+
+    if (beautifyEnabled === false) {
+      console.log('XZZDPRO: beautification is disabled')
+      document.body.classList.add('xzzdpro-disabled')
+      return
+    }
 
     if (document.querySelector('.xzzdpro-root')) {
       console.log('XZZDPRO: beautification already applied, skipping...')
@@ -64,7 +80,7 @@ const LearningActivityPageInjector = () => {
     }
 
     detectAndBeautify()
-  }, [theme])
+  }, [theme, beautifyEnabled, isLoading])
 
   return null
 }

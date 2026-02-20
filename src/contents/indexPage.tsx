@@ -1,6 +1,7 @@
 import type { PlasmoCSConfig } from "plasmo"
 import { useStorage } from "@plasmohq/storage/hook"
-import { useEffect, useRef } from "react"
+import { storage } from "@/lib/storage"
+import { useEffect, useRef, useState } from "react"
 
 import { indexPageBeautifier } from "../lib/indexPageBeautifier"
 
@@ -14,14 +15,35 @@ export const config: PlasmoCSConfig = {
 }
 
 const IndexPageInjector = () => {
-  const [theme] = useStorage("theme", "light")
+  const [theme] = useStorage({
+    key: "theme",
+    instance: storage
+  }, "light")
+  const [beautifyEnabled, , { isLoading }] = useStorage({
+    key: "beautify-enabled",
+    instance: storage
+  }, true)
   const rootClassName = "xzzdpro"
   const isBeautifying = useRef(false)
 
   useEffect(() => {
+    // Wait for storage to load
+    if (isLoading) {
+      console.log('XZZDPRO: Waiting for storage to load...')
+      return
+    }
+
+    console.log('XZZDPRO: beautifyEnabled =', beautifyEnabled, 'type:', typeof beautifyEnabled)
+
     const rootElement = document.documentElement
     rootElement.classList.add(rootClassName)
     rootElement.setAttribute("data-theme", theme)
+
+    // check if beautification is disabled
+    if (beautifyEnabled === false) {
+      console.log('XZZDPRO: beautification is disabled')
+      return
+    }
 
     // check if already beautified
     if (document.querySelector('.xzzdpro-root')) {
@@ -39,7 +61,7 @@ const IndexPageInjector = () => {
     console.log('XZZDPRO: starting index page beautification...')
 
     indexPageBeautifier()
-  }, [theme])
+  }, [theme, beautifyEnabled, isLoading])
 
   return null
 }

@@ -212,6 +212,30 @@ export interface HomeworkApiResponse {
   homework_activities: HomeworkActivity[];
 }
 
+// Homework detail types
+export interface HomeworkDetailUpload {
+  id: number;
+  name: string;
+  size: number;
+  type: string;
+  key: string;
+  allow_download: boolean;
+  created_at: string;
+}
+
+export interface HomeworkDetailResponse {
+  created_at: string;
+  title: string;
+  type: string;
+  uploads: HomeworkDetailUpload[];
+  data: {
+    description: string;
+    homework_type: string;
+    [key: string]: any;
+  };
+  user_submit_count: number;
+}
+
 export interface ProcessedHomework {
   id: number;
   title: string;

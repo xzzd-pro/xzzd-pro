@@ -1,11 +1,11 @@
 /* styles/courseDetail.css */
 
 /* Hide original page content before beautification */
-body:not(.xzzdpro-body) > * {
+body:not(.xzzdpro-body):not(.xzzdpro-disabled) > * {
   display: none !important;
 }
 
-body:not(.xzzdpro-body)::before {
+body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
   content: "加载中...";
   display: flex;
   justify-content: center;
