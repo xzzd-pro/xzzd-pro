@@ -65,7 +65,7 @@ interface CoursewareActivity {
 
 export async function fetchCourseMaterials(courseId: string): Promise<MaterialSummary[]> {
     const response = await fetch(
-        `https://courses.zju.edu.cn/api/course/${courseId}/coursewares`,
+        `https://courses.zju.edu.cn/api/course/${courseId}/coursewares?conditions=%7B%22category%22:null,%22itemsSortBy%22:%7B%22predicate%22:%22chapter%22,%22reverse%22:true%7D,%22ignore_activity_types%22:%5B%22lesson%22%5D%7D&page=1&page_size=1000`,
         { credentials: 'include' }
     )
 

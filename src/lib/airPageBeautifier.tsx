@@ -65,7 +65,10 @@ export async function mountAirPage() {
   setupAssistantNavigation();
 
   // 5. Initialize resize handlers
-  await applySavedLayout();
-  setupResizeHandlers();
-  console.log('XZZDPRO: Air Page Logic Initialized');
+  // Use requestAnimationFrame to ensure DOM is ready
+  requestAnimationFrame(() => {
+    void applySavedLayout()
+    setupResizeHandlers()
+    console.log('XZZDPRO: Air Page Logic Initialized')
+  })
 }

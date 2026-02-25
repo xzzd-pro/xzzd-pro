@@ -529,7 +529,10 @@ export async function indexPageBeautifier(): Promise<void> {
   loadAndRenderTodos()
 
   // Apply saved layout state and setup resize handlers
-  await applySavedLayout()
-  setupResizeHandlers()
-  console.log("XZZDPRO: 拖拽功能已初始化")
+  // Use requestAnimationFrame to ensure DOM is ready
+  requestAnimationFrame(() => {
+    void applySavedLayout()
+    setupResizeHandlers()
+    console.log("XZZDPRO: 拖拽功能已初始化")
+  })
 }

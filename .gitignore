@@ -38,3 +38,5 @@ dist/
 /.github
 README.md
 tsguide.html
+
+.vscode/

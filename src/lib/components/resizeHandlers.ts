@@ -6,6 +6,16 @@ import type { LayoutState } from "../../types"
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
 
+// Check if extension context is still valid
+function isExtensionContextValid(): boolean {
+  try {
+    // Try to access chrome.runtime to check if context is valid
+    return !!chrome.runtime?.id
+  } catch {
+    return false
+  }
+}
+
 // Default layout state
 const DEFAULT_LAYOUT: LayoutState = {
   leftHandleWidth: 100,
@@ -41,6 +51,11 @@ async function loadLayoutState(): Promise<LayoutState> {
 
 // Apply saved layout state to DOM
 export async function applySavedLayout(): Promise<void> {
+  if (!isExtensionContextValid()) {
+    console.warn('XZZDPRO: Extension context invalidated, skipping layout apply')
+    return
+  }
+
   const state = await loadLayoutState()
 
   const mainGrid = document.querySelector('.xzzdpro-main') as HTMLElement
@@ -69,11 +84,21 @@ export async function applySavedLayout(): Promise<void> {
 }
 
 export function setupResizeHandlers(): void {
+  if (!isExtensionContextValid()) {
+    console.warn('XZZDPRO: Extension context invalidated, skipping resize handlers setup')
+    return
+  }
+
   const mainGrid = document.querySelector('.xzzdpro-main') as HTMLElement
   const mainContentWrapper = document.querySelector('.main-content-wrapper') as HTMLElement
 
-  if (!mainGrid || !mainContentWrapper) {
-    console.warn('XZZDPRO: Main grid or content wrapper not found')
+  if (!mainGrid) {
+    console.warn('XZZDPRO: .xzzdpro-main element not found, skipping resize handlers')
+    return
+  }
+
+  if (!mainContentWrapper) {
+    console.warn('XZZDPRO: .main-content-wrapper element not found, skipping resize handlers')
     return
   }
 
