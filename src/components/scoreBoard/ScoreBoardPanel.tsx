@@ -15,7 +15,13 @@ import type {
   HomeworkScoreItem,
   ExamScoresResponse,
   ExamsResponse,
-  ExamInfo
+  ExamInfo,
+  ForumScoreItem,
+  ForumScoresResponse,
+  ClassroomScoreItem,
+  ClassroomScoresResponse,
+  QuestionnaireScoreItem,
+  QuestionnaireScoresResponse
 } from "@/types"
 
 // API functions
@@ -95,6 +101,42 @@ async function fetchExams(courseId: string): Promise<ExamInfo[]> {
     return data.exams || []
   } catch (error) {
     console.error('XZZDPRO: 获取测试列表时出错', error)
+    return []
+  }
+}
+
+async function fetchForumScores(courseId: string): Promise<ForumScoreItem[]> {
+  try {
+    const response = await fetch(`https://courses.zju.edu.cn/api/course/${courseId}/forum-scores`)
+    if (!response.ok) return []
+    const data: ForumScoresResponse = await response.json()
+    return data.forum_scores || []
+  } catch (error) {
+    console.error('XZZDPRO: 获取讨论成绩时出错', error)
+    return []
+  }
+}
+
+async function fetchClassroomExamScores(courseId: string): Promise<ClassroomScoreItem[]> {
+  try {
+    const response = await fetch(`https://courses.zju.edu.cn/api/course/${courseId}/classroom-exam-scores`)
+    if (!response.ok) return []
+    const data: ClassroomScoresResponse = await response.json()
+    return data.classroom_scores || []
+  } catch (error) {
+    console.error('XZZDPRO: 获取课堂测试成绩时出错', error)
+    return []
+  }
+}
+
+async function fetchQuestionnaireScores(courseId: string): Promise<QuestionnaireScoreItem[]> {
+  try {
+    const response = await fetch(`https://courses.zju.edu.cn/api/course/${courseId}/questionnaire-scores`)
+    if (!response.ok) return []
+    const data: QuestionnaireScoresResponse = await response.json()
+    return data.questionnaire_scores || []
+  } catch (error) {
+    console.error('XZZDPRO: 获取问卷成绩时出错', error)
     return []
   }
 }
@@ -291,11 +333,17 @@ function CustomScoreSection({ items }: { items: CustomScoreItem[] }) {
 function ActivityScoresSection({
   homeworkData,
   examScores,
-  exams
+  exams,
+  forumScores,
+  classroomScores,
+  questionnaireScores
 }: {
   homeworkData: HomeworkScoresResponse | null
   examScores: ExamScoresResponse | null
   exams: ExamInfo[]
+  forumScores: ForumScoreItem[]
+  classroomScores: ClassroomScoreItem[]
+  questionnaireScores: QuestionnaireScoreItem[]
 }) {
   const hasHomework = homeworkData && homeworkData.homework_activities.length > 0
   const hasExams = examScores && examScores.exam_scores.length > 0 && exams.length > 0
@@ -384,6 +432,81 @@ function ActivityScoresSection({
             <p className="text-muted-foreground text-center py-4">暂无测试成绩</p>
           )}
         </div>
+
+        {/* Classroom Exam Section */}
+        <div>
+          <h4 className="text-[15px] font-semibold mb-3">课堂测试</h4>
+          {classroomScores.length > 0 ? (
+            <>
+              <div className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 bg-card border rounded-t-lg text-sm font-semibold text-muted-foreground">
+                <span>名称</span>
+                <span className="text-center">得分</span>
+              </div>
+              <div className="divide-y divide-border bg-card border border-t-0 rounded-b-lg">
+                {classroomScores.map(item => (
+                  <div key={item.activity_id} className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 items-center">
+                    <span className="text-sm font-medium">{item.title || `课堂测试 #${item.activity_id}`}</span>
+                    <span className="text-center text-base font-bold text-primary">
+                      {item.score !== null ? item.score : '--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">暂无课堂测试成绩</p>
+          )}
+        </div>
+
+        {/* Forum Section */}
+        <div>
+          <h4 className="text-[15px] font-semibold mb-3">讨论</h4>
+          {forumScores.length > 0 ? (
+            <>
+              <div className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 bg-card border rounded-t-lg text-sm font-semibold text-muted-foreground">
+                <span>名称</span>
+                <span className="text-center">得分</span>
+              </div>
+              <div className="divide-y divide-border bg-card border border-t-0 rounded-b-lg">
+                {forumScores.map(item => (
+                  <div key={item.activity_id} className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 items-center">
+                    <span className="text-sm font-medium">{item.title || `讨论 #${item.activity_id}`}</span>
+                    <span className="text-center text-base font-bold text-primary">
+                      {item.score !== null ? item.score : '--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">暂无讨论成绩</p>
+          )}
+        </div>
+
+        {/* Questionnaire Section */}
+        <div>
+          <h4 className="text-[15px] font-semibold mb-3">问卷</h4>
+          {questionnaireScores.length > 0 ? (
+            <>
+              <div className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 bg-card border rounded-t-lg text-sm font-semibold text-muted-foreground">
+                <span>名称</span>
+                <span className="text-center">得分</span>
+              </div>
+              <div className="divide-y divide-border bg-card border border-t-0 rounded-b-lg">
+                {questionnaireScores.map(item => (
+                  <div key={item.activity_id} className="grid grid-cols-[1fr_100px] gap-4 px-4 py-3 items-center">
+                    <span className="text-sm font-medium">{item.title || `问卷 #${item.activity_id}`}</span>
+                    <span className="text-center text-base font-bold text-primary">
+                      {item.score !== null ? item.score : '--'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-muted-foreground text-center py-4">暂无问卷成绩</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -423,6 +546,9 @@ interface ScoreData {
   homeworkScores: HomeworkScoresResponse | null
   examScores: ExamScoresResponse | null
   exams: ExamInfo[]
+  forumScores: ForumScoreItem[]
+  classroomScores: ClassroomScoreItem[]
+  questionnaireScores: QuestionnaireScoreItem[]
 }
 
 export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
@@ -449,7 +575,10 @@ export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
           customScoreItems,
           homeworkScores,
           examScores,
-          exams
+          exams,
+          forumScores,
+          classroomScores,
+          questionnaireScores
         ] = await Promise.all([
           fetchAnnounceScoreSettings(courseId),
           fetchRollcalls(courseId, userId),
@@ -457,7 +586,10 @@ export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
           fetchCustomScoreItems(courseId),
           fetchHomeworkScores(courseId),
           fetchExamScores(courseId),
-          fetchExams(courseId)
+          fetchExams(courseId),
+          fetchForumScores(courseId),
+          fetchClassroomExamScores(courseId),
+          fetchQuestionnaireScores(courseId)
         ])
 
         setData({
@@ -467,7 +599,10 @@ export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
           customScoreItems,
           homeworkScores,
           examScores,
-          exams
+          exams,
+          forumScores,
+          classroomScores,
+          questionnaireScores
         })
       } catch (err) {
         setError('加载成绩数据失败，请刷新重试')
@@ -510,6 +645,9 @@ export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
         homeworkData={data.homeworkScores}
         examScores={data.examScores}
         exams={data.exams}
+        forumScores={data.forumScores}
+        classroomScores={data.classroomScores}
+        questionnaireScores={data.questionnaireScores}
       />
     </div>
   )

@@ -416,6 +416,42 @@ export interface ExamsResponse {
   exams: ExamInfo[];
 }
 
+// 6. 讨论成绩
+export interface ForumScoreItem {
+  activity_id: number
+  score: number | null
+  score_percentage: string
+  title?: string
+}
+
+export interface ForumScoresResponse {
+  forum_scores: ForumScoreItem[]
+}
+
+// 7. 课堂测试成绩
+export interface ClassroomScoreItem {
+  activity_id: number
+  score: number | null
+  score_percentage: string
+  title?: string
+}
+
+export interface ClassroomScoresResponse {
+  classroom_scores: ClassroomScoreItem[]
+}
+
+// 8. 问卷成绩
+export interface QuestionnaireScoreItem {
+  activity_id: number
+  score: number | null
+  score_percentage: string
+  title?: string
+}
+
+export interface QuestionnaireScoresResponse {
+  questionnaire_scores: QuestionnaireScoreItem[]
+}
+
 // Forum/Discussion types
 export interface TopicCategory {
   activity: any | null;
