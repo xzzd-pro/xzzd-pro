@@ -47,11 +47,13 @@ async function fetchSubmissionList(activityId: number, userId: string): Promise<
 async function uploadFile(file: File): Promise<number | null> {
   try {
     const fileData = await file.arrayBuffer()
+    // Convert ArrayBuffer to Array for message passing
+    const fileArray = Array.from(new Uint8Array(fileData))
     const response = await chrome.runtime.sendMessage({
       type: 'UPLOAD_FILE',
       fileName: file.name,
       fileSize: file.size,
-      fileData: fileData
+      fileData: fileArray
     })
     if (response && response.success) {
       return response.uploadId
@@ -68,6 +70,12 @@ async function uploadFile(file: File): Promise<number | null> {
 // Submit homework
 async function submitHomework(activityId: number, uploadIds: number[]): Promise<boolean> {
   try {
+    console.log('XZZDPRO: 提交作业 API 请求', {
+      activityId,
+      uploadIds,
+      url: `https://courses.zju.edu.cn/api/course/activities/${activityId}/submissions`
+    })
+
     const response = await fetch(
       `https://courses.zju.edu.cn/api/course/activities/${activityId}/submissions`,
       {
@@ -85,7 +93,20 @@ async function submitHomework(activityId: number, uploadIds: number[]): Promise<
         })
       }
     )
-    return response.ok
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('XZZDPRO: 提交作业失败', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText
+      })
+      return false
+    }
+
+    const result = await response.json()
+    console.log('XZZDPRO: 提交作业成功', result)
+    return true
   } catch (error) {
     console.error('XZZDPRO: 提交作业时出错', error)
     return false
@@ -255,23 +276,37 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
   const handleSubmit = async () => {
     if (selectedFiles.length === 0) return
 
+    console.log('XZZDPRO: 开始提交作业，文件数量:', selectedFiles.length)
     setSubmitStatus('uploading')
     const uploadedIds: number[] = []
 
+    // 步骤1: 上传所有文件到个人文件库
     for (const file of selectedFiles) {
+      console.log('XZZDPRO: 正在上传文件:', file.name, '大小:', file.size)
       const uploadId = await uploadFile(file)
-      if (uploadId) uploadedIds.push(uploadId)
+      if (uploadId) {
+        console.log('XZZDPRO: 文件上传成功，uploadId:', uploadId)
+        uploadedIds.push(uploadId)
+      } else {
+        console.error('XZZDPRO: 文件上传失败:', file.name)
+      }
     }
 
     if (uploadedIds.length === 0) {
+      console.error('XZZDPRO: 所有文件上传失败')
       setSubmitStatus('error')
       return
     }
 
+    console.log('XZZDPRO: 文件上传完成，uploadIds:', uploadedIds)
+
+    // 步骤2: 提交作业（使用上传的文件ID）
     setSubmitStatus('submitting')
+    console.log('XZZDPRO: 正在提交作业，activityId:', homework.id)
     const success = await submitHomework(homework.id, uploadedIds)
 
     if (success) {
+      console.log('XZZDPRO: 作业提交成功')
       setSubmitStatus('success')
       setSelectedFiles([])
       setIsSubmitted(true)
@@ -280,6 +315,7 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
       setSubmissions(newSubmissions)
       setTimeout(() => setSubmitStatus('idle'), 2000)
     } else {
+      console.error('XZZDPRO: 作业提交失败')
       setSubmitStatus('error')
     }
   }
