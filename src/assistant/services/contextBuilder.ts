@@ -35,10 +35,35 @@ export async function buildSystemPrompt(context: CourseContext, onProgress?: (ms
 
 /**
  * Get visual context (images) for multimodal LLM input.
- * Returns list of visual content items.
+ * Returns list of visual content items scoped to the current context.
  */
-export function getVisualContext(): VisualContent[] {
-    return Array.from(visualContentCache.values())
+export function getVisualContext(context?: CourseContext): VisualContent[] {
+    if (!context) {
+        return Array.from(visualContentCache.values())
+    }
+
+    const urlsInContext = new Set<string>()
+    for (const material of context.materials) {
+        for (const file of material.files || []) {
+            if (file.downloadUrl) {
+                urlsInContext.add(file.downloadUrl)
+            }
+        }
+    }
+
+    if (urlsInContext.size === 0) {
+        return []
+    }
+
+    const visuals: VisualContent[] = []
+    for (const url of urlsInContext) {
+        const visual = visualContentCache.get(url)
+        if (visual) {
+            visuals.push(visual)
+        }
+    }
+
+    return visuals
 }
 
 export async function preloadCourseContext(context: CourseContext, onProgress?: (msg: string, type?: 'success' | 'error' | 'info') => void): Promise<void> {

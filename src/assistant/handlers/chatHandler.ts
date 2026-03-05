@@ -2,22 +2,32 @@
  * Chat Handler - Manages chat interactions, message sending, and flashcard generation
  */
 import { renderChatMessage, renderAttachmentCard } from '../components/assistantPageHelpers'
-import { hydrateFlashcardBubbles } from '../components/flashcardRenderer'
 import { createChatMessage, saveChatHistory } from '../storage'
 import { buildCourseContext } from '../services/courseDataService'
 import { streamChat, formatErrorMessage } from '../services/chatService'
 import { convertPdfToImages } from '../services/fileService'
 import { PROVIDER_DEFAULTS } from '../config'
 import { FLASHCARD_GENERATION_PROMPT } from '../types/flashcard'
+import { MINDMAP_GENERATION_PROMPT } from '../types/mindmap'
 import { readFileAsBase64, readFileAsText } from '../utils/fileUtils'
-import { showStatus, scrollToBottom, renderMessages } from '../utils/uiUtils'
+import {
+  showStatus,
+  scrollToBottom,
+  renderMessages,
+  setActiveToolTab,
+  setActiveMindmapMessageId,
+  openAssistantPrompt,
+  openAssistantConfirm
+} from '../utils/uiUtils'
 import { filterContextBySelectedMaterials, getCurrentSettings, getCurrentCourseId, getCurrentCourseName, getSelectedCourseMaterials } from './courseHandler'
-import type { ChatMessage, Attachment, ProviderConfig, FlashcardData } from '../types'
+import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData } from '../types'
+
+type ChatMode = 'chat' | 'flashcard' | 'mindmap'
 
 // State
 let overlayElement: HTMLElement | null = null
 let isGenerating = false
-let isFlashcardMode = false
+let currentMode: ChatMode = 'chat'
 let isFlashcardSplitView = false
 let isSplitTransitioning = false
 let messages: ChatMessage[] = []
@@ -27,6 +37,9 @@ let pendingAttachments: File[] = []
 let externalSplitToggleHandler: ((event: Event) => void) | null = null
 let externalClearHistoryHandler: ((event: Event) => void) | null = null
 let externalMaterialToggleHandler: ((event: Event) => void) | null = null
+let externalMindmapSelectHandler: ((event: Event) => void) | null = null
+let externalMindmapRenameHandler: ((event: Event) => void) | null = null
+let externalMindmapDeleteHandler: ((event: Event) => void) | null = null
 
 // Setter functions
 export function setOverlayElement(element: HTMLElement | null): void {
@@ -51,7 +64,7 @@ export function getIsGenerating(): boolean {
 }
 
 export function getIsFlashcardMode(): boolean {
-  return isFlashcardMode
+  return currentMode === 'flashcard'
 }
 
 export function getIsFlashcardSplitView(): boolean {
@@ -91,6 +104,18 @@ export function cleanupChatHandlers(): void {
     window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
     externalMaterialToggleHandler = null
   }
+  if (externalMindmapSelectHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+    externalMindmapSelectHandler = null
+  }
+  if (externalMindmapRenameHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+    externalMindmapRenameHandler = null
+  }
+  if (externalMindmapDeleteHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+    externalMindmapDeleteHandler = null
+  }
 }
 
 export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
@@ -104,6 +129,34 @@ function buildFlashcardPrompt(content: string): string {
     ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
     : '请基于提供的材料生成闪卡。')
   return `${FLASHCARD_GENERATION_PROMPT}\n\n用户需求：${userText}`
+}
+
+function buildMindmapPrompt(content: string): string {
+  const selectedCount = getSelectedCourseMaterials().size
+  const userText = content || (selectedCount > 0
+    ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成思维导图。`
+    : '请基于提供的材料生成思维导图。')
+  return `${MINDMAP_GENERATION_PROMPT}\n\n用户需求：${userText}`
+}
+
+function sanitizeModelOutput(raw: string): string {
+  let cleaned = raw.trim()
+
+  cleaned = cleaned.replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "").trim()
+
+  if (cleaned.startsWith('```markdown')) {
+    cleaned = cleaned.substring(11)
+  } else if (cleaned.startsWith('```md')) {
+    cleaned = cleaned.substring(5)
+  } else if (cleaned.startsWith('```')) {
+    cleaned = cleaned.substring(3)
+  }
+
+  if (cleaned.endsWith('```')) {
+    cleaned = cleaned.substring(0, cleaned.length - 3)
+  }
+
+  return cleaned.trim()
 }
 
 function parseFlashcardResponse(raw: string): FlashcardData | null {
@@ -151,19 +204,12 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
 
   console.log('XZZDPRO: Raw flashcard response:', raw.substring(0, 200))
 
-  let cleaned = raw.trim()
+  let cleaned = sanitizeModelOutput(raw)
 
-  // Remove tokens like <|begin_of_box|>, <|end_of_box|>, etc.
-  cleaned = cleaned.replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "").trim()
-
-  if (cleaned.startsWith('```json')) {
+  if (cleaned.startsWith('json')) {
+    cleaned = cleaned.substring(4).trim()
+  } else if (cleaned.startsWith('```json')) {
     cleaned = cleaned.substring(7)
-  } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.substring(3)
-  }
-
-  if (cleaned.endsWith('```')) {
-    cleaned = cleaned.substring(0, cleaned.length - 3)
   }
 
   cleaned = cleaned.trim()
@@ -196,12 +242,53 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
   }
 }
 
+function parseMindmapResponse(raw: string): MindmapData | null {
+  const cleaned = sanitizeModelOutput(raw)
+    .replace(/<[^>]*>/g, '')
+    .trim()
+
+  if (!cleaned) {
+    return null
+  }
+
+  const hasHeading = /^#{1,6}\s+\S/m.test(cleaned)
+  const hasList = /^\s*[-*+]\s+\S/m.test(cleaned) || /^\s*\d+\.\s+\S/m.test(cleaned)
+  if (!hasHeading && !hasList) {
+    return null
+  }
+
+  const titleFromHeading = cleaned.match(/^#{1,6}\s+(.+)$/m)?.[1]?.trim()
+  const title = (titleFromHeading || '学习导图').replace(/[#*_`\[\]]/g, '').trim() || '学习导图'
+  const markdown = hasHeading ? cleaned : `# ${title}\n\n${cleaned}`
+
+  return {
+    title,
+    markdown,
+    version: 'v1'
+  }
+}
+
+function updateMindmapMarkdownTitle(markdown: string, newTitle: string): string {
+  const cleaned = (markdown || '').trim()
+  if (!cleaned) {
+    return `# ${newTitle}`
+  }
+
+  if (/^#{1,6}\s+.+$/m.test(cleaned)) {
+    return cleaned.replace(/^#{1,6}\s+.+$/m, `# ${newTitle}`)
+  }
+
+  return `# ${newTitle}\n\n${cleaned}`
+}
+
 export function setupChatHandlers(): void {
   console.log('XZZDPRO: setupChatHandlers called')
   const input = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
+  const mindmapSendBtn = overlayElement?.querySelector('#mindmap-send-btn') as HTMLButtonElement
   const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
+  const mindmapModeBtn = overlayElement?.querySelector('#mindmap-mode-btn') as HTMLButtonElement
   const chatAreaEl = overlayElement?.querySelector('.chat-area') as HTMLElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
@@ -271,24 +358,45 @@ export function setupChatHandlers(): void {
     if (!input) return
     const chatPlaceholder = '问问学习助理'
     const flashcardPlaceholder = '生成闪卡：输入要点或上传课件'
-    const flashcardModeBtnText = overlayElement?.querySelector('#flashcard-mode-btn-text') as HTMLElement | null
+    const mindmapPlaceholder = '生成思维导图：输入主题或上传课件'
     const activeCourseId = getCurrentCourseId()
 
-    if (isFlashcardMode) {
+    if (currentMode === 'flashcard') {
       flashcardModeBtn?.classList.add('active')
+      mindmapModeBtn?.classList.remove('active')
       flashcardModeBtn?.setAttribute('title', '当前为闪卡模式，点击切换到聊天模式')
-      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '闪卡模式'
+      mindmapModeBtn?.setAttribute('title', '切换到导图模式')
+      setActiveToolTab('flashcard', overlayElement)
       if (flashcardSendBtn) {
         flashcardSendBtn.style.display = ''
         flashcardSendBtn.disabled = !activeCourseId || isGenerating
       }
+      if (mindmapSendBtn) mindmapSendBtn.style.display = 'none'
       if (sendBtn) sendBtn.style.display = 'none'
       input.placeholder = flashcardPlaceholder
+      return
+    }
+
+    if (currentMode === 'mindmap') {
+      flashcardModeBtn?.classList.remove('active')
+      mindmapModeBtn?.classList.add('active')
+      flashcardModeBtn?.setAttribute('title', '切换到闪卡模式')
+      mindmapModeBtn?.setAttribute('title', '当前为导图模式，点击切换到聊天模式')
+      setActiveToolTab('mindmap', overlayElement)
+      if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
+      if (mindmapSendBtn) {
+        mindmapSendBtn.style.display = ''
+        mindmapSendBtn.disabled = !activeCourseId || isGenerating
+      }
+      if (sendBtn) sendBtn.style.display = 'none'
+      input.placeholder = mindmapPlaceholder
     } else {
       flashcardModeBtn?.classList.remove('active')
+      mindmapModeBtn?.classList.remove('active')
       flashcardModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到闪卡模式')
-      if (flashcardModeBtnText) flashcardModeBtnText.textContent = '聊天模式'
+      mindmapModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到导图模式')
       if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
+      if (mindmapSendBtn) mindmapSendBtn.style.display = 'none'
       if (sendBtn) {
         sendBtn.style.display = ''
         sendBtn.disabled = !activeCourseId || isGenerating
@@ -313,6 +421,103 @@ export function setupChatHandlers(): void {
   }
   window.addEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
 
+  const persistCurrentMessages = async () => {
+    const activeCourseId = getCurrentCourseId()
+    if (!activeCourseId) return
+    await saveChatHistory(activeCourseId, {
+      courseId: activeCourseId,
+      courseName: getCurrentCourseName(),
+      messages,
+      updatedAt: Date.now()
+    })
+  }
+
+  if (externalMindmapSelectHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+  }
+  externalMindmapSelectHandler = (event: Event) => {
+    const customEvent = event as CustomEvent<{ messageId?: string }>
+    const messageId = customEvent.detail?.messageId || ''
+    if (!messageId) return
+    const exists = messages.some(msg => msg.id === messageId && !!msg.mindmap)
+    if (!exists) return
+    setActiveMindmapMessageId(messageId)
+    renderMessages(messages, overlayElement)
+  }
+  window.addEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+
+  if (externalMindmapRenameHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+  }
+  externalMindmapRenameHandler = (event: Event) => {
+    void (async () => {
+      const customEvent = event as CustomEvent<{ messageId?: string }>
+      const messageId = customEvent.detail?.messageId || ''
+      if (!messageId) return
+      const messageIndex = messages.findIndex(msg => msg.id === messageId && !!msg.mindmap)
+      if (messageIndex === -1) return
+
+      const targetMessage = messages[messageIndex]
+      const currentTitle = (targetMessage.mindmap?.title || '学习导图').trim() || '学习导图'
+      const inputTitle = await openAssistantPrompt({
+        title: '修改导图标题',
+        value: currentTitle,
+        placeholder: '请输入新的导图标题',
+        confirmText: '保存',
+        maxLength: 60
+      }, overlayElement)
+      if (inputTitle === null) return
+
+      const nextTitle = inputTitle.trim()
+      if (!nextTitle) {
+        showStatus('标题不能为空', 'error')
+        return
+      }
+
+      const normalizedTitle = nextTitle.slice(0, 60)
+      if (!targetMessage.mindmap) return
+      targetMessage.mindmap = {
+        ...targetMessage.mindmap,
+        title: normalizedTitle,
+        markdown: updateMindmapMarkdownTitle(targetMessage.mindmap.markdown, normalizedTitle)
+      }
+
+      setActiveMindmapMessageId(messageId)
+      renderMessages(messages, overlayElement)
+      void persistCurrentMessages()
+      showStatus('导图标题已更新', 'success')
+    })()
+  }
+  window.addEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+
+  if (externalMindmapDeleteHandler) {
+    window.removeEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+  }
+  externalMindmapDeleteHandler = (event: Event) => {
+    void (async () => {
+      const customEvent = event as CustomEvent<{ messageId?: string }>
+      const messageId = customEvent.detail?.messageId || ''
+      if (!messageId) return
+      const messageIndex = messages.findIndex(msg => msg.id === messageId && !!msg.mindmap)
+      if (messageIndex === -1) return
+
+      const confirmed = await openAssistantConfirm({
+        title: '删除思维导图',
+        message: '删除后将同步从当前课程聊天历史中移除，确认继续吗？',
+        confirmText: '删除',
+        danger: true
+      }, overlayElement)
+      if (!confirmed) return
+
+      messages = messages.filter(msg => msg.id !== messageId)
+      setActiveMindmapMessageId(null)
+      renderMessages(messages, overlayElement)
+      void persistCurrentMessages()
+      showStatus('导图已删除', 'success')
+    })()
+  }
+  window.addEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+
   const previewArea = overlayElement?.querySelector('#file-preview-area') as HTMLElement
   const plusMenu = overlayElement?.querySelector('#plus-menu') as HTMLElement
   const menuUploadBtn = overlayElement?.querySelector('#menu-upload-btn') as HTMLButtonElement
@@ -328,7 +533,12 @@ export function setupChatHandlers(): void {
   updateSplitUI()
 
   flashcardModeBtn?.addEventListener('click', () => {
-    isFlashcardMode = !isFlashcardMode
+    currentMode = currentMode === 'flashcard' ? 'chat' : 'flashcard'
+    updateModeUI()
+  })
+
+  mindmapModeBtn?.addEventListener('click', () => {
+    currentMode = currentMode === 'mindmap' ? 'chat' : 'mindmap'
     updateModeUI()
   })
 
@@ -365,7 +575,7 @@ export function setupChatHandlers(): void {
     const customEvent = event as CustomEvent<{
       courseId?: string
       checked?: boolean
-      file?: { id: string; name: string; size: number; downloadUrl: string; materialTitle?: string }
+      file?: { id: number | string; name: string; size: number; downloadUrl: string; materialTitle?: string }
     }>
     const courseId = customEvent.detail?.courseId
     const checked = !!customEvent.detail?.checked
@@ -377,18 +587,24 @@ export function setupChatHandlers(): void {
     const selectedCourseMaterials = getSelectedCourseMaterials()
     const materialTitle = file.materialTitle || '课程资料'
     if (checked) {
+      const normalizedFileId = Number(file.id)
+      if (!Number.isFinite(normalizedFileId)) {
+        showStatus(`资料 ID 无效: ${file.name}`, 'error')
+        return
+      }
+      const normalizedFile = {
+        id: normalizedFileId,
+        name: file.name,
+        size: file.size,
+        downloadUrl: file.downloadUrl
+      }
       selectedCourseMaterials.set(file.downloadUrl, {
-        file: {
-          id: file.id,
-          name: file.name,
-          size: file.size,
-          downloadUrl: file.downloadUrl
-        },
+        file: normalizedFile,
         materialTitle
       })
       try {
         const { preloadSelectedMaterial } = await import('./courseHandler')
-        await preloadSelectedMaterial(file, materialTitle)
+        await preloadSelectedMaterial(normalizedFile, materialTitle)
       } catch (error) {
         console.error('Failed to preload selected material:', error)
         showStatus(`读取失败: ${file.name}`, 'error')
@@ -585,6 +801,7 @@ export function setupChatHandlers(): void {
     if (input) input.disabled = disabled
     if (sendBtn) sendBtn.disabled = disabled || !activeCourseId
     if (flashcardSendBtn) flashcardSendBtn.disabled = disabled || !activeCourseId
+    if (mindmapSendBtn) mindmapSendBtn.disabled = disabled || !activeCourseId
     if (attachBtn) attachBtn.disabled = disabled
     updateModeUI()
   }
@@ -694,7 +911,7 @@ export function setupChatHandlers(): void {
     appendAssistantLoading(assistantMsg)
 
     try {
-      let context = await buildCourseContext(activeCourseId)
+      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
@@ -817,7 +1034,7 @@ export function setupChatHandlers(): void {
     })
 
     try {
-      let context = await buildCourseContext(activeCourseId)
+      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
@@ -871,14 +1088,127 @@ export function setupChatHandlers(): void {
     }
   }
 
+  const sendMindmapMessage = async () => {
+    const content = input?.value.trim() || ''
+    const selectedMaterialCount = getSelectedCourseMaterials().size
+
+    const activeCourseId = getCurrentCourseId()
+    const activeSettings = getCurrentSettings()
+    const activeCourseName = getCurrentCourseName()
+
+    if (!activeCourseId || isGenerating) return
+    if (!content && pendingAttachments.length === 0 && selectedMaterialCount === 0) {
+      showStatus('请输入内容、上传课件，或在侧边栏勾选资料后再生成导图', 'error')
+      return
+    }
+
+    resetInput()
+    setInteractionDisabled(true)
+
+    let processedAttachments: Attachment[] = []
+    try {
+      processedAttachments = await processAttachments()
+    } catch (e) {
+      console.error('Attachment processing failed:', e)
+      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      setInteractionDisabled(false)
+      return
+    }
+
+    if (processedAttachments.length === 0) {
+      if (selectedMaterialCount > 0) {
+        showStatus(`将基于已勾选的 ${selectedMaterialCount} 份课程资料生成思维导图`, 'info')
+      } else {
+        showStatus('未上传资料，将仅基于输入生成思维导图', 'info')
+      }
+    }
+
+    const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成思维导图' : '生成思维导图'))
+    if (processedAttachments.length > 0) {
+      userMsg.attachments = processedAttachments
+    }
+
+    messages.push(userMsg)
+    renderMessages(messages, overlayElement)
+
+    const assistantMsg = createChatMessage('assistant', '')
+    messages.push(assistantMsg)
+    appendAssistantLoading(assistantMsg)
+
+    const promptContent = buildMindmapPrompt(content)
+    const modelMessages = messages.slice(0, -1).map((msg, idx, arr) => {
+      if (idx === arr.length - 1 && msg.role === 'user') {
+        return { ...msg, content: promptContent }
+      }
+      return msg
+    })
+
+    try {
+      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
+      context = filterContextBySelectedMaterials(context)
+
+      const provider = activeSettings!.provider
+      const config = activeSettings!.configs[provider] as ProviderConfig
+
+      let fullResponse = ''
+
+      await streamChat({
+        messages: modelMessages,
+        context,
+        provider,
+        config: {
+          apiKey: config.apiKey,
+          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
+          model: config.model
+        },
+        onProgress: (msg) => showStatus(msg, 'info'),
+        onChunk: (chunk) => {
+          fullResponse += chunk
+        }
+      })
+
+      const parsed = parseMindmapResponse(fullResponse)
+      if (!parsed) {
+        assistantMsg.content = '未能解析思维导图，请重试或调整输入'
+        renderMessages(messages, overlayElement)
+        return
+      }
+
+      assistantMsg.mindmap = parsed
+      assistantMsg.content = fullResponse
+      setActiveMindmapMessageId(assistantMsg.id)
+      renderMessages(messages, overlayElement)
+
+      await saveChatHistory(activeCourseId, {
+        courseId: activeCourseId,
+        courseName: activeCourseName,
+        messages,
+        updatedAt: Date.now()
+      })
+    } catch (error) {
+      console.error('Mindmap generation error:', error)
+      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成思维导图时发生错误'
+      assistantMsg.content = `❌ ${errorMsg}`
+      renderMessages(messages, overlayElement)
+    } finally {
+      setInteractionDisabled(false)
+      if (input) input.focus()
+      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
+      if (loadingEl) loadingEl.remove()
+    }
+  }
+
   sendBtn?.addEventListener('click', sendChatMessage)
   flashcardSendBtn?.addEventListener('click', sendFlashcardMessage)
+  mindmapSendBtn?.addEventListener('click', sendMindmapMessage)
 
   input?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (isFlashcardMode) {
+      if (currentMode === 'flashcard') {
         void sendFlashcardMessage()
+      } else if (currentMode === 'mindmap') {
+        void sendMindmapMessage()
       } else {
         void sendChatMessage()
       }

@@ -193,10 +193,12 @@ export async function switchCourse(courseId: string): Promise<void> {
   const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
   const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
   const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
+  const mindmapSendBtn = overlayElement?.querySelector('#mindmap-send-btn') as HTMLButtonElement
   if (chatInput) chatInput.disabled = false
   if (sendBtn) sendBtn.disabled = false
   if (attachBtn) attachBtn.disabled = false
   if (flashcardSendBtn) flashcardSendBtn.disabled = false
+  if (mindmapSendBtn) mindmapSendBtn.disabled = false
 
   // Load history
   const session = await loadChatHistory(courseId)

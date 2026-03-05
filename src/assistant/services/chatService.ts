@@ -22,7 +22,7 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
     try {
         const model = createChatModel(provider, config)
         const systemPrompt = await buildSystemPrompt(context, onProgress)
-        const visualContext = getVisualContext()
+        const visualContext = getVisualContext(context)
 
         console.log('XZZDPRO: Visual Context Count:', visualContext.length)
         if (visualContext.length > 0) {
@@ -47,13 +47,35 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
         // --- API Call Debug End ---
 
         let fullResponse = ''
-        const stream = await model.stream(langchainMessages)
+        try {
+            const stream = await model.stream(langchainMessages)
 
-        for await (const chunk of stream) {
-            const content = typeof chunk.content === 'string' ? chunk.content : ''
-            if (content) {
-                fullResponse += content
-                onChunk(content)
+            for await (const chunk of stream) {
+                const content = extractChunkText(chunk.content)
+                if (content) {
+                    fullResponse += content
+                    onChunk(content)
+                }
+            }
+        } catch (streamError: any) {
+            const streamErrMsg = streamError instanceof Error ? streamError.message : String(streamError)
+            const apiCode = extractApiErrorCode(streamErrMsg)
+
+            // Some OpenAI-compatible gateways may fail on multimodal payloads with code 50507.
+            // Retry once without visual course-image context to improve resilience.
+            if (apiCode === 50507 && visualContext.length > 0 && fullResponse.length === 0) {
+                onProgress?.('检测到模型网关错误(50507)，正在自动重试（不附带图片上下文）')
+                const fallbackMessages = convertToLangChainMessages(systemPrompt, messages, [])
+                const fallbackStream = await model.stream(fallbackMessages)
+                for await (const chunk of fallbackStream) {
+                    const content = extractChunkText(chunk.content)
+                    if (content) {
+                        fullResponse += content
+                        onChunk(content)
+                    }
+                }
+            } else {
+                throw streamError
             }
         }
 
@@ -78,6 +100,35 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
     }
 }
 
+function extractChunkText(content: unknown): string {
+    if (!content) return ''
+
+    if (typeof content === 'string') {
+        return content
+    }
+
+    if (Array.isArray(content)) {
+        return content
+            .map((part) => {
+                if (!part) return ''
+                if (typeof part === 'string') return part
+                if (typeof part === 'object') {
+                    const maybeText = (part as any).text
+                    if (typeof maybeText === 'string') return maybeText
+                }
+                return ''
+            })
+            .join('')
+    }
+
+    if (typeof content === 'object') {
+        const maybeText = (content as any).text
+        if (typeof maybeText === 'string') return maybeText
+    }
+
+    return ''
+}
+
 export async function generateResponse(
     messages: ChatMessage[],
     context: CourseContext,
@@ -87,7 +138,7 @@ export async function generateResponse(
 ): Promise<string> {
     const model = createChatModel(provider, config)
     const systemPrompt = await buildSystemPrompt(context, onProgress)
-    const visualContext = getVisualContext()
+    const visualContext = getVisualContext(context)
     const langchainMessages = convertToLangChainMessages(systemPrompt, messages, visualContext)
 
     const sanitizedConfig = { ...config, apiKey: '***' }
@@ -224,16 +275,37 @@ function extractApiErrorMessage(errorMessage: string): string | null {
     return null
 }
 
+function extractApiErrorCode(errorMessage: string): number | null {
+    const jsonStart = errorMessage.indexOf('{')
+    if (jsonStart !== -1) {
+        try {
+            const parsed = JSON.parse(errorMessage.substring(jsonStart))
+            const code = parsed?.code ?? parsed?.error?.code
+            if (typeof code === 'number') return code
+            if (typeof code === 'string' && /^\d+$/.test(code)) return Number(code)
+        } catch {
+            // Ignore parse failures and continue regex fallback.
+        }
+    }
+
+    const codeMatch = errorMessage.match(/"code"\s*:\s*(\d+)/)
+    if (codeMatch) return Number(codeMatch[1])
+    return null
+}
+
 export function formatErrorMessage(error: Error): string {
     const lowerMessage = error.message.toLowerCase()
     const originalError = error.message
 
     // Try to extract detailed error message from API response
     const apiErrorDetail = extractApiErrorMessage(error.message)
+    const apiErrorCode = extractApiErrorCode(error.message)
 
     let simplifiedMessage = ''
 
-    if (lowerMessage.includes('401') || lowerMessage.includes('unauthorized') || lowerMessage.includes('invalid api key')) {
+    if (apiErrorCode === 50507 || lowerMessage.includes('50507')) {
+        simplifiedMessage = '模型服务端处理失败 (50507)。通常是服务端不稳定，或请求过大/含多模态内容导致。请重试或切换模型。'
+    } else if (lowerMessage.includes('401') || lowerMessage.includes('unauthorized') || lowerMessage.includes('invalid api key')) {
         simplifiedMessage = 'API Key 无效，请检查设置中的 API Key 是否正确'
     } else if (lowerMessage.includes('429') || lowerMessage.includes('rate limit')) {
         simplifiedMessage = '请求过于频繁，请稍后再试'

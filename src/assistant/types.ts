@@ -1,4 +1,5 @@
 import type { FlashcardData } from "./types/flashcard"
+import type { MindmapData } from "./types/mindmap"
 
 export type Provider =
     | 'openai'
@@ -34,6 +35,7 @@ export interface ChatMessage {
     timestamp: number
     attachments?: Attachment[]
     flashcards?: FlashcardData
+    mindmap?: MindmapData
 }
 
 export interface ChatSession {
@@ -77,3 +79,6 @@ export interface CourseInfo {
     displayName: string
     instructors: string[]
 }
+
+export type { FlashcardData } from "./types/flashcard"
+export type { MindmapData } from "./types/mindmap"

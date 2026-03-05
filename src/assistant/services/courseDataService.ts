@@ -124,11 +124,20 @@ export async function fetchCourseName(courseId: string): Promise<string> {
     return data.display_name || data.name || `Course ${courseId}`
 }
 
-export async function buildCourseContext(courseId: string): Promise<CourseContext> {
+interface BuildCourseContextOptions {
+    includeHomeworks?: boolean
+}
+
+export async function buildCourseContext(
+    courseId: string,
+    options: BuildCourseContextOptions = {}
+): Promise<CourseContext> {
+    const includeHomeworks = options.includeHomeworks ?? true
+
     const [courseName, materials, homeworks] = await Promise.all([
         fetchCourseName(courseId),
         fetchCourseMaterials(courseId),
-        fetchHomeworkList(courseId)
+        includeHomeworks ? fetchHomeworkList(courseId) : Promise.resolve([])
     ])
 
     return {

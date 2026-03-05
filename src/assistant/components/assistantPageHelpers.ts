@@ -7,6 +7,7 @@ import type {
   Provider,
 } from "../types";
 import { renderFlashcardBubble, renderFlashcardTipBubble } from "./flashcardRenderer";
+import { renderMindmapBubble, renderMindmapTipBubble } from "./mindmapRenderer";
 import { marked } from "marked";
 
 export function renderAssistantPage(username: string = ""): string {
@@ -15,7 +16,11 @@ export function renderAssistantPage(username: string = ""): string {
       <main class="chat-area">
         <div id="assistant-main-panels" class="assistant-main-panels">
           <section id="flashcard-panel" class="flashcard-panel">
-            <div id="flashcard-messages-container" class="flashcard-messages-container">
+            <div class="tool-panel-tabs" role="tablist" aria-label="学习工具切换">
+              <button id="tool-tab-flashcard" class="tool-panel-tab active" data-tool-tab="flashcard" type="button" aria-selected="true">闪卡</button>
+              <button id="tool-tab-mindmap" class="tool-panel-tab" data-tool-tab="mindmap" type="button" aria-selected="false">导图</button>
+            </div>
+            <div id="flashcard-messages-container" class="flashcard-messages-container" data-tool-content="flashcard">
               <div class="empty-state">
                 <div class="empty-state-icon">
                   <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
@@ -24,6 +29,17 @@ export function renderAssistantPage(username: string = ""): string {
                 </div>
                 <h3>闪卡区域</h3>
                 <p>生成闪卡后将在这里展示</p>
+              </div>
+            </div>
+            <div id="mindmap-messages-container" class="mindmap-messages-container" data-tool-content="mindmap" style="display: none;">
+              <div class="empty-state">
+                <div class="empty-state-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" aria-hidden="true">
+                    <path d="M12 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM5 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm14 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM12 16a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-1-8v3H8v2h3v3h2v-3h3v-2h-3V8h-2Z"/>
+                  </svg>
+                </div>
+                <h3>导图区域</h3>
+                <p>生成思维导图后将在这里展示</p>
               </div>
             </div>
           </section>
@@ -70,8 +86,11 @@ export function renderAssistantPage(username: string = ""): string {
                     <button id="settings-btn" class="modern-icon-btn settings-inline-btn" title="设置">
                       ${navIcons.settings}
                     </button>
-                    <button id="flashcard-mode-btn" class="modern-icon-btn flashcard-mode-toggle-btn" title="切换到闪卡模式">
-                      <span id="flashcard-mode-btn-text">闪卡模式</span>
+                    <button id="flashcard-mode-btn" class="modern-icon-btn tool-mode-btn" title="切换到闪卡模式">
+                      <span>闪卡</span>
+                    </button>
+                    <button id="mindmap-mode-btn" class="modern-icon-btn tool-mode-btn" title="切换到导图模式">
+                      <span>导图</span>
                     </button>
                     <input type="file" id="file-input" multiple style="display: none;" accept="image/*,.pdf,.txt,.md,.js,.ts,.java,.py,.json,.c,.cpp,.h">
                   </div>
@@ -87,6 +106,11 @@ export function renderAssistantPage(username: string = ""): string {
                     <button id="send-btn" class="modern-icon-btn send-btn" disabled>
                       <svg viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                    </button>
+                    <button id="mindmap-send-btn" class="modern-icon-btn send-btn mindmap-send-btn" title="生成思维导图" style="display: none;" disabled>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM5 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm14 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM12 16a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-1-8v3H8v2h3v3h2v-3h3v-2h-3V8h-2Z"/>
                       </svg>
                     </button>
                   </div>
@@ -255,10 +279,13 @@ export function renderAttachmentCard(
           </div>`;
 }
 
-export function renderChatMessage(message: ChatMessage, showFlashcard: boolean = true): string {
+export function renderChatMessage(message: ChatMessage, showToolContent: boolean = true): string {
   const isUser = message.role === "user";
   if (message.flashcards) {
-    return showFlashcard ? renderFlashcardBubble(message.flashcards, message.id) : renderFlashcardTipBubble(message.flashcards, message.id);
+    return showToolContent ? renderFlashcardBubble(message.flashcards, message.id) : renderFlashcardTipBubble(message.flashcards, message.id);
+  }
+  if (message.mindmap) {
+    return showToolContent ? renderMindmapBubble(message.mindmap, message.id) : renderMindmapTipBubble(message.mindmap, message.id);
   }
   const contentHtml = parseMarkdown(message.content);
 
