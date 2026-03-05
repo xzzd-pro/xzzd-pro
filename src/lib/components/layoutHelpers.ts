@@ -417,6 +417,8 @@ export function setupAssistantNavigation(): void {
   const expandBtn = document.getElementById('nav-assistant-expand');
   const materialExpandMainBtn = document.getElementById('nav-assistant-material-expand') as HTMLButtonElement | null;
   const materialExpandArrowBtn = document.getElementById('nav-assistant-material-arrow') as HTMLButtonElement | null;
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle') as HTMLButtonElement | null;
+  const root = document.querySelector('.xzzdpro-root') as HTMLElement | null;
   const flashcardToggleBtn = document.getElementById('nav-assistant-flashcard-toggle');
   const clearHistoryBtn = document.getElementById('nav-assistant-clear-history');
   const navItem = link?.closest('.nav-item-expandable');
@@ -425,6 +427,37 @@ export function setupAssistantNavigation(): void {
   const materialSubmenu = materialNavItem?.querySelector('.nav-submenu') as HTMLElement;
   
   if (!link || !expandBtn || !navItem || !submenu) return;
+
+  const ensureSidebarExpanded = (): boolean => {
+    if (!root || !root.classList.contains('sidebar-collapsed')) return false;
+    if (sidebarToggleBtn) {
+      sidebarToggleBtn.click();
+      return true;
+    }
+
+    root.classList.remove('sidebar-collapsed');
+    const cssValue = root.style.getPropertyValue('--xzzd-sidebar-width').trim();
+    const parsed = Number(cssValue.replace('px', ''));
+    const width = Number.isFinite(parsed) && parsed > 0
+      ? Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, parsed))
+      : SIDEBAR_DEFAULT_WIDTH;
+    root.style.gridTemplateColumns = `${width}px 1fr`;
+    return true;
+  };
+
+  // If already on assistant page, clicking the assistant icon should open submenu
+  // instead of navigating and refreshing the page.
+  link.addEventListener('click', (e) => {
+    const onAssistantPage = navItem.classList.contains('active')
+    if (!onAssistantPage) return
+
+    e.preventDefault()
+    e.stopPropagation()
+    ensureSidebarExpanded()
+    navItem.classList.add('expanded')
+    submenu.style.display = 'block'
+    void loadAssistantCourses()
+  })
 
   // Toggle submenu on expand button click only
   expandBtn.addEventListener('click', (e) => {
@@ -461,6 +494,11 @@ export function setupAssistantNavigation(): void {
     const toggleMaterialSubmenu = (e: Event) => {
       e.preventDefault();
       e.stopPropagation();
+      const expandedFromCollapsed = ensureSidebarExpanded();
+      if (expandedFromCollapsed) {
+        openMaterialSubmenu();
+        return;
+      }
       if (materialNavItem.classList.contains('expanded')) {
         closeMaterialSubmenu();
       } else {

@@ -73,6 +73,7 @@ export async function convertPdfToImages(blob: Blob): Promise<string[]> {
         data: arrayBuffer,
         cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.449/cmaps/',
         cMapPacked: true,
+        verbosity: 0
     })
     const pdf = await loadingTask.promise
 
@@ -112,6 +113,7 @@ async function parsePdf(blob: Blob): Promise<string> {
         data: arrayBuffer,
         cMapUrl: 'https://unpkg.com/pdfjs-dist@5.4.449/cmaps/',
         cMapPacked: true,
+        verbosity: 0
     })
     const pdf = await loadingTask.promise
 

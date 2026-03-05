@@ -195,6 +195,11 @@ async function loadAndRenderCourses(studentId: string) {
   ])
 
   console.log("XZZDPRO: Received response from background:", response)
+  console.log("XZZDPRO: Background summary:", {
+    xnm: response?.data?.xnm,
+    xqm: response?.data?.xqm,
+    kbListLength: Array.isArray(response?.data?.kbList) ? response.data.kbList.length : -1,
+  })
 
   if (response && response.status === "ok" && response.data) {
     // Login successful: Clean up polling and window
@@ -529,7 +534,10 @@ export async function indexPageBeautifier(): Promise<void> {
   loadAndRenderTodos()
 
   // Apply saved layout state and setup resize handlers
-  await applySavedLayout()
-  setupResizeHandlers()
-  console.log("XZZDPRO: 拖拽功能已初始化")
+  // Use requestAnimationFrame to ensure DOM is ready
+  requestAnimationFrame(() => {
+    void applySavedLayout()
+    setupResizeHandlers()
+    console.log("XZZDPRO: 拖拽功能已初始化")
+  })
 }

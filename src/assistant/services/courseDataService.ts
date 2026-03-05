@@ -65,7 +65,7 @@ interface CoursewareActivity {
 
 export async function fetchCourseMaterials(courseId: string): Promise<MaterialSummary[]> {
     const response = await fetch(
-        `https://courses.zju.edu.cn/api/course/${courseId}/coursewares`,
+        `https://courses.zju.edu.cn/api/course/${courseId}/coursewares?conditions=%7B%22category%22:null,%22itemsSortBy%22:%7B%22predicate%22:%22chapter%22,%22reverse%22:true%7D,%22ignore_activity_types%22:%5B%22lesson%22%5D%7D&page=1&page_size=1000`,
         { credentials: 'include' }
     )
 
@@ -124,11 +124,20 @@ export async function fetchCourseName(courseId: string): Promise<string> {
     return data.display_name || data.name || `Course ${courseId}`
 }
 
-export async function buildCourseContext(courseId: string): Promise<CourseContext> {
+interface BuildCourseContextOptions {
+    includeHomeworks?: boolean
+}
+
+export async function buildCourseContext(
+    courseId: string,
+    options: BuildCourseContextOptions = {}
+): Promise<CourseContext> {
+    const includeHomeworks = options.includeHomeworks ?? true
+
     const [courseName, materials, homeworks] = await Promise.all([
         fetchCourseName(courseId),
         fetchCourseMaterials(courseId),
-        fetchHomeworkList(courseId)
+        includeHomeworks ? fetchHomeworkList(courseId) : Promise.resolve([])
     ])
 
     return {

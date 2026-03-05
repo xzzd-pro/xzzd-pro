@@ -230,7 +230,7 @@ export function renderFlashcardTipBubble(data: FlashcardData, messageId: string)
           <div class="flashcard-tip-content">
             <div class="flashcard-tip-title">${escapeHtml(data.topic)}</div>
             <div class="flashcard-tip-subtitle">共 ${data.cards.length} 张闪卡</div>
-            <div class="flashcard-tip-message">打开左侧侧栏查看完整闪卡</div>
+            <div class="flashcard-tip-message">已生成 ${data.cards.length} 张闪卡，请打开左侧侧栏查看</div>
           </div>
         </div>
       </div>
