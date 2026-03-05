@@ -74,7 +74,8 @@ async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
   try {
     const payload = {
       conditions: {
-        semester_id: ["78"],
+        // Do not hardcode semester_id, otherwise links break after term switch.
+        semester_id: [],
         status: ["ongoing", "notStarted", "closed"],
         keyword: "",
         classify_type: "recently_started",
@@ -118,11 +119,30 @@ let pollingInterval: NodeJS.Timeout | null = null
 let coursesRoot: Root | null = null
 let todosRoot: Root | null = null
 
+function stripHtmlToText(raw: string): string {
+  if (!raw) return ""
+  const temp = document.createElement("div")
+  temp.innerHTML = raw
+  return (temp.textContent || temp.innerText || "").replace(/\u00a0/g, " ").trim()
+}
+
+function normalizeCourseName(raw: string): string {
+  return stripHtmlToText(raw)
+    .replace(/[（(][^）)]*[）)]/g, "")
+    .replace(/[【】\[\]（）()_\-\s]/g, "")
+    .toLowerCase()
+}
+
+function generateCourseUrlById(courseId: number): string {
+  if (!courseId) return "#"
+  return `https://courses.zju.edu.cn/course/${courseId}/content#/`
+}
+
 function generateCourseUrl(item: ApiCourseData): string {
   if (!item.id) {
     return "#"
   }
-  return `https://courses.zju.edu.cn/course/${item.id}/content#/`
+  return generateCourseUrlById(item.id)
 }
 
 // Render courses using React
@@ -200,6 +220,7 @@ async function loadAndRenderCourses(studentId: string) {
     xqm: response?.data?.xqm,
     kbListLength: Array.isArray(response?.data?.kbList) ? response.data.kbList.length : -1,
   })
+  console.log("XZZDPRO: API courses count:", Array.isArray(apiCourses) ? apiCourses.length : -1)
 
   if (response && response.status === "ok" && response.data) {
     // Login successful: Clean up polling and window
@@ -237,11 +258,49 @@ async function loadAndRenderCourses(studentId: string) {
     // Helper to parse kcb string
     const parseKcb = (kcbStr: string) => {
       if (!kcbStr) return { name: "未知课程", teacher: "", location: "" }
-      const parts = kcbStr.split("<br>")
+      const parts = kcbStr
+        .split(/<br\s*\/?>/i)
+        .map((part) => stripHtmlToText(part))
+        .map((part) => part.replace(/zwf.*$/i, "").trim())
+        .filter(Boolean)
       const name = parts[0] || "未知课程"
-      const teacher = parts[2] || ""
-      let location = parts[3]?.split("zwf")[0] || ""
+      const teacher = parts[2] || parts[1] || ""
+      const location = parts[3] || ""
       return { name, teacher, location }
+    }
+
+    const getCandidateCourseNames = (course: any, fallbackName: string): string[] => {
+      return [
+        fallbackName,
+        course?.kcmc,
+        course?.course_name,
+        course?.courseName,
+        course?.kchmc,
+      ]
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    }
+
+    const apiCourseIdSet = new Set(apiCourses.map((course) => course.id))
+    const getDirectCourseId = (course: any): number | null => {
+      const idCandidates = [
+        course?.course_id,
+        course?.courseId,
+        course?.kcid,
+        course?.kc_id,
+        course?.courseid,
+        course?.id,
+      ]
+
+      for (const candidate of idCandidates) {
+        const id = Number(candidate)
+        if (Number.isInteger(id) && id > 0 && apiCourseIdSet.has(id)) {
+          return id
+        }
+      }
+
+      return null
     }
 
     // Filter courses for today
@@ -257,29 +316,33 @@ async function loadAndRenderCourses(studentId: string) {
 
         let link = "#"
         if (apiCourses && Array.isArray(apiCourses)) {
-          const normalize = (str: string) =>
-            str ? str.replace(/[（）()_\-\s]/g, "").toLowerCase() : ""
-          const zdbkName = normalize(details.name)
+          const directCourseId = getDirectCourseId(course)
+          if (directCourseId) {
+            link = generateCourseUrlById(directCourseId)
+          } else {
+            const zdbkNames = getCandidateCourseNames(course, details.name)
+              .map(normalizeCourseName)
+              .filter(Boolean)
 
-          const matched = apiCourses.find((c) => {
-            const apiName = normalize(c.name)
-            const apiDisplayName = normalize(c.display_name)
+            const matched = apiCourses.find((apiCourse) => {
+              const apiName = normalizeCourseName(apiCourse.name)
+              const apiDisplayName = normalizeCourseName(apiCourse.display_name)
+              if (!apiName && !apiDisplayName) return false
 
-            if (!zdbkName) return false
+              return zdbkNames.some((zdbkName) => {
+                if (!zdbkName) return false
+                const nameMatch =
+                  apiName && (zdbkName.includes(apiName) || apiName.includes(zdbkName))
+                const displayMatch =
+                  apiDisplayName &&
+                  (zdbkName.includes(apiDisplayName) || apiDisplayName.includes(zdbkName))
+                return Boolean(nameMatch || displayMatch)
+              })
+            })
 
-            const nameMatch =
-              apiName &&
-              (zdbkName.includes(apiName) || apiName.includes(zdbkName))
-            const displayMatch =
-              apiDisplayName &&
-              (zdbkName.includes(apiDisplayName) ||
-                apiDisplayName.includes(zdbkName))
-
-            return nameMatch || displayMatch
-          })
-
-          if (matched) {
-            link = generateCourseUrl(matched)
+            if (matched) {
+              link = generateCourseUrl(matched)
+            }
           }
         }
 
