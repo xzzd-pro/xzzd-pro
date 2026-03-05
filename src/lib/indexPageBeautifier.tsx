@@ -195,6 +195,11 @@ async function loadAndRenderCourses(studentId: string) {
   ])
 
   console.log("XZZDPRO: Received response from background:", response)
+  console.log("XZZDPRO: Background summary:", {
+    xnm: response?.data?.xnm,
+    xqm: response?.data?.xqm,
+    kbListLength: Array.isArray(response?.data?.kbList) ? response.data.kbList.length : -1,
+  })
 
   if (response && response.status === "ok" && response.data) {
     // Login successful: Clean up polling and window
