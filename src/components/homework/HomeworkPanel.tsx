@@ -12,7 +12,8 @@ import type { HomeworkApiResponse, HomeworkActivity, ProcessedHomework } from "@
 async function fetchHomeworkList(courseId: string): Promise<HomeworkActivity[]> {
   try {
     const response = await fetch(
-      `https://courses.zju.edu.cn/api/courses/${courseId}/homework-activities`
+      `
+https://courses.zju.edu.cn/api/courses/${courseId}/homework-activities?conditions=%7B%22itemsSortBy%22:%7B%22predicate%22:%22module%22,%22reverse%22:false%7D%7D&page=1&page_size=100&reloadPage=false`
     )
     if (!response.ok) return []
     const data: HomeworkApiResponse = await response.json()
