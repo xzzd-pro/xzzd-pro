@@ -67,6 +67,15 @@
     ],
     "host_permissions": [
       "https://*/*"
-    ]
+    ],
+    "overrides": {
+      "firefox-mv3": {
+        "browser_specific_settings": {
+          "gecko": {
+            "id": "xzzd-pro@2444088970.qq.com"
+          }
+        }
+      }
+    }
   }
 }

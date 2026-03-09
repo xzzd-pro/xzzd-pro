@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: 'LXGW WenKai Screen';
-  src: url('data-url:../assets/LXGWWenKaiScreen.ttf') format('truetype');
+  src: url('/LXGWWenKaiScreen.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
