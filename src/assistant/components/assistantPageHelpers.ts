@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import { renderFlashcardBubble, renderFlashcardTipBubble } from "./flashcardRenderer";
 import { renderMindmapBubble, renderMindmapTipBubble } from "./mindmapRenderer";
+import { normalizeMathDelimiters } from "../utils/mathUtils";
 import { marked } from "marked";
 
 export function renderAssistantPage(username: string = ""): string {
@@ -355,6 +356,7 @@ export function parseMarkdown(text: string): string {
 
   // Remove tokens like <|begin_of_box|>, <|end_of_box|>, etc.
   let cleanText = text.replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "").trim();
+  cleanText = normalizeMathDelimiters(cleanText);
 
   // Process Math formulas first
   const mathBlocks: string[] = [];

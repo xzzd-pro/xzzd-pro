@@ -1,4 +1,5 @@
 import type { FlashcardData, Flashcard } from "../types/flashcard"
+import { normalizeMathDelimiters } from "../utils/mathUtils"
 
 type PackType = "favorite" | "fuzzy" | "mastered"
 const PACK_DRAW_SIZE = 10
@@ -58,7 +59,7 @@ function formatWithLatex(text: string): string {
   const blockMath: string[] = []
   const inlineMath: string[] = []
 
-  let processed = clampText(text).replace(/\$\$\s*([\s\S]+?)\s*\$\$/g, (_, formula: string) => {
+  let processed = normalizeMathDelimiters(clampText(text)).replace(/\$\$\s*([\s\S]+?)\s*\$\$/g, (_, formula: string) => {
     blockMath.push(formula)
     return `@@BLOCK_MATH_${blockMath.length - 1}@@`
   })
