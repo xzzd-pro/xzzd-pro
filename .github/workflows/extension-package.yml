@@ -32,11 +32,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Package Chrome
-        run: pnpm run package
+      - name: Build Chrome package
+        run: pnpm exec plasmo build --target=chrome-mv3 --tag=prod --zip
 
-      - name: Package Firefox
-        run: pnpm run package:firefox
+      - name: Build Firefox package
+        run: pnpm exec plasmo build --target=firefox-mv3 --tag=prod --zip
 
       - name: Prepare package names
         id: meta
