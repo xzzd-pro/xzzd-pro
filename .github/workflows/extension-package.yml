@@ -38,26 +38,25 @@ jobs:
       - name: Build Firefox package
         run: pnpm exec plasmo build --target=firefox-mv3 --tag=prod --zip
 
-      - name: Prepare package names
+      - name: Prepare packages
         id: meta
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "chrome_zip=build/xzzd-pro-chrome-${VERSION}.zip" >> "$GITHUB_OUTPUT"
-          echo "firefox_zip=build/xzzd-pro-firefox-${VERSION}.zip" >> "$GITHUB_OUTPUT"
-          mv build/chrome-mv3-prod.zip "build/xzzd-pro-chrome-${VERSION}.zip"
-          mv build/firefox-mv3-prod.zip "build/xzzd-pro-firefox-${VERSION}.zip"
+          mkdir -p artifacts/chrome artifacts/firefox
+          unzip -q build/chrome-mv3-prod.zip -d artifacts/chrome/
+          unzip -q build/firefox-mv3-prod.zip -d artifacts/firefox/
 
       - name: Upload Chrome package
         uses: actions/upload-artifact@v4
         with:
           name: xzzd-pro-chrome-${{ steps.meta.outputs.version }}
-          path: ${{ steps.meta.outputs.chrome_zip }}
+          path: artifacts/chrome/*
           if-no-files-found: error
 
       - name: Upload Firefox package
         uses: actions/upload-artifact@v4
         with:
           name: xzzd-pro-firefox-${{ steps.meta.outputs.version }}
-          path: ${{ steps.meta.outputs.firefox_zip }}
+          path: artifacts/firefox/*
           if-no-files-found: error
