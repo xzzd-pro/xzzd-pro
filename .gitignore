@@ -36,6 +36,9 @@ dist/
 #other
 /.claude
 /.github
+!/.github/
+!/.github/workflows/
+!/.github/workflows/**
 README.md
 tsguide.html
 

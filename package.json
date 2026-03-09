@@ -10,8 +10,11 @@
   },
   "scripts": {
     "dev": "plasmo dev",
+    "dev:firefox": "plasmo dev --target=firefox-mv3",
     "build": "plasmo build",
-    "package": "plasmo package"
+    "build:firefox": "plasmo build --target=firefox-mv3 --tag=prod",
+    "package": "plasmo package",
+    "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.2.3",

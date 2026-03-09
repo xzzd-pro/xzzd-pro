@@ -1,0 +1,63 @@
+name: Package Extension
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Package Chrome
+        run: pnpm run package
+
+      - name: Package Firefox
+        run: pnpm run package:firefox
+
+      - name: Prepare package names
+        id: meta
+        run: |
+          VERSION="v$(node -p "require('./package.json').version")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "chrome_zip=build/xzzd-pro-chrome-${VERSION}.zip" >> "$GITHUB_OUTPUT"
+          echo "firefox_zip=build/xzzd-pro-firefox-${VERSION}.zip" >> "$GITHUB_OUTPUT"
+          mv build/chrome-mv3-prod.zip "build/xzzd-pro-chrome-${VERSION}.zip"
+          mv build/firefox-mv3-prod.zip "build/xzzd-pro-firefox-${VERSION}.zip"
+
+      - name: Upload Chrome package
+        uses: actions/upload-artifact@v4
+        with:
+          name: xzzd-pro-chrome-${{ steps.meta.outputs.version }}
+          path: ${{ steps.meta.outputs.chrome_zip }}
+          if-no-files-found: error
+
+      - name: Upload Firefox package
+        uses: actions/upload-artifact@v4
+        with:
+          name: xzzd-pro-firefox-${{ steps.meta.outputs.version }}
+          path: ${{ steps.meta.outputs.firefox_zip }}
+          if-no-files-found: error
