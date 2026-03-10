@@ -1,10 +1,40 @@
 import { useStorage } from "@plasmohq/storage/hook"
 import { storage } from "@/lib/storage"
 import { Switch } from "@/components/ui/switch"
-import { useEffect } from "react"
-import "../styles/global.css"
+import { Component, type ErrorInfo, type ReactNode, useEffect } from "react"
+import "../styles/popup.css"
 
-function IndexPopup() {
+class PopupErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("XZZDPRO Popup: 渲染失败", error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-80 p-6 bg-background text-foreground">
+          <p className="text-sm font-medium">插件设置加载失败</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            请刷新扩展页面后重试
+          </p>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
+function PopupContent() {
   const [beautifyEnabled, setBeautifyEnabled] = useStorage({
     key: "beautify-enabled",
     instance: storage
@@ -51,6 +81,14 @@ function IndexPopup() {
         </div>
       </div>
     </div>
+  )
+}
+
+function IndexPopup() {
+  return (
+    <PopupErrorBoundary>
+      <PopupContent />
+    </PopupErrorBoundary>
   )
 }
 
