@@ -86,7 +86,6 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 4. 选择 `build/firefox-mv3-prod/manifest.json` 完成临时安装。
 
 > 注意Firefox 的临时安装在浏览器重启后会失效，需要重新加载。
-> 并且在Firefox 中安装无法使用学习助理功能
 
 ### 学习助理配置
 
