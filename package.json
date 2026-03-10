@@ -11,10 +11,12 @@
   "scripts": {
     "dev": "plasmo dev",
     "dev:firefox": "plasmo dev --target=firefox-mv3",
-    "build": "plasmo build",
-    "build:firefox": "plasmo build --target=firefox-mv3 --tag=prod",
-    "package": "plasmo package",
-    "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod"
+    "build": "plasmo build && pnpm run fix:locales",
+    "build:firefox": "plasmo build --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id && pnpm run fix:locales",
+    "package": "plasmo package && pnpm run fix:locales",
+    "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id && pnpm run fix:locales",
+    "fix:firefox:addon-id": "node scripts/inject-firefox-addon-id.mjs",
+    "fix:locales": "node scripts/inject-locales.mjs"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.2.3",
@@ -61,6 +63,9 @@
     "typescript": "5.3.3"
   },
   "manifest": {
+    "name": "__MSG_extensionName__",
+    "description": "__MSG_extensionDescription__",
+    "default_locale": "en",
     "permissions": [
       "storage",
       "tabs"
@@ -68,13 +73,9 @@
     "host_permissions": [
       "https://*/*"
     ],
-    "overrides": {
-      "firefox-mv3": {
-        "browser_specific_settings": {
-          "gecko": {
-            "id": "xzzd-pro@2444088970.qq.com"
-          }
-        }
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "xzzd-pro@2444088970.qq.com"
       }
     }
   }

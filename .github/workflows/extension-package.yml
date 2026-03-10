@@ -38,6 +38,12 @@ jobs:
       - name: Build Firefox package
         run: pnpm exec plasmo build --target=firefox-mv3 --tag=prod --zip
 
+      - name: Inject Firefox addon id
+        run: pnpm run fix:firefox:addon-id
+
+      - name: Inject locales
+        run: pnpm run fix:locales
+
       - name: Prepare packages
         id: meta
         run: |
