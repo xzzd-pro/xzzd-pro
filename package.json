@@ -75,7 +75,12 @@
     ],
     "browser_specific_settings": {
       "gecko": {
-        "id": "xzzd-pro@2444088970.qq.com"
+        "id": "xzzd-pro@2444088970.qq.com",
+        "data_collection_permissions": {
+          "required": [
+            "none"
+          ]
+        }
       }
     }
   }
