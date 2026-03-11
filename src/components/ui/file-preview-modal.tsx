@@ -69,7 +69,7 @@ function getFileTypeInfo(filename: string) {
 function canPreviewFile(filename: string): boolean {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
   const previewableTypes = [
-    'pdf', 'txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h',
+    'pdf', 'ppt', 'pptx', 'txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h',
     'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',
     'mp4', 'avi', 'mov', 'mp3', 'wav'
   ]
@@ -353,7 +353,7 @@ export function FilePreviewModal({ isOpen, onClose, fileName, fileUrl, fileSize,
               )}
 
               {/* Text Preview */}
-              {['txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h'].includes(ext) && content && (
+              {['ppt', 'pptx', 'txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h'].includes(ext) && content && (
                 <div>
                   <h4 className="font-medium mb-3">文件内容</h4>
                   <div className="bg-muted rounded-lg p-4">

@@ -11,6 +11,7 @@ export interface StreamChatOptions {
     provider: Provider
     config: ProviderConfig
     onChunk: (chunk: string) => void
+    onFirstChunk?: () => void
     onComplete?: (fullResponse: string) => void
     onError?: (error: Error) => void
     onProgress?: (msg: string) => void
@@ -18,7 +19,7 @@ export interface StreamChatOptions {
 }
 
 export async function streamChat(options: StreamChatOptions): Promise<string> {
-    const { messages, context, provider, config, onChunk, onComplete, onError, onProgress, signal } = options
+    const { messages, context, provider, config, onChunk, onFirstChunk, onComplete, onError, onProgress, signal } = options
 
     try {
         if (signal?.aborted) {
@@ -52,6 +53,7 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
         // --- API Call Debug End ---
 
         let fullResponse = ''
+        let hasFirstChunk = false
         let abortListener: (() => void) | null = null
         try {
             const stream = await model.stream(langchainMessages) as AsyncIterable<any>
@@ -70,6 +72,10 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 }
                 const content = extractChunkText(chunk.content)
                 if (content) {
+                    if (!hasFirstChunk) {
+                        hasFirstChunk = true
+                        onFirstChunk?.()
+                    }
                     fullResponse += content
                     onChunk(content)
                 }
@@ -93,6 +99,10 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                     }
                     const content = extractChunkText(chunk.content)
                     if (content) {
+                        if (!hasFirstChunk) {
+                            hasFirstChunk = true
+                            onFirstChunk?.()
+                        }
                         fullResponse += content
                         onChunk(content)
                     }

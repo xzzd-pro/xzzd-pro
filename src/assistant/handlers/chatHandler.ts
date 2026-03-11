@@ -389,6 +389,7 @@ function appendLoadingPreviewChunk(handle: LoadingIndicatorHandle, chunk: string
 }
 
 function setLoadingPhase(handle: LoadingIndicatorHandle, phase: LoadingIndicatorHandle['phase']): void {
+  const previousPhase = handle.phase
   if (phase === 'receiving' && !handle.receivingStartedAt) {
     if (handle.frozenWaitingElapsedMs === undefined) {
       handle.frozenWaitingElapsedMs = Date.now() - handle.waitingStartedAt
@@ -407,6 +408,9 @@ function setLoadingPhase(handle: LoadingIndicatorHandle, phase: LoadingIndicator
     handle.toggleBtn.disabled = false
   }
   updateLoadingStatusText(handle)
+  if (previousPhase !== phase) {
+    console.debug('XZZDPRO: stream phase transition', { from: previousPhase, to: phase })
+  }
 }
 
 function freezeLoadingTimer(handle: LoadingIndicatorHandle): void {
@@ -569,13 +573,16 @@ async function streamToolResponseWithTimeout(options: {
         if (settled) return
         onProgress(msg)
       },
-      onChunk: (chunk) => {
+      onFirstChunk: () => {
         if (settled) return
-        if (!hasFirstChunk && chunk) {
+        if (!hasFirstChunk) {
           hasFirstChunk = true
           clearTimer()
           onFirstChunk?.()
         }
+      },
+      onChunk: (chunk) => {
+        if (settled) return
         fullResponse += chunk
         onChunk?.(chunk)
       }

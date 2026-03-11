@@ -33,6 +33,43 @@ export interface VisualContent {
 }
 const visualContentCache = new Map<string, VisualContent>()
 
+function isBracketMessage(content: string): boolean {
+    const text = (content || '').trim()
+    return text.startsWith('[') && text.endsWith(']')
+}
+
+function isInsufficientTextContent(content: string, ext: string): boolean {
+    const trimmed = (content || '').trim()
+    if (!trimmed) {
+        return true
+    }
+
+    // Short extracted PDF text is often image-based, keep heuristic for PDF only.
+    if (ext === 'pdf' && trimmed.length < 50) {
+        return true
+    }
+
+    return false
+}
+
+function isLegacyIgnoredPlaceholder(content?: string): boolean {
+    const text = (content || '').trim()
+    return text.includes('文件内容过短或为空')
+        || text.includes('内容过短或为空')
+        || text === '[文件内容过短或为空，已忽略]'
+        || text === '(此文件内容过短或为空，无法提取文本)'
+}
+
+function buildInsufficientContentMessage(ext: string, fileName: string): string {
+    if (ext === 'pptx') {
+        return `[文件 ${fileName}：PPTX 未提取到可读文本，可能为纯图片课件或文件受保护]`
+    }
+    if (ext === 'ppt') {
+        return `[文件 ${fileName}：文件类型 ppt 暂不支持解析，请先转换为 pptx 或 pdf]`
+    }
+    return `[文件 ${fileName}：内容过短或为空，已忽略]`
+}
+
 export async function buildSystemPrompt(context: CourseContext, onProgress?: (msg: string) => void): Promise<string> {
     const contextText = await formatContextToText(context, onProgress)
     return SYSTEM_PROMPT_TEMPLATE
@@ -94,6 +131,11 @@ export async function preloadCourseContext(context: CourseContext, onProgress?: 
                     const ext = file.name.split('.').pop()?.toLowerCase() || ''
                     // Check if valid type
                     if (SUPPORTED_TEXT_LIKE_EXTENSIONS.includes(ext)) {
+                        const cached = fileContentCache.get(file.downloadUrl)
+                        if (cached && isLegacyIgnoredPlaceholder(cached) && ext !== 'pdf') {
+                            fileContentCache.delete(file.downloadUrl)
+                        }
+
                         // Check cache
                         if (fileContentCache.has(file.downloadUrl) || visualContentCache.has(file.downloadUrl)) {
                             continue;
@@ -106,8 +148,11 @@ export async function preloadCourseContext(context: CourseContext, onProgress?: 
                             if (content.startsWith('[') && content.includes('失败')) {
                                 // Failed
                                 if (onProgress) onProgress(`读取失败: ${file.name}`, 'error')
-                            } else if (!content || content.trim().length < 50) {
-                                // Too short - likely an image PDF
+                            } else if (isBracketMessage(content)) {
+                                fileContentCache.set(file.downloadUrl, content)
+                                if (onProgress) onProgress(`已读取状态信息: ${file.name}`, 'info')
+                            } else if (isInsufficientTextContent(content, ext)) {
+                                // Empty or (PDF-only) too short extracted text.
                                 if (ext === 'pdf') {
                                     if (onProgress) onProgress(`检测到图片PDF: ${file.name}，正在转换...`, 'info')
                                     // Try to convert to images
@@ -126,7 +171,7 @@ export async function preloadCourseContext(context: CourseContext, onProgress?: 
                                     }
                                 } else {
                                     if (onProgress) onProgress(`忽略空文件: ${file.name}`, 'info')
-                                    fileContentCache.set(file.downloadUrl, `[文件内容过短或为空，已忽略]`)
+                                    fileContentCache.set(file.downloadUrl, buildInsufficientContentMessage(ext, file.name))
                                 }
                             } else {
                                 // Success
@@ -168,10 +213,15 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
                         line += `\n\n  --- 文件内容: ${file.name} ---\n`
 
                         // Check cache first
-                        if (fileContentCache.has(file.downloadUrl)) {
+                        const cached = fileContentCache.get(file.downloadUrl)
+                        const shouldBypassLegacyPlaceholder = !!cached && isLegacyIgnoredPlaceholder(cached) && ext !== 'pdf'
+                        if (fileContentCache.has(file.downloadUrl) && !shouldBypassLegacyPlaceholder) {
                             // Cache hit - use it silently
                             line += fileContentCache.get(file.downloadUrl)
                         } else {
+                            if (shouldBypassLegacyPlaceholder) {
+                                fileContentCache.delete(file.downloadUrl)
+                            }
                             // Cache miss - fetch it (should rarely happen if preloaded)
                             try {
                                 if (onProgress) onProgress(`正在读取文件: ${file.name}...`)
@@ -180,12 +230,14 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
                                 if (content.startsWith('[') && content.includes('失败')) {
                                     if (onProgress) onProgress(`❌ 读取失败: ${file.name} - ${content}`)
                                     line += `  (文件读取失败: ${content})`
-                                } else if (!content || content.trim().length < 50) {
-                                    // Stricter check: < 50 chars
+                                } else if (isBracketMessage(content)) {
+                                    line += `  ${content}`
+                                    fileContentCache.set(file.downloadUrl, content)
+                                } else if (isInsufficientTextContent(content, ext)) {
                                     // Check if we have visual content for this file
                                     if (visualContentCache.has(file.downloadUrl)) {
                                         const visual = visualContentCache.get(file.downloadUrl)
-                                        line += `  [此文件为图片PDF，包含 ${visual?.images.length} 页图片，请查看附带的图片内容]`
+                                        line += `  [文件 ${file.name} 为图片PDF，包含 ${visual?.images.length} 页图片，请查看附带的图片内容]`
                                         if (onProgress) onProgress(`✅ 已启用图片模式: ${file.name} (${visual?.images.length} 页)`)
                                     } else {
                                         // Try to detect and convert if not already cached (JIT conversion for lazy loading)
@@ -200,17 +252,17 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
                                                             filename: file.name,
                                                             images
                                                         })
-                                                        line += `  [此文件为图片PDF，包含 ${images.length} 页图片，请查看附带的图片内容]`
+                                                        line += `  [文件 ${file.name} 为图片PDF，包含 ${images.length} 页图片，请查看附带的图片内容]`
                                                         if (onProgress) onProgress(`✅ 转换成功: ${file.name} (${images.length} 页)`)
                                                     } else {
-                                                        line += `  (此文件内容过短或为空，无法提取文本)`
+                                                        line += `  [文件 ${file.name} 为图片PDF，但未能转换出可用图片]`
                                                     }
                                                 } else {
                                                     line += `  (文件读取失败)`
                                                 }
                                             } else {
                                                 if (onProgress) onProgress(`⚠️ 内容过短或为空: ${file.name}`)
-                                                line += `  (此文件内容过短或为空，无法提取文本)`
+                                                line += `  ${buildInsufficientContentMessage(ext, file.name)}`
                                             }
                                         } catch (e) {
                                             line += `  (转换为图片失败: ${String(e)})`
@@ -218,7 +270,7 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
 
                                         // Cache file-level fallback text only, avoid polluting cache with whole material section.
                                         if (!visualContentCache.has(file.downloadUrl)) {
-                                            fileContentCache.set(file.downloadUrl, '  (此文件内容过短或为空，无法提取文本)')
+                                            fileContentCache.set(file.downloadUrl, buildInsufficientContentMessage(ext, file.name))
                                         }
                                     }
                                 } else {

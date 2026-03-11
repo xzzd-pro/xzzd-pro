@@ -31,6 +31,7 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 - 支持生成笔记与闪卡，辅助复习
 - 支持自定义 API Key，不依赖原有“浙大先生”
 - 支持多模型与多平台接入：GPT、Claude、Gemini，以及硅基流动、OpenRouter、阿里云等
+- 注意 AI 功能不支持ppt格式文件输入，仅支持pdf/pptx/docx等文本格式文件输入
 
 ![AI 闪卡示意图](./assets/screenshots/ai-flashcards.png)
 ![AI思维导图示意图](./assets/screenshots/ai-mindmaps.png)

@@ -59,6 +59,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@18.2.0)
