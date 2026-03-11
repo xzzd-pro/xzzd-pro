@@ -1,11 +1,12 @@
 import type { CourseContext, MaterialFile } from '../types'
 import { fetchFileContent, fetchPdfBlob, convertPdfToImages } from './fileService'
+import { MAX_CONTEXT_LENGTH } from '../config'
 
 const SYSTEM_PROMPT_TEMPLATE = `你是一个学习助理，专门帮助学生理解课程内容。
 
 规则：
-1. 只基于以下课程资料回答问题，不要延伸额外知识点
-2. 如果资料中没有相关内容，请明确告知学生"课程资料中没有找到相关内容"
+1. 优先基于以下课程资料回答，并在有依据时明确给出对应资料线索（如文件名或章节）
+2. 若课程资料不足以直接回答，可提供通识推断；必须先说明“以下为基于通识知识的补充，非课件原文”
 3. 回答要简洁明了，适合学习场景
 4. 使用与学生问题相同的语言回答
 5. 如果提供了课件图片，请仔细查看图片内容来回答问题
@@ -15,6 +16,12 @@ const SYSTEM_PROMPT_TEMPLATE = `你是一个学习助理，专门帮助学生理
 
 课程资料：
 {context}`
+
+const SUPPORTED_TEXT_LIKE_EXTENSIONS = [
+    'pdf', 'txt', 'md', 'json',
+    'java', 'py', 'js', 'ts', 'c', 'cpp', 'cc', 'h', 'hpp', 'cs', 'go', 'rs', 'swift', 'kt', 'scala', 'rb', 'php', 'sh', 'bat', 'cmd', 'ps1',
+    'ppt', 'pptx'
+]
 
 // In-memory cache for file contents (text)
 const fileContentCache = new Map<string, string>()
@@ -86,7 +93,7 @@ export async function preloadCourseContext(context: CourseContext, onProgress?: 
                 for (const file of material.files) {
                     const ext = file.name.split('.').pop()?.toLowerCase() || ''
                     // Check if valid type
-                    if (['pdf', 'txt', 'md', 'java', 'py', 'js', 'ts', 'c', 'cpp', 'cc', 'h', 'hpp', 'cs', 'go', 'rs', 'swift', 'kt', 'scala', 'rb', 'php', 'sh', 'bat', 'cmd', 'ps1'].includes(ext)) {
+                    if (SUPPORTED_TEXT_LIKE_EXTENSIONS.includes(ext)) {
                         // Check cache
                         if (fileContentCache.has(file.downloadUrl) || visualContentCache.has(file.downloadUrl)) {
                             continue;
@@ -157,7 +164,7 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
                 // Fetch full content for files
                 for (const file of material.files) {
                     const ext = file.name.split('.').pop()?.toLowerCase() || ''
-                    if (['pdf', 'txt', 'md', 'java', 'py', 'js', 'ts', 'c', 'cpp', 'cc', 'h', 'hpp', 'cs', 'go', 'rs', 'swift', 'kt', 'scala', 'rb', 'php', 'sh', 'bat', 'cmd', 'ps1'].includes(ext)) {
+                    if (SUPPORTED_TEXT_LIKE_EXTENSIONS.includes(ext)) {
                         line += `\n\n  --- 文件内容: ${file.name} ---\n`
 
                         // Check cache first
@@ -209,9 +216,9 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
                                             line += `  (转换为图片失败: ${String(e)})`
                                         }
 
-                                        // Cache this text result effectively (but we might have updated visual cache)
+                                        // Cache file-level fallback text only, avoid polluting cache with whole material section.
                                         if (!visualContentCache.has(file.downloadUrl)) {
-                                            fileContentCache.set(file.downloadUrl, line)
+                                            fileContentCache.set(file.downloadUrl, '  (此文件内容过短或为空，无法提取文本)')
                                         }
                                     }
                                 } else {
@@ -254,7 +261,7 @@ async function formatContextToText(context: CourseContext, onProgress?: (msg: st
         result = '暂无课程资料'
     }
 
-    return result
+    return limitContextLength(result, MAX_CONTEXT_LENGTH)
 }
 
 function truncateText(text: string, maxLength: number): string {
@@ -272,4 +279,12 @@ function formatDeadline(isoTime: string): string {
     const hours = date.getHours().toString().padStart(2, '0')
     const minutes = date.getMinutes().toString().padStart(2, '0')
     return `${month}月${day}日 ${hours}:${minutes}`
+}
+
+function limitContextLength(text: string, maxLength: number): string {
+    if (!text || text.length <= maxLength) {
+        return text
+    }
+    const truncated = text.slice(0, maxLength)
+    return `${truncated}\n\n[上下文过长，后续内容已截断]`
 }

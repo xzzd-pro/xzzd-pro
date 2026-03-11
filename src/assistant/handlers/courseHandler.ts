@@ -9,13 +9,39 @@ import { setupSettingsHandlers } from './settingsHandler'
 import { setupChatHandlers } from './chatHandler'
 import type { CourseInfo, CourseContext, MaterialFile, AssistantSettings } from '../types'
 
+type SelectedMaterial = {
+  file: MaterialFile
+  materialTitle: string
+}
+
 // State references (will be set via setter functions)
 let overlayElement: HTMLElement | null = null
 let currentSettings: AssistantSettings | null = null
 let currentCourseId: string | null = null
 let currentCourseName: string = ''
 let courses: CourseInfo[] = []
-const selectedCourseMaterials = new Map<string, { file: MaterialFile; materialTitle: string }>()
+const selectedCourseMaterials = new Map<string, SelectedMaterial>()
+
+function normalizeMaterialUrl(downloadUrl: string): string {
+  const raw = (downloadUrl || '').trim()
+  if (!raw) return ''
+  try {
+    const parsed = new URL(raw)
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '')
+  } catch {
+    return raw.split('?')[0].split('#')[0].replace(/\/+$/, '')
+  }
+}
+
+function extractUploadId(value: string): string | null {
+  const normalized = normalizeMaterialUrl(value)
+  const match = normalized.match(/\/uploads\/(\d+)\/blob$/)
+  return match?.[1] || null
+}
+
+export function getMaterialSelectionKey(downloadUrl: string): string {
+  return normalizeMaterialUrl(downloadUrl)
+}
 
 // Setter functions for state management
 export function setOverlayElement(element: HTMLElement | null): void {
@@ -54,7 +80,7 @@ export function getCourses(): CourseInfo[] {
   return courses
 }
 
-export function getSelectedCourseMaterials(): Map<string, { file: MaterialFile; materialTitle: string }> {
+export function getSelectedCourseMaterials(): Map<string, SelectedMaterial> {
   return selectedCourseMaterials
 }
 
@@ -97,20 +123,39 @@ export function bindSidebarCourseSelection(): void {
 
 export function filterContextBySelectedMaterials(context: CourseContext): CourseContext {
   if (selectedCourseMaterials.size === 0) {
-    return {
-      ...context,
-      materials: []
-    }
+    return context
   }
 
-  const selectedByUrl = new Map<string, MaterialFile>()
-  selectedCourseMaterials.forEach(({ file }, downloadUrl) => {
-    selectedByUrl.set(downloadUrl, file)
+  const selectedByUrl = new Set<string>()
+  const selectedByUploadId = new Set<string>()
+
+  selectedCourseMaterials.forEach(({ file }, selectionKey) => {
+    const normalizedKey = normalizeMaterialUrl(selectionKey || file.downloadUrl || '')
+    if (normalizedKey) {
+      selectedByUrl.add(normalizedKey)
+    }
+    const uploadId = extractUploadId(normalizedKey || file.downloadUrl || '')
+    if (uploadId) {
+      selectedByUploadId.add(uploadId)
+    }
+    if (Number.isFinite(Number(file.id))) {
+      selectedByUploadId.add(String(file.id))
+    }
   })
 
   const filteredMaterials = context.materials
     .map((material) => {
-      const filteredFiles = (material.files || []).filter(file => selectedByUrl.has(file.downloadUrl))
+      const filteredFiles = (material.files || []).filter((file) => {
+        const normalizedUrl = normalizeMaterialUrl(file.downloadUrl || '')
+        if (normalizedUrl && selectedByUrl.has(normalizedUrl)) {
+          return true
+        }
+        const uploadId = extractUploadId(normalizedUrl || file.downloadUrl || '')
+        if (uploadId && selectedByUploadId.has(uploadId)) {
+          return true
+        }
+        return Number.isFinite(Number(file.id)) && selectedByUploadId.has(String(file.id))
+      })
       return {
         ...material,
         files: filteredFiles

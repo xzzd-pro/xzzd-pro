@@ -19,10 +19,58 @@ import {
   openAssistantPrompt,
   openAssistantConfirm
 } from '../utils/uiUtils'
-import { filterContextBySelectedMaterials, getCurrentSettings, getCurrentCourseId, getCurrentCourseName, getSelectedCourseMaterials } from './courseHandler'
-import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData } from '../types'
+import { filterContextBySelectedMaterials, getCurrentSettings, getCurrentCourseId, getCurrentCourseName, getSelectedCourseMaterials, getMaterialSelectionKey } from './courseHandler'
+import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData, CourseContext, Provider, MaterialFile } from '../types'
 
 type ChatMode = 'chat' | 'flashcard' | 'mindmap'
+type MaterialLoadStatus = 'pending' | 'ready' | 'failed'
+
+interface MaterialLoadState {
+  status: MaterialLoadStatus
+  fileName: string
+  updatedAt: number
+  error?: string
+  promise?: Promise<void>
+}
+
+interface LoadingIndicatorHandle {
+  root: HTMLElement
+  statusEl: HTMLElement
+  toggleBtn: HTMLButtonElement
+  stopBtn: HTMLButtonElement
+  previewWrap: HTMLElement
+  previewEl: HTMLElement
+  startedAt: number
+  waitingStartedAt: number
+  receivingStartedAt: number | null
+  timerId: number | null
+  expanded: boolean
+  phase: 'waiting' | 'receiving' | 'stopped'
+  bufferedText: string
+  frozenWaitingElapsedMs?: number
+  frozenReceivingElapsedMs?: number
+}
+
+interface ActiveRunState {
+  runId: number
+  mode: ChatMode
+  assistantMsgId: string
+  controller: AbortController
+  stopped: boolean
+  stoppedByUser: boolean
+  loading: LoadingIndicatorHandle
+}
+
+const MATERIAL_PRELOAD_WAIT_TIMEOUT_MS = 8000
+const TOOL_PRIMARY_TIMEOUT_MS = 90000
+const TOOL_RETRY_TIMEOUT_MS = 45000
+const TOOL_PRIMARY_HISTORY_WINDOW = 10
+const TOOL_RETRY_HISTORY_WINDOW = 4
+const TOOL_PARSE_RAW_MAX_CHARS = 3000
+const LOADING_TIMER_INTERVAL_MS = 1000
+const LOADING_STATUS_WAITING = '正在等待回复'
+const LOADING_STATUS_RECEIVING = '正在接收回复'
+const LOADING_STATUS_STOPPED = '已手动停止'
 
 // State
 let overlayElement: HTMLElement | null = null
@@ -32,6 +80,9 @@ let isFlashcardSplitView = false
 let isSplitTransitioning = false
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
+const materialLoadStates = new Map<string, MaterialLoadState>()
+let activeRun: ActiveRunState | null = null
+let runCounter = 0
 
 // External handlers for cleanup
 let externalSplitToggleHandler: ((event: Event) => void) | null = null
@@ -40,6 +91,7 @@ let externalMaterialToggleHandler: ((event: Event) => void) | null = null
 let externalMindmapSelectHandler: ((event: Event) => void) | null = null
 let externalMindmapRenameHandler: ((event: Event) => void) | null = null
 let externalMindmapDeleteHandler: ((event: Event) => void) | null = null
+let externalCourseChangedHandler: ((event: Event) => void) | null = null
 
 // Setter functions
 export function setOverlayElement(element: HTMLElement | null): void {
@@ -115,6 +167,14 @@ export function cleanupChatHandlers(): void {
   if (externalMindmapDeleteHandler) {
     window.removeEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
     externalMindmapDeleteHandler = null
+  }
+  if (externalCourseChangedHandler) {
+    window.removeEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
+    externalCourseChangedHandler = null
+  }
+  if (activeRun) {
+    stopRun(activeRun, false)
+    clearActiveRun(activeRun)
   }
 }
 
@@ -281,6 +341,344 @@ function updateMindmapMarkdownTitle(markdown: string, newTitle: string): string 
   return `# ${newTitle}\n\n${cleaned}`
 }
 
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0')
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0')
+  return `${minutes}:${seconds}`
+}
+
+function getWaitingElapsedMs(handle: LoadingIndicatorHandle): number {
+  return handle.frozenWaitingElapsedMs ?? (Date.now() - handle.waitingStartedAt)
+}
+
+function getReceivingElapsedMs(handle: LoadingIndicatorHandle): number {
+  if (!handle.receivingStartedAt) {
+    return handle.frozenReceivingElapsedMs ?? 0
+  }
+  return handle.frozenReceivingElapsedMs ?? (Date.now() - handle.receivingStartedAt)
+}
+
+function updateLoadingStatusText(handle: LoadingIndicatorHandle): void {
+  const waitingText = formatElapsed(getWaitingElapsedMs(handle))
+  const receivingText = formatElapsed(getReceivingElapsedMs(handle))
+  if (handle.phase === 'waiting') {
+    handle.statusEl.textContent = `${LOADING_STATUS_WAITING}（等待 ${waitingText}）`
+    return
+  }
+  if (handle.phase === 'receiving') {
+    handle.statusEl.textContent = `${LOADING_STATUS_RECEIVING}（接收 ${receivingText}，等待 ${waitingText}）`
+    return
+  }
+  handle.statusEl.textContent = `${LOADING_STATUS_STOPPED}（接收 ${receivingText}，等待 ${waitingText}）`
+}
+
+function setLoadingExpanded(handle: LoadingIndicatorHandle, expanded: boolean): void {
+  handle.expanded = expanded
+  handle.previewWrap.style.display = expanded ? 'block' : 'none'
+  handle.toggleBtn.textContent = expanded ? '收起预览' : '展开预览'
+}
+
+function appendLoadingPreviewChunk(handle: LoadingIndicatorHandle, chunk: string): void {
+  if (!chunk) return
+  handle.bufferedText += chunk
+  handle.previewEl.textContent = handle.bufferedText
+  if (handle.expanded) {
+    handle.previewEl.scrollTop = handle.previewEl.scrollHeight
+  }
+}
+
+function setLoadingPhase(handle: LoadingIndicatorHandle, phase: LoadingIndicatorHandle['phase']): void {
+  if (phase === 'receiving' && !handle.receivingStartedAt) {
+    if (handle.frozenWaitingElapsedMs === undefined) {
+      handle.frozenWaitingElapsedMs = Date.now() - handle.waitingStartedAt
+    }
+    handle.receivingStartedAt = Date.now()
+  }
+  handle.phase = phase
+  if (phase === 'waiting') {
+    handle.toggleBtn.disabled = true
+    handle.toggleBtn.title = '收到内容后可展开预览'
+    setLoadingExpanded(handle, false)
+  } else if (phase === 'receiving') {
+    handle.toggleBtn.disabled = false
+    handle.toggleBtn.title = ''
+  } else {
+    handle.toggleBtn.disabled = false
+  }
+  updateLoadingStatusText(handle)
+}
+
+function freezeLoadingTimer(handle: LoadingIndicatorHandle): void {
+  if (handle.frozenWaitingElapsedMs === undefined) {
+    handle.frozenWaitingElapsedMs = Date.now() - handle.waitingStartedAt
+  }
+  if (handle.frozenReceivingElapsedMs === undefined) {
+    handle.frozenReceivingElapsedMs = handle.receivingStartedAt ? Date.now() - handle.receivingStartedAt : 0
+  }
+  if (handle.timerId !== null) {
+    window.clearInterval(handle.timerId)
+    handle.timerId = null
+  }
+}
+
+function finalizeLoadingIndicator(handle: LoadingIndicatorHandle, remove = true): void {
+  freezeLoadingTimer(handle)
+  if (remove) {
+    handle.root.remove()
+  }
+}
+
+function createActiveRun(mode: ChatMode, assistantMsgId: string, loading: LoadingIndicatorHandle): ActiveRunState {
+  if (activeRun) {
+    stopRun(activeRun, false)
+    clearActiveRun(activeRun)
+  }
+  runCounter += 1
+  const run: ActiveRunState = {
+    runId: runCounter,
+    mode,
+    assistantMsgId,
+    controller: new AbortController(),
+    stopped: false,
+    stoppedByUser: false,
+    loading
+  }
+  activeRun = run
+  return run
+}
+
+function isRunCurrent(run: ActiveRunState): boolean {
+  return !!activeRun && activeRun.runId === run.runId
+}
+
+function stopRun(run: ActiveRunState, stoppedByUser = true): void {
+  if (!isRunCurrent(run) || run.stopped) return
+  run.stopped = true
+  run.stoppedByUser = stoppedByUser
+  run.controller.abort()
+  run.loading.stopBtn.disabled = true
+  setLoadingPhase(run.loading, 'stopped')
+  freezeLoadingTimer(run.loading)
+}
+
+function clearActiveRun(run: ActiveRunState): void {
+  if (isRunCurrent(run)) {
+    activeRun = null
+  }
+}
+
+function trimRawModelOutput(raw: string): string {
+  const content = sanitizeModelOutput(raw || '').trim()
+  if (!content) return ''
+  if (content.length <= TOOL_PARSE_RAW_MAX_CHARS) {
+    return content
+  }
+  return `${content.slice(0, TOOL_PARSE_RAW_MAX_CHARS)}\n\n...(模型输出过长，已截断)`
+}
+
+function buildToolParseFailureMessage(toolLabel: string, raw: string): string {
+  const preview = trimRawModelOutput(raw)
+  if (!preview) {
+    return `未能解析${toolLabel}结构，模型返回为空。`
+  }
+  return `未能解析${toolLabel}结构，以下为模型原始输出：\n\n${preview}`
+}
+
+function buildToolMessagesWithWindow(
+  baseMessages: ChatMessage[],
+  promptContent: string,
+  historyWindow: number
+): ChatMessage[] {
+  const history = historyWindow > 0 ? baseMessages.slice(-historyWindow) : []
+  return history.map((msg, idx, arr) => {
+    if (idx === arr.length - 1 && msg.role === 'user') {
+      return { ...msg, content: promptContent }
+    }
+    return msg
+  })
+}
+
+function buildToolRetryContext(context: CourseContext): CourseContext {
+  const trimmedMaterials = context.materials
+    .slice(0, 3)
+    .map((material) => ({
+      ...material,
+      files: (material.files || []).slice(0, 2)
+    }))
+  return {
+    ...context,
+    materials: trimmedMaterials
+  }
+}
+
+async function streamToolResponseWithTimeout(options: {
+  messages: ChatMessage[]
+  context: CourseContext
+  provider: Provider
+  config: ProviderConfig
+  timeoutMs: number
+  signal?: AbortSignal
+  onProgress: (msg: string) => void
+  onChunk?: (chunk: string) => void
+  onFirstChunk?: () => void
+}): Promise<string> {
+  const { messages, context, provider, config, timeoutMs, signal, onProgress, onChunk, onFirstChunk } = options
+  let fullResponse = ''
+  let settled = false
+  let hasFirstChunk = false
+
+  await new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new Error('STREAM_ABORTED'))
+      return
+    }
+
+    let timer = 0
+    const clearTimer = () => {
+      if (timer) {
+        window.clearTimeout(timer)
+      }
+    }
+
+    const abortListener = () => {
+      if (settled) return
+      settled = true
+      clearTimer()
+      signal?.removeEventListener('abort', abortListener)
+      reject(new Error('STREAM_ABORTED'))
+    }
+
+    timer = window.setTimeout(() => {
+      if (settled) return
+      if (hasFirstChunk) return
+      settled = true
+      signal?.removeEventListener('abort', abortListener)
+      reject(new Error(`TOOL_TIMEOUT:${timeoutMs}`))
+    }, timeoutMs)
+
+    signal?.addEventListener('abort', abortListener, { once: true })
+
+    void streamChat({
+      messages,
+      context,
+      provider,
+      config,
+      signal,
+      onProgress: (msg) => {
+        if (settled) return
+        onProgress(msg)
+      },
+      onChunk: (chunk) => {
+        if (settled) return
+        if (!hasFirstChunk && chunk) {
+          hasFirstChunk = true
+          clearTimer()
+          onFirstChunk?.()
+        }
+        fullResponse += chunk
+        onChunk?.(chunk)
+      }
+    }).then(() => {
+      if (settled) return
+      settled = true
+      clearTimer()
+      signal?.removeEventListener('abort', abortListener)
+      resolve()
+    }).catch((error) => {
+      if (settled) return
+      settled = true
+      clearTimer()
+      signal?.removeEventListener('abort', abortListener)
+      reject(error)
+    })
+  })
+
+  return fullResponse
+}
+
+function isToolTimeoutError(error: unknown): boolean {
+  return error instanceof Error && error.message.startsWith('TOOL_TIMEOUT:')
+}
+
+function isStreamAbortError(error: unknown): boolean {
+  return error instanceof Error && error.message === 'STREAM_ABORTED'
+}
+
+function setMaterialLoadState(selectionKey: string, next: MaterialLoadState): void {
+  materialLoadStates.set(selectionKey, {
+    ...next,
+    updatedAt: Date.now()
+  })
+}
+
+function startSelectedMaterialPreload(selectionKey: string, file: MaterialFile, materialTitle: string): void {
+  const preloadPromise = (async () => {
+    try {
+      const { preloadSelectedMaterial } = await import('./courseHandler')
+      await preloadSelectedMaterial(file, materialTitle)
+      const current = materialLoadStates.get(selectionKey)
+      if (!current || current.promise !== preloadPromise) return
+      setMaterialLoadState(selectionKey, {
+        status: 'ready',
+        fileName: file.name
+      })
+    } catch (error) {
+      const current = materialLoadStates.get(selectionKey)
+      if (!current || current.promise !== preloadPromise) return
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      setMaterialLoadState(selectionKey, {
+        status: 'failed',
+        fileName: file.name,
+        error: errorMsg
+      })
+      showStatus(`读取失败: ${file.name}`, 'error')
+      console.error('Failed to preload selected material:', error)
+    }
+  })()
+
+  setMaterialLoadState(selectionKey, {
+    status: 'pending',
+    fileName: file.name,
+    promise: preloadPromise
+  })
+}
+
+async function waitForSelectedMaterialsReady(): Promise<void> {
+  const selected = getSelectedCourseMaterials()
+  if (selected.size === 0) return
+
+  const pendingEntries = Array.from(selected.keys())
+    .map((key) => [key, materialLoadStates.get(key)] as const)
+    .filter(([, state]) => state?.status === 'pending' && !!state.promise)
+
+  if (pendingEntries.length === 0) {
+    return
+  }
+
+  showStatus(`正在等待 ${pendingEntries.length} 份资料完成解析...`, 'info')
+  await Promise.race([
+    Promise.allSettled(pendingEntries.map(([, state]) => state!.promise as Promise<void>)).then(() => undefined),
+    new Promise<void>((resolve) => window.setTimeout(resolve, MATERIAL_PRELOAD_WAIT_TIMEOUT_MS))
+  ])
+
+  const selectedStates = Array.from(selected.keys())
+    .map((key) => materialLoadStates.get(key))
+    .filter((state): state is MaterialLoadState => !!state)
+
+  const stillPending = selectedStates.filter((state) => state.status === 'pending').map((state) => state.fileName)
+  if (stillPending.length > 0) {
+    showStatus(`部分资料仍在解析，先继续生成：${stillPending.slice(0, 2).join('、')}${stillPending.length > 2 ? ' 等' : ''}`, 'info')
+  }
+
+  const failed = selectedStates
+    .filter((state) => state.status === 'failed')
+    .map((state) => state.fileName)
+  if (failed.length > 0) {
+    showStatus(`以下资料解析失败：${failed.slice(0, 2).join('、')}${failed.length > 2 ? ' 等' : ''}`, 'error')
+  }
+}
+
 export function setupChatHandlers(): void {
   console.log('XZZDPRO: setupChatHandlers called')
   const input = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
@@ -420,6 +818,18 @@ export function setupChatHandlers(): void {
     void clearCurrentHistory()
   }
   window.addEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+
+  if (externalCourseChangedHandler) {
+    window.removeEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
+  }
+  externalCourseChangedHandler = () => {
+    if (activeRun) {
+      stopRun(activeRun, false)
+      clearActiveRun(activeRun)
+    }
+    materialLoadStates.clear()
+  }
+  window.addEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
 
   const persistCurrentMessages = async () => {
     const activeCourseId = getCurrentCourseId()
@@ -586,6 +996,9 @@ export function setupChatHandlers(): void {
 
     const selectedCourseMaterials = getSelectedCourseMaterials()
     const materialTitle = file.materialTitle || '课程资料'
+    const selectionKey = getMaterialSelectionKey(file.downloadUrl)
+    if (!selectionKey) return
+
     if (checked) {
       const normalizedFileId = Number(file.id)
       if (!Number.isFinite(normalizedFileId)) {
@@ -598,21 +1011,16 @@ export function setupChatHandlers(): void {
         size: file.size,
         downloadUrl: file.downloadUrl
       }
-      selectedCourseMaterials.set(file.downloadUrl, {
+      selectedCourseMaterials.set(selectionKey, {
         file: normalizedFile,
         materialTitle
       })
-      try {
-        const { preloadSelectedMaterial } = await import('./courseHandler')
-        await preloadSelectedMaterial(normalizedFile, materialTitle)
-      } catch (error) {
-        console.error('Failed to preload selected material:', error)
-        showStatus(`读取失败: ${file.name}`, 'error')
-      }
+      startSelectedMaterialPreload(selectionKey, normalizedFile, materialTitle)
       return
     }
 
-    selectedCourseMaterials.delete(file.downloadUrl)
+    selectedCourseMaterials.delete(selectionKey)
+    materialLoadStates.delete(selectionKey)
   }
   window.addEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
 
@@ -851,26 +1259,76 @@ export function setupChatHandlers(): void {
     return processedAttachments
   }
 
-  const appendAssistantLoading = (assistantMsg: ChatMessage) => {
+  const appendAssistantLoading = (assistantMsg: ChatMessage): LoadingIndicatorHandle | null => {
     const container = overlayElement?.querySelector('#messages-container')
-    if (!container) return
+    if (!container) return null
 
     const loadingDiv = document.createElement('div')
     loadingDiv.id = `loading-${assistantMsg.id}`
     loadingDiv.className = 'message assistant'
     loadingDiv.innerHTML = `
       <div class="message-body">
-          <div class="message-text">
-            <div class="typing-indicator">
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
-              <div class="typing-dot"></div>
+        <div class="stream-loading message-text">
+          <div class="stream-loading-header">
+            <div class="stream-loading-status" data-role="status"></div>
+            <div class="stream-loading-actions">
+              <button type="button" class="stream-loading-btn" data-action="toggle-preview">展开预览</button>
+              <button type="button" class="stream-loading-btn danger" data-action="stop-stream">停止输出</button>
             </div>
           </div>
+          <div class="stream-loading-preview-wrap" data-role="preview-wrap" style="display:none;">
+            <pre class="stream-loading-preview" data-role="preview"></pre>
+          </div>
+        </div>
       </div>
     `
     container.appendChild(loadingDiv)
+
+    const statusEl = loadingDiv.querySelector<HTMLElement>('[data-role="status"]')
+    const previewWrap = loadingDiv.querySelector<HTMLElement>('[data-role="preview-wrap"]')
+    const previewEl = loadingDiv.querySelector<HTMLElement>('[data-role="preview"]')
+    const toggleBtn = loadingDiv.querySelector<HTMLButtonElement>('[data-action="toggle-preview"]')
+    const stopBtn = loadingDiv.querySelector<HTMLButtonElement>('[data-action="stop-stream"]')
+
+    if (!statusEl || !previewWrap || !previewEl || !toggleBtn || !stopBtn) {
+      loadingDiv.remove()
+      return null
+    }
+
+    const handle: LoadingIndicatorHandle = {
+      root: loadingDiv,
+      statusEl,
+      toggleBtn,
+      stopBtn,
+      previewWrap,
+      previewEl,
+      startedAt: Date.now(),
+      waitingStartedAt: Date.now(),
+      receivingStartedAt: null,
+      timerId: null,
+      expanded: false,
+      phase: 'waiting',
+      bufferedText: ''
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      setLoadingExpanded(handle, !handle.expanded)
+    })
+
+    stopBtn.addEventListener('click', () => {
+      const run = activeRun
+      if (!run || run.assistantMsgId !== assistantMsg.id) return
+      stopRun(run, true)
+      showStatus('已停止输出，已保留当前内容', 'info')
+    })
+
+    setLoadingPhase(handle, 'waiting')
+    handle.timerId = window.setInterval(() => {
+      updateLoadingStatusText(handle)
+    }, LOADING_TIMER_INTERVAL_MS)
+
     scrollToBottom()
+    return handle
   }
 
   const sendChatMessage = async () => {
@@ -908,9 +1366,17 @@ export function setupChatHandlers(): void {
 
     const assistantMsg = createChatMessage('assistant', '')
     messages.push(assistantMsg)
-    appendAssistantLoading(assistantMsg)
+    const loadingHandle = appendAssistantLoading(assistantMsg)
+    if (!loadingHandle) {
+      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      renderMessages(messages, overlayElement)
+      setInteractionDisabled(false)
+      return
+    }
+    const run = createActiveRun('chat', assistantMsg.id, loadingHandle)
 
     try {
+      await waitForSelectedMaterialsReady()
       let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
       context = filterContextBySelectedMaterials(context)
 
@@ -918,6 +1384,7 @@ export function setupChatHandlers(): void {
       const config = activeSettings!.configs[provider] as ProviderConfig
 
       let responseText = ''
+      let hasFirstChunk = false
 
       await streamChat({
         messages: messages.slice(0, -1),
@@ -928,34 +1395,31 @@ export function setupChatHandlers(): void {
           baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
           model: config.model
         },
+        signal: run.controller.signal,
         onProgress: (msg) => {
+          if (!isRunCurrent(run) || run.stopped) return
           showStatus(msg, 'info')
-
-          if (responseText) {
-            assistantMsg.content = responseText
-            const msgEl = overlayElement?.querySelector(`#${assistantMsg.id}`)
-            if (msgEl) {
-              msgEl.outerHTML = renderChatMessage(assistantMsg)
-            }
-          }
         },
         onChunk: (chunk) => {
-          responseText += chunk
-          assistantMsg.content = responseText
-
-          const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
-          if (loadingEl) loadingEl.remove()
-
-          const msgEl = overlayElement?.querySelector(`#${assistantMsg.id}`)
-          if (msgEl) {
-            msgEl.outerHTML = renderChatMessage(assistantMsg)
-          } else {
-            const container = overlayElement?.querySelector('#messages-container')
-            container?.insertAdjacentHTML('beforeend', renderChatMessage(assistantMsg))
+          if (!isRunCurrent(run) || run.stopped) return
+          if (!hasFirstChunk) {
+            hasFirstChunk = true
+            setLoadingPhase(loadingHandle, 'receiving')
           }
+          responseText += chunk
+          appendLoadingPreviewChunk(loadingHandle, chunk)
           scrollToBottom()
         }
       })
+
+      if (run.stoppedByUser) {
+        assistantMsg.content = responseText.trim()
+          ? `${responseText}\n\n[已手动停止]`
+          : '[已手动停止]'
+      } else {
+        assistantMsg.content = responseText
+      }
+      renderMessages(messages, overlayElement)
 
       await saveChatHistory(activeCourseId, {
         courseId: activeCourseId,
@@ -965,15 +1429,28 @@ export function setupChatHandlers(): void {
       })
 
     } catch (error) {
-      console.error('Chat error:', error)
-      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '发生未知错误'
-      assistantMsg.content = `❌ ${errorMsg}`
-      renderMessages(messages, overlayElement)
+      if (isStreamAbortError(error) && run.stoppedByUser) {
+        assistantMsg.content = loadingHandle.bufferedText.trim()
+          ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
+          : '[已手动停止]'
+        renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
+      } else {
+        console.error('Chat error:', error)
+        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '发生未知错误'
+        assistantMsg.content = `❌ ${errorMsg}`
+        renderMessages(messages, overlayElement)
+      }
     } finally {
+      finalizeLoadingIndicator(loadingHandle, true)
+      clearActiveRun(run)
       setInteractionDisabled(false)
       if (input) input.focus()
-      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
-      if (loadingEl) loadingEl.remove()
     }
   }
 
@@ -1023,44 +1500,107 @@ export function setupChatHandlers(): void {
 
     const assistantMsg = createChatMessage('assistant', '')
     messages.push(assistantMsg)
-    appendAssistantLoading(assistantMsg)
+    const loadingHandle = appendAssistantLoading(assistantMsg)
+    if (!loadingHandle) {
+      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      renderMessages(messages, overlayElement)
+      setInteractionDisabled(false)
+      return
+    }
+    const run = createActiveRun('flashcard', assistantMsg.id, loadingHandle)
 
     const promptContent = buildFlashcardPrompt(content)
-    const modelMessages = messages.slice(0, -1).map((msg, idx, arr) => {
-      if (idx === arr.length - 1 && msg.role === 'user') {
-        return { ...msg, content: promptContent }
-      }
-      return msg
-    })
+    const primaryModelMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_PRIMARY_HISTORY_WINDOW)
 
     try {
+      await waitForSelectedMaterialsReady()
       let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
       const config = activeSettings!.configs[provider] as ProviderConfig
+      const resolvedConfig = {
+        apiKey: config.apiKey,
+        baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
+        model: config.model
+      }
 
-      let fullResponse = ''
+      let fullResponse: string
+      try {
+        fullResponse = await streamToolResponseWithTimeout({
+          messages: primaryModelMessages,
+          context,
+          provider,
+          config: resolvedConfig,
+          timeoutMs: TOOL_PRIMARY_TIMEOUT_MS,
+          signal: run.controller.signal,
+          onProgress: (msg) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            showStatus(msg, 'info')
+          },
+          onFirstChunk: () => {
+            if (!isRunCurrent(run) || run.stopped) return
+            setLoadingPhase(loadingHandle, 'receiving')
+          },
+          onChunk: (chunk) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            appendLoadingPreviewChunk(loadingHandle, chunk)
+            scrollToBottom()
+          }
+        })
+      } catch (error) {
+        if (!isToolTimeoutError(error)) throw error
+        showStatus('闪卡生成耗时较长，正在缩小上下文重试...', 'info')
+        const retryMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_RETRY_HISTORY_WINDOW)
+        const retryContext = buildToolRetryContext(context)
+        fullResponse = await streamToolResponseWithTimeout({
+          messages: retryMessages,
+          context: retryContext,
+          provider,
+          config: resolvedConfig,
+          timeoutMs: TOOL_RETRY_TIMEOUT_MS,
+          signal: run.controller.signal,
+          onProgress: (msg) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            showStatus(msg, 'info')
+          },
+          onFirstChunk: () => {
+            if (!isRunCurrent(run) || run.stopped) return
+            setLoadingPhase(loadingHandle, 'receiving')
+          },
+          onChunk: (chunk) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            appendLoadingPreviewChunk(loadingHandle, chunk)
+            scrollToBottom()
+          }
+        })
+      }
 
-      await streamChat({
-        messages: modelMessages,
-        context,
-        provider,
-        config: {
-          apiKey: config.apiKey,
-          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
-          model: config.model
-        },
-        onProgress: (msg) => showStatus(msg, 'info'),
-        onChunk: (chunk) => {
-          fullResponse += chunk
-        }
-      })
+      if (run.stoppedByUser) {
+        assistantMsg.content = loadingHandle.bufferedText.trim()
+          ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
+          : '[已手动停止]'
+        renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
+        return
+      }
 
       const parsed = parseFlashcardResponse(fullResponse)
       if (!parsed) {
-        assistantMsg.content = '未能解析闪卡，请重试或调整输入'
+        assistantMsg.content = buildToolParseFailureMessage('闪卡', fullResponse)
+        showStatus('未能解析闪卡结构，已展示模型原始输出', 'error')
         renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
         return
       }
 
@@ -1076,15 +1616,28 @@ export function setupChatHandlers(): void {
       })
 
     } catch (error) {
-      console.error('Flashcard generation error:', error)
-      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
-      assistantMsg.content = `❌ ${errorMsg}`
-      renderMessages(messages, overlayElement)
+      if (isStreamAbortError(error) && run.stoppedByUser) {
+        assistantMsg.content = loadingHandle.bufferedText.trim()
+          ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
+          : '[已手动停止]'
+        renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
+      } else {
+        console.error('Flashcard generation error:', error)
+        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
+        assistantMsg.content = `❌ ${errorMsg}`
+        renderMessages(messages, overlayElement)
+      }
     } finally {
+      finalizeLoadingIndicator(loadingHandle, true)
+      clearActiveRun(run)
       setInteractionDisabled(false)
       if (input) input.focus()
-      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
-      if (loadingEl) loadingEl.remove()
     }
   }
 
@@ -1133,44 +1686,107 @@ export function setupChatHandlers(): void {
 
     const assistantMsg = createChatMessage('assistant', '')
     messages.push(assistantMsg)
-    appendAssistantLoading(assistantMsg)
+    const loadingHandle = appendAssistantLoading(assistantMsg)
+    if (!loadingHandle) {
+      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      renderMessages(messages, overlayElement)
+      setInteractionDisabled(false)
+      return
+    }
+    const run = createActiveRun('mindmap', assistantMsg.id, loadingHandle)
 
     const promptContent = buildMindmapPrompt(content)
-    const modelMessages = messages.slice(0, -1).map((msg, idx, arr) => {
-      if (idx === arr.length - 1 && msg.role === 'user') {
-        return { ...msg, content: promptContent }
-      }
-      return msg
-    })
+    const primaryModelMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_PRIMARY_HISTORY_WINDOW)
 
     try {
+      await waitForSelectedMaterialsReady()
       let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
       const config = activeSettings!.configs[provider] as ProviderConfig
+      const resolvedConfig = {
+        apiKey: config.apiKey,
+        baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
+        model: config.model
+      }
 
-      let fullResponse = ''
+      let fullResponse: string
+      try {
+        fullResponse = await streamToolResponseWithTimeout({
+          messages: primaryModelMessages,
+          context,
+          provider,
+          config: resolvedConfig,
+          timeoutMs: TOOL_PRIMARY_TIMEOUT_MS,
+          signal: run.controller.signal,
+          onProgress: (msg) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            showStatus(msg, 'info')
+          },
+          onFirstChunk: () => {
+            if (!isRunCurrent(run) || run.stopped) return
+            setLoadingPhase(loadingHandle, 'receiving')
+          },
+          onChunk: (chunk) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            appendLoadingPreviewChunk(loadingHandle, chunk)
+            scrollToBottom()
+          }
+        })
+      } catch (error) {
+        if (!isToolTimeoutError(error)) throw error
+        showStatus('导图生成耗时较长，正在缩小上下文重试...', 'info')
+        const retryMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_RETRY_HISTORY_WINDOW)
+        const retryContext = buildToolRetryContext(context)
+        fullResponse = await streamToolResponseWithTimeout({
+          messages: retryMessages,
+          context: retryContext,
+          provider,
+          config: resolvedConfig,
+          timeoutMs: TOOL_RETRY_TIMEOUT_MS,
+          signal: run.controller.signal,
+          onProgress: (msg) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            showStatus(msg, 'info')
+          },
+          onFirstChunk: () => {
+            if (!isRunCurrent(run) || run.stopped) return
+            setLoadingPhase(loadingHandle, 'receiving')
+          },
+          onChunk: (chunk) => {
+            if (!isRunCurrent(run) || run.stopped) return
+            appendLoadingPreviewChunk(loadingHandle, chunk)
+            scrollToBottom()
+          }
+        })
+      }
 
-      await streamChat({
-        messages: modelMessages,
-        context,
-        provider,
-        config: {
-          apiKey: config.apiKey,
-          baseUrl: config.baseUrl || PROVIDER_DEFAULTS[provider].baseUrl,
-          model: config.model
-        },
-        onProgress: (msg) => showStatus(msg, 'info'),
-        onChunk: (chunk) => {
-          fullResponse += chunk
-        }
-      })
+      if (run.stoppedByUser) {
+        assistantMsg.content = loadingHandle.bufferedText.trim()
+          ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
+          : '[已手动停止]'
+        renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
+        return
+      }
 
       const parsed = parseMindmapResponse(fullResponse)
       if (!parsed) {
-        assistantMsg.content = '未能解析思维导图，请重试或调整输入'
+        assistantMsg.content = buildToolParseFailureMessage('思维导图', fullResponse)
+        showStatus('未能解析思维导图结构，已展示模型原始输出', 'error')
         renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
         return
       }
 
@@ -1186,15 +1802,28 @@ export function setupChatHandlers(): void {
         updatedAt: Date.now()
       })
     } catch (error) {
-      console.error('Mindmap generation error:', error)
-      const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成思维导图时发生错误'
-      assistantMsg.content = `❌ ${errorMsg}`
-      renderMessages(messages, overlayElement)
+      if (isStreamAbortError(error) && run.stoppedByUser) {
+        assistantMsg.content = loadingHandle.bufferedText.trim()
+          ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
+          : '[已手动停止]'
+        renderMessages(messages, overlayElement)
+        await saveChatHistory(activeCourseId, {
+          courseId: activeCourseId,
+          courseName: activeCourseName,
+          messages,
+          updatedAt: Date.now()
+        })
+      } else {
+        console.error('Mindmap generation error:', error)
+        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成思维导图时发生错误'
+        assistantMsg.content = `❌ ${errorMsg}`
+        renderMessages(messages, overlayElement)
+      }
     } finally {
+      finalizeLoadingIndicator(loadingHandle, true)
+      clearActiveRun(run)
       setInteractionDisabled(false)
       if (input) input.focus()
-      const loadingEl = overlayElement?.querySelector(`#loading-${assistantMsg.id}`)
-      if (loadingEl) loadingEl.remove()
     }
   }
 

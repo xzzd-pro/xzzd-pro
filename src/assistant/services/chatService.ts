@@ -14,12 +14,17 @@ export interface StreamChatOptions {
     onComplete?: (fullResponse: string) => void
     onError?: (error: Error) => void
     onProgress?: (msg: string) => void
+    signal?: AbortSignal
 }
 
 export async function streamChat(options: StreamChatOptions): Promise<string> {
-    const { messages, context, provider, config, onChunk, onComplete, onError, onProgress } = options
+    const { messages, context, provider, config, onChunk, onComplete, onError, onProgress, signal } = options
 
     try {
+        if (signal?.aborted) {
+            throw createStreamAbortError()
+        }
+
         const model = createChatModel(provider, config)
         const systemPrompt = await buildSystemPrompt(context, onProgress)
         const visualContext = getVisualContext(context)
@@ -47,10 +52,22 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
         // --- API Call Debug End ---
 
         let fullResponse = ''
+        let abortListener: (() => void) | null = null
         try {
-            const stream = await model.stream(langchainMessages)
+            const stream = await model.stream(langchainMessages) as AsyncIterable<any>
+            const streamIterator = stream[Symbol.asyncIterator] ? stream[Symbol.asyncIterator]() : null
+
+            if (streamIterator && signal) {
+                abortListener = () => {
+                    void streamIterator.return?.()
+                }
+                signal.addEventListener('abort', abortListener, { once: true })
+            }
 
             for await (const chunk of stream) {
+                if (signal?.aborted) {
+                    throw createStreamAbortError()
+                }
                 const content = extractChunkText(chunk.content)
                 if (content) {
                     fullResponse += content
@@ -58,6 +75,9 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 }
             }
         } catch (streamError: any) {
+            if (signal?.aborted || isStreamAbortError(streamError)) {
+                throw createStreamAbortError()
+            }
             const streamErrMsg = streamError instanceof Error ? streamError.message : String(streamError)
             const apiCode = extractApiErrorCode(streamErrMsg)
 
@@ -68,6 +88,9 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 const fallbackMessages = convertToLangChainMessages(systemPrompt, messages, [])
                 const fallbackStream = await model.stream(fallbackMessages)
                 for await (const chunk of fallbackStream) {
+                    if (signal?.aborted) {
+                        throw createStreamAbortError()
+                    }
                     const content = extractChunkText(chunk.content)
                     if (content) {
                         fullResponse += content
@@ -76,6 +99,10 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 }
             } else {
                 throw streamError
+            }
+        } finally {
+            if (abortListener && signal) {
+                signal.removeEventListener('abort', abortListener)
             }
         }
 
@@ -98,6 +125,14 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
         onError?.(err);
         throw err;
     }
+}
+
+function createStreamAbortError(): Error {
+    return new Error('STREAM_ABORTED')
+}
+
+function isStreamAbortError(error: unknown): boolean {
+    return error instanceof Error && error.message === 'STREAM_ABORTED'
 }
 
 function extractChunkText(content: unknown): string {

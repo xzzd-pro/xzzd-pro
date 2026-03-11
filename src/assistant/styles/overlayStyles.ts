@@ -1336,25 +1336,63 @@ button, input, select, textarea, label {
   filter: brightness(0.94);
 }
 
-/* Typing Indicator */
-.typing-indicator {
+/* Streaming Loading */
+.stream-loading {
   display: flex;
-  gap: 4px;
-  padding: 4px 8px;
+  flex-direction: column;
+  gap: 10px;
 }
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  background-color: var(--xzzd-text-secondary);
-  border-radius: 50%;
-  animation: typing-bounce 1.4s infinite ease-in-out both;
+.stream-loading-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
 }
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes typing-bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+.stream-loading-status {
+  font-size: 13px;
+  color: var(--xzzd-text-secondary);
+}
+.stream-loading-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.stream-loading-btn {
+  border: 1px solid var(--xzzd-card-border);
+  background: var(--xzzd-card-bg);
+  color: var(--xzzd-text-secondary);
+  border-radius: 8px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.stream-loading-btn:hover {
+  color: var(--xzzd-text-primary);
+}
+.stream-loading-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.stream-loading-btn.danger {
+  border-color: rgba(220, 53, 69, 0.32);
+  color: #b42334;
+}
+.stream-loading-preview-wrap {
+  border: 1px solid var(--xzzd-card-border);
+  border-radius: 10px;
+  background: var(--xzzd-input-bg);
+}
+.stream-loading-preview {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--xzzd-text-primary);
 }
 
 /* Flashcard mode toggle */
