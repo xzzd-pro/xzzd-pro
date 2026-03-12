@@ -8,7 +8,8 @@ import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
 // Configure worker locally
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
-const MAX_IMAGE_PAGES = 10 // Limit pages to prevent huge payloads
+const DEFAULT_PDF_IMAGE_MAX_PAGES = 6 // Limit pages to prevent huge payloads
+const DEFAULT_PDF_IMAGE_SCALE = 1.25
 
 async function fetchBlobViaBackground(url: string): Promise<Blob> {
     const res = await sendToBackground({
@@ -77,7 +78,10 @@ export async function fetchPdfBlob(url: string): Promise<Blob | null> {
  * Convert PDF pages to base64 images for multimodal LLM input.
  * Returns array of data URIs (image/png).
  */
-export async function convertPdfToImages(blob: Blob): Promise<string[]> {
+export async function convertPdfToImages(
+    blob: Blob,
+    options?: { maxPages?: number; scale?: number }
+): Promise<string[]> {
     const arrayBuffer = await blob.arrayBuffer()
     const loadingTask = pdfjsLib.getDocument({
         data: arrayBuffer,
@@ -88,11 +92,13 @@ export async function convertPdfToImages(blob: Blob): Promise<string[]> {
     const pdf = await loadingTask.promise
 
     const images: string[] = []
-    const pageCount = Math.min(pdf.numPages, MAX_IMAGE_PAGES)
+    const maxPages = options?.maxPages ?? DEFAULT_PDF_IMAGE_MAX_PAGES
+    const scale = options?.scale ?? DEFAULT_PDF_IMAGE_SCALE
+    const pageCount = Math.min(pdf.numPages, maxPages)
 
     for (let i = 1; i <= pageCount; i++) {
         const page = await pdf.getPage(i)
-        const viewport = page.getViewport({ scale: 1.5 }) // Higher scale for readability
+        const viewport = page.getViewport({ scale })
 
         // Create canvas
         const canvas = document.createElement('canvas')
@@ -111,6 +117,10 @@ export async function convertPdfToImages(blob: Blob): Promise<string[]> {
     }
 
     return images
+}
+
+export async function extractPdfText(blob: Blob): Promise<string> {
+    return await parsePdf(blob)
 }
 
 async function parseText(blob: Blob): Promise<string> {

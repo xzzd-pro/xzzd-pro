@@ -53,7 +53,8 @@ export const DEFAULT_PROVIDER: Provider = 'openai'
 
 export const STORAGE_KEYS = {
     settings: 'xzzdpro_assistant_settings',
-    chatHistory: 'xzzdpro_assistant_chat_'
+    chatHistory: 'xzzdpro_assistant_chat_',
+    uploadHistory: 'xzzdpro_assistant_upload_history_'
 } as const
 
 export const MAX_CONTEXT_LENGTH = 8000

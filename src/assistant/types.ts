@@ -26,6 +26,21 @@ export interface Attachment {
     content: string | string[]
     name: string
     originalData?: string  // Original file as base64 data URI (for recall)
+    payloadRef?: string
+}
+
+export interface AssistantUploadHistoryItem {
+    id: string
+    courseId: string
+    name: string
+    size: number
+    mimeType: string
+    sourceType: 'assistant_upload'
+    createdAt: number
+    updatedAt: number
+    payloadRef: string
+    fingerprint: string
+    status?: 'ready' | 'missing' | 'session_only'
 }
 
 export interface ChatMessage {

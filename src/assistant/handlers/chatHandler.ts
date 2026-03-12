@@ -2,14 +2,17 @@
  * Chat Handler - Manages chat interactions, message sending, and flashcard generation
  */
 import { renderChatMessage, renderAttachmentCard } from '../components/assistantPageHelpers'
-import { createChatMessage, saveChatHistory } from '../storage'
+import { createChatMessage, saveChatHistory, appendAssistantUploadHistory, getAssistantUploadHistory, buildUploadHistoryKey, UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT, UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT } from '../storage'
 import { buildCourseContext } from '../services/courseDataService'
 import { streamChat, formatErrorMessage } from '../services/chatService'
-import { convertPdfToImages } from '../services/fileService'
+import { convertPdfToImages, extractPdfText } from '../services/fileService'
 import { PROVIDER_DEFAULTS } from '../config'
 import { FLASHCARD_GENERATION_PROMPT } from '../types/flashcard'
 import { MINDMAP_GENERATION_PROMPT } from '../types/mindmap'
 import { readFileAsBase64, readFileAsText } from '../utils/fileUtils'
+import { hashArrayBuffer } from '../utils/hashUtils'
+import { createPayloadRef, estimatePayloadBytes, getPayload, gcPayloads, putPayload } from '../attachmentPayloadStore'
+import { isValidImageDataUri } from '../utils/dataUriUtils'
 import {
   showStatus,
   scrollToBottom,
@@ -20,7 +23,7 @@ import {
   openAssistantConfirm
 } from '../utils/uiUtils'
 import { filterContextBySelectedMaterials, getCurrentSettings, getCurrentCourseId, getCurrentCourseName, getSelectedCourseMaterials, getMaterialSelectionKey } from './courseHandler'
-import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData, CourseContext, Provider, MaterialFile } from '../types'
+import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData, CourseContext, Provider, MaterialFile, AssistantUploadHistoryItem } from '../types'
 
 type ChatMode = 'chat' | 'flashcard' | 'mindmap'
 type MaterialLoadStatus = 'pending' | 'ready' | 'failed'
@@ -81,6 +84,7 @@ let isSplitTransitioning = false
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
 const materialLoadStates = new Map<string, MaterialLoadState>()
+const selectedHistoryUploads = new Map<string, { id: string; name: string; mimeType: string; payloadRef: string; status?: 'ready' | 'missing' | 'session_only' }>()
 let activeRun: ActiveRunState | null = null
 let runCounter = 0
 
@@ -176,6 +180,7 @@ export function cleanupChatHandlers(): void {
     stopRun(activeRun, false)
     clearActiveRun(activeRun)
   }
+  selectedHistoryUploads.clear()
 }
 
 export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
@@ -184,7 +189,7 @@ export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
 }
 
 function buildFlashcardPrompt(content: string): string {
-  const selectedCount = getSelectedCourseMaterials().size
+  const selectedCount = getSelectedMaterialCount()
   const userText = content || (selectedCount > 0
     ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
     : '请基于提供的材料生成闪卡。')
@@ -192,11 +197,118 @@ function buildFlashcardPrompt(content: string): string {
 }
 
 function buildMindmapPrompt(content: string): string {
-  const selectedCount = getSelectedCourseMaterials().size
+  const selectedCount = getSelectedMaterialCount()
   const userText = content || (selectedCount > 0
     ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成思维导图。`
     : '请基于提供的材料生成思维导图。')
   return `${MINDMAP_GENERATION_PROMPT}\n\n用户需求：${userText}`
+}
+
+function getSelectedMaterialCount(): number {
+  return getSelectedCourseMaterials().size + selectedHistoryUploads.size
+}
+
+async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
+  const attachments: Attachment[] = []
+  const missingNames: string[] = []
+
+  for (const item of selectedHistoryUploads.values()) {
+    if (!item.payloadRef || item.status === 'missing' || item.status === 'session_only') {
+      missingNames.push(item.name)
+      continue
+    }
+
+    try {
+      const payload = await getPayload(item.payloadRef)
+      if (!payload) {
+        missingNames.push(item.name)
+        continue
+      }
+
+      if (payload.type === 'text') {
+        attachments.push({
+          type: 'text',
+          name: item.name,
+          content: String(payload.data || ''),
+          payloadRef: item.payloadRef
+        })
+        continue
+      }
+
+      if (payload.type === 'image') {
+        if (Array.isArray(payload.data) && payload.data.length > 1) {
+          const images = payload.data.filter((img) => typeof img === 'string' && isValidImageDataUri(img))
+          if (images.length > 0) {
+            const asPdf = item.mimeType === 'application/pdf' || images.length > 1
+            attachments.push({
+              type: asPdf ? 'pdf' : 'image',
+              name: item.name,
+              content: asPdf ? images : images[0],
+              payloadRef: item.payloadRef
+            })
+          } else {
+            missingNames.push(item.name)
+          }
+          continue
+        }
+
+        const imageData = Array.isArray(payload.data) ? payload.data[0] : payload.data
+        if (typeof imageData === 'string' && isValidImageDataUri(imageData)) {
+          attachments.push({
+            type: 'image',
+            name: item.name,
+            content: imageData,
+            payloadRef: item.payloadRef
+          })
+        } else {
+          missingNames.push(item.name)
+        }
+        continue
+      }
+
+      if (payload.type === 'pdf_blob' && payload.data instanceof Blob) {
+        try {
+          const images = await convertPdfToImages(payload.data)
+          if (images.length > 0) {
+            attachments.push({
+              type: 'pdf',
+              name: item.name,
+              content: images,
+              payloadRef: item.payloadRef
+            })
+          } else {
+            const text = await extractPdfText(payload.data)
+            if (text) {
+              attachments.push({
+                type: 'text',
+                name: item.name,
+                content: text,
+                payloadRef: item.payloadRef
+              })
+            } else {
+              missingNames.push(item.name)
+            }
+          }
+        } catch (error) {
+          console.error('[Assistant Debug] Failed to convert history PDF', error)
+          missingNames.push(item.name)
+        }
+      }
+    } catch (error) {
+      console.error('[Assistant Debug] Failed to load history attachment', error)
+      missingNames.push(item.name)
+    }
+  }
+
+  if (missingNames.length > 0) {
+    showStatus(`历史资料载入失败：${missingNames.join('、')}`, 'error')
+  }
+
+  return attachments
+}
+
+function createUploadHistoryId(): string {
+  return `upl_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
 function sanitizeModelOutput(raw: string): string {
@@ -750,12 +862,7 @@ export function setupChatHandlers(): void {
     if (confirm('确认要清空当前课程的聊天记录吗？')) {
       messages = []
       renderMessages(messages, overlayElement)
-      await saveChatHistory(activeCourseId, {
-        courseId: activeCourseId,
-        courseName: activeCourseName,
-        messages: [],
-        updatedAt: Date.now()
-      })
+      await safeSaveChatHistory(activeCourseId, activeCourseName, [])
     }
   }
 
@@ -835,18 +942,14 @@ export function setupChatHandlers(): void {
       clearActiveRun(activeRun)
     }
     materialLoadStates.clear()
+    selectedHistoryUploads.clear()
   }
   window.addEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
 
   const persistCurrentMessages = async () => {
     const activeCourseId = getCurrentCourseId()
     if (!activeCourseId) return
-    await saveChatHistory(activeCourseId, {
-      courseId: activeCourseId,
-      courseName: getCurrentCourseName(),
-      messages,
-      updatedAt: Date.now()
-    })
+    await safeSaveChatHistory(activeCourseId, getCurrentCourseName(), messages)
   }
 
   if (externalMindmapSelectHandler) {
@@ -992,7 +1095,18 @@ export function setupChatHandlers(): void {
     const customEvent = event as CustomEvent<{
       courseId?: string
       checked?: boolean
-      file?: { id: number | string; name: string; size: number; downloadUrl: string; materialTitle?: string }
+      file?: {
+        id: number | string
+        name: string
+        size: number
+        downloadUrl: string
+        materialTitle?: string
+        sourceType?: 'courseware' | 'history_upload'
+        historyId?: string
+        historyPayloadRef?: string
+        historyMimeType?: string
+        historyStatus?: 'ready' | 'missing' | 'session_only'
+      }
     }>
     const courseId = customEvent.detail?.courseId
     const checked = !!customEvent.detail?.checked
@@ -1005,6 +1119,33 @@ export function setupChatHandlers(): void {
     const materialTitle = file.materialTitle || '课程资料'
     const selectionKey = getMaterialSelectionKey(file.downloadUrl)
     if (!selectionKey) return
+
+    if (file.sourceType === 'history_upload') {
+      if (!file.historyId || !file.historyPayloadRef) {
+        if (checked) {
+          showStatus(`历史资料缺少可用内容: ${file.name}`, 'error')
+        }
+        return
+      }
+      if (file.historyStatus === 'missing' || file.historyStatus === 'session_only') {
+        if (checked) {
+          showStatus(`历史资料暂不可用: ${file.name}`, 'error')
+        }
+        return
+      }
+      if (checked) {
+        selectedHistoryUploads.set(selectionKey, {
+          id: file.historyId,
+          name: file.name,
+          mimeType: file.historyMimeType || '',
+          payloadRef: file.historyPayloadRef,
+          status: file.historyStatus
+        })
+      } else {
+        selectedHistoryUploads.delete(selectionKey)
+      }
+      return
+    }
 
     if (checked) {
       const normalizedFileId = Number(file.id)
@@ -1162,23 +1303,50 @@ export function setupChatHandlers(): void {
             try {
               const restoredFiles: File[] = []
               for (const att of msg.attachments) {
-                const dataToRestore = att.originalData ||
-                  (Array.isArray(att.content) ? att.content[0] : att.content)
+                let file: File | null = null
 
-                if (typeof dataToRestore === 'string' && dataToRestore.startsWith('data:')) {
-                  const res = await fetch(dataToRestore)
+                if (att.originalData && att.originalData.startsWith('data:')) {
+                  const res = await fetch(att.originalData)
                   const blob = await res.blob()
-
-                  let mimeType = 'application/octet-stream'
-                  if (att.type === 'pdf') {
-                    mimeType = 'application/pdf'
-                  } else if (att.type === 'image') {
-                    mimeType = blob.type || 'image/png'
-                  } else if (att.type === 'text') {
-                    mimeType = 'text/plain'
+                  const mimeType = att.type === 'pdf'
+                    ? 'application/pdf'
+                    : att.type === 'image'
+                      ? blob.type || 'image/png'
+                      : 'text/plain'
+                  file = new File([blob], att.name, { type: mimeType })
+                } else if (att.payloadRef) {
+                  const payload = await getPayload(att.payloadRef)
+                  if (payload?.type === 'pdf_blob' && payload.data instanceof Blob) {
+                    file = new File([payload.data], att.name, { type: 'application/pdf' })
+                  } else if (payload?.type === 'image') {
+                    const imageData = Array.isArray(payload.data) ? payload.data[0] : payload.data
+                    if (typeof imageData === 'string' && imageData.startsWith('data:')) {
+                      const res = await fetch(imageData)
+                      const blob = await res.blob()
+                      file = new File([blob], att.name, { type: blob.type || 'image/png' })
+                    }
+                  } else if (payload?.type === 'text') {
+                    const textBlob = new Blob([String(payload.data || '')], { type: 'text/plain' })
+                    file = new File([textBlob], att.name, { type: 'text/plain' })
                   }
+                } else {
+                  const dataToRestore = Array.isArray(att.content) ? att.content[0] : att.content
+                  if (typeof dataToRestore === 'string' && dataToRestore.startsWith('data:')) {
+                    const res = await fetch(dataToRestore)
+                    const blob = await res.blob()
+                    const mimeType = att.type === 'pdf'
+                      ? 'application/pdf'
+                      : att.type === 'image'
+                        ? blob.type || 'image/png'
+                        : 'text/plain'
+                    file = new File([blob], att.name, { type: mimeType })
+                  } else if (att.type === 'text') {
+                    const textBlob = new Blob([String(att.content || '')], { type: 'text/plain' })
+                    file = new File([textBlob], att.name, { type: 'text/plain' })
+                  }
+                }
 
-                  const file = new File([blob], att.name, { type: mimeType })
+                if (file) {
                   restoredFiles.push(file)
                 }
               }
@@ -1196,12 +1364,7 @@ export function setupChatHandlers(): void {
           const activeCourseId = getCurrentCourseId()
           const activeCourseName = getCurrentCourseName()
           if (activeCourseId) {
-            await saveChatHistory(activeCourseId, {
-              courseId: activeCourseId,
-              courseName: activeCourseName,
-              messages,
-              updatedAt: Date.now()
-            })
+            await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
           }
         }
       }
@@ -1228,41 +1391,191 @@ export function setupChatHandlers(): void {
     }
   }
 
-  const processAttachments = async (): Promise<Attachment[]> => {
+  const safeSaveChatHistory = async (courseId: string, courseName: string, messagesToSave: ChatMessage[]) => {
+    if (!courseId) return
+    try {
+      await saveChatHistory(courseId, {
+        courseId,
+        courseName,
+        messages: messagesToSave,
+        updatedAt: Date.now()
+      })
+    } catch (error) {
+      console.warn('XZZDPRO: 保存聊天记录失败', error)
+    }
+  }
+
+  const processAttachments = async (courseId?: string): Promise<Attachment[]> => {
     if (pendingAttachments.length === 0) return []
 
     const processedAttachments: Attachment[] = []
+    const historyItems: AssistantUploadHistoryItem[] = []
+    const existingHistory = courseId ? await getAssistantUploadHistory(courseId) : []
+    const existingByKey = new Map<string, AssistantUploadHistoryItem>()
+
+    if (courseId) {
+      for (const item of existingHistory) {
+        if (!item.fingerprint) continue
+        const key = buildUploadHistoryKey(item.courseId, item.name, item.size, item.fingerprint)
+        existingByKey.set(key, item)
+      }
+    }
 
     for (const file of pendingAttachments) {
+      const now = Date.now()
+      const arrayBuffer = await file.arrayBuffer()
+      const fingerprint = await hashArrayBuffer(arrayBuffer)
+      const historyKey = courseId ? buildUploadHistoryKey(courseId, file.name, file.size, fingerprint) : ''
+      const existing = historyKey ? existingByKey.get(historyKey) : undefined
+
+      let attachment: Attachment
+      let payloadData: string | Blob | null = null
+      let payloadType: 'text' | 'image' | 'pdf_blob' | null = null
+
       if (file.type.startsWith('image/')) {
         const base64 = await readFileAsBase64(file)
-        processedAttachments.push({
+        if (!isValidImageDataUri(base64)) {
+          showStatus(`图片格式不兼容，已忽略：${file.name}`, 'error')
+          continue
+        }
+        attachment = {
           type: 'image',
           name: file.name,
           content: base64
-        })
+        }
+        payloadData = base64
+        payloadType = 'image'
       } else if (file.type === 'application/pdf') {
         const originalBase64 = await readFileAsBase64(file)
         const blob = new Blob([file], { type: 'application/pdf' })
-        const images = await convertPdfToImages(blob)
-        processedAttachments.push({
-          type: 'pdf',
-          name: file.name,
-          content: images,
-          originalData: originalBase64
-        })
+        let images: string[] = []
+        try {
+          images = await convertPdfToImages(blob)
+        } catch (error) {
+          console.error('[Assistant Debug] PDF image conversion failed', error)
+        }
+
+        if (images.length === 0) {
+          const text = await extractPdfText(blob)
+          attachment = {
+            type: 'text',
+            name: file.name,
+            content: text || `[文件 ${file.name}：PDF 未能转换为图片，已尝试文本解析]`
+          }
+          payloadData = blob
+          payloadType = 'pdf_blob'
+        } else {
+          attachment = {
+            type: 'pdf',
+            name: file.name,
+            content: images,
+            originalData: originalBase64
+          }
+          payloadData = blob
+          payloadType = 'pdf_blob'
+        }
       } else {
         const textContent = await readFileAsText(file)
-        processedAttachments.push({
+        attachment = {
           type: 'text',
           name: file.name,
           content: textContent
-        })
+        }
+        payloadData = textContent
+        payloadType = 'text'
+      }
+
+      processedAttachments.push(attachment)
+
+      if (courseId) {
+        const historyId = existing?.id || createUploadHistoryId()
+        const createdAt = existing?.createdAt || now
+        const payloadRef = existing?.payloadRef || createPayloadRef('upl')
+        const mimeType = file.type || (attachment.type === 'text' ? 'text/plain' : attachment.type === 'image' ? 'image/png' : 'application/pdf')
+
+        let shouldSavePayload = !existing?.payloadRef || existing?.status === 'missing'
+        let fallbackStatus: AssistantUploadHistoryItem['status'] | null = null
+        if (!payloadData || !payloadType) {
+          shouldSavePayload = false
+        }
+
+        if (shouldSavePayload) {
+          const payloadSize = estimatePayloadBytes(payloadData as any)
+          if (payloadSize > UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT) {
+            showStatus(`"${file.name}" 仅本次使用，不加入历史`, 'info')
+            shouldSavePayload = false
+            fallbackStatus = 'session_only'
+          } else {
+            try {
+              await putPayload({
+                id: payloadRef,
+                type: payloadType,
+                data: payloadData,
+                size: payloadSize,
+                createdAt,
+                lastAccessed: now
+              })
+            } catch (error) {
+              console.warn('XZZDPRO: 保存附件失败', error)
+              showStatus(`"${file.name}" 仅本次使用，不加入历史`, 'info')
+              shouldSavePayload = false
+              fallbackStatus = 'session_only'
+            }
+          }
+        }
+
+        if (shouldSavePayload) {
+          attachment.payloadRef = payloadRef
+          historyItems.push({
+            id: historyId,
+            courseId,
+            name: file.name,
+            size: file.size,
+            mimeType,
+            sourceType: 'assistant_upload',
+            createdAt,
+            updatedAt: now,
+            payloadRef,
+            fingerprint,
+            status: 'ready'
+          })
+        } else if (fallbackStatus) {
+          historyItems.push({
+            id: historyId,
+            courseId,
+            name: file.name,
+            size: file.size,
+            mimeType,
+            sourceType: 'assistant_upload',
+            createdAt,
+            updatedAt: now,
+            payloadRef: '',
+            fingerprint,
+            status: fallbackStatus
+          })
+        } else if (existing?.payloadRef) {
+          attachment.payloadRef = existing.payloadRef
+          historyItems.push({
+            ...existing,
+            updatedAt: now,
+            fingerprint
+          })
+        }
       }
     }
 
     pendingAttachments = []
     renderPreviews()
+
+    if (courseId && historyItems.length > 0) {
+      try {
+        await appendAssistantUploadHistory(courseId, historyItems)
+        await gcPayloads(UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT)
+      } catch (error) {
+        console.error('XZZDPRO: 保存上传历史失败', error)
+      }
+    }
+
     return processedAttachments
   }
 
@@ -1355,7 +1668,7 @@ export function setupChatHandlers(): void {
 
     let processedAttachments: Attachment[] = []
     try {
-      processedAttachments = await processAttachments()
+      processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
       console.error('Attachment processing failed:', e)
       showStatus(`附件处理失败: ${String(e)}`, 'error')
@@ -1364,8 +1677,10 @@ export function setupChatHandlers(): void {
     }
 
     const userMsg = createChatMessage('user', content)
-    if (processedAttachments.length > 0) {
-      userMsg.attachments = processedAttachments
+    const selectedHistoryAttachments = await getSelectedHistoryAttachments()
+    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    if (mergedAttachments.length > 0) {
+      userMsg.attachments = mergedAttachments
     }
 
     messages.push(userMsg)
@@ -1428,12 +1743,7 @@ export function setupChatHandlers(): void {
       }
       renderMessages(messages, overlayElement)
 
-      await saveChatHistory(activeCourseId, {
-        courseId: activeCourseId,
-        courseName: activeCourseName,
-        messages,
-        updatedAt: Date.now()
-      })
+      await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
 
     } catch (error) {
       if (isStreamAbortError(error) && run.stoppedByUser) {
@@ -1441,16 +1751,14 @@ export function setupChatHandlers(): void {
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
           : '[已手动停止]'
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
         console.error('Chat error:', error)
         const errorMsg = error instanceof Error ? formatErrorMessage(error) : '发生未知错误'
-        assistantMsg.content = `❌ ${errorMsg}`
+        const partial = loadingHandle.bufferedText.trim()
+        assistantMsg.content = partial
+          ? `${partial}\n\n[错误: ${errorMsg}]`
+          : `❌ ${errorMsg}`
         renderMessages(messages, overlayElement)
       }
     } finally {
@@ -1463,7 +1771,7 @@ export function setupChatHandlers(): void {
 
   const sendFlashcardMessage = async () => {
     const content = input?.value.trim() || ''
-    const selectedMaterialCount = getSelectedCourseMaterials().size
+    const selectedMaterialCount = getSelectedMaterialCount()
 
     // 实时获取状态
     const activeCourseId = getCurrentCourseId()
@@ -1481,7 +1789,7 @@ export function setupChatHandlers(): void {
 
     let processedAttachments: Attachment[] = []
     try {
-      processedAttachments = await processAttachments()
+      processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
       console.error('Attachment processing failed:', e)
       showStatus(`附件处理失败: ${String(e)}`, 'error')
@@ -1498,8 +1806,10 @@ export function setupChatHandlers(): void {
     }
 
     const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成闪卡' : '生成闪卡'))
-    if (processedAttachments.length > 0) {
-      userMsg.attachments = processedAttachments
+    const selectedHistoryAttachments = await getSelectedHistoryAttachments()
+    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    if (mergedAttachments.length > 0) {
+      userMsg.attachments = mergedAttachments
     }
 
     messages.push(userMsg)
@@ -1588,12 +1898,7 @@ export function setupChatHandlers(): void {
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
           : '[已手动停止]'
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
       }
 
@@ -1602,12 +1907,7 @@ export function setupChatHandlers(): void {
         assistantMsg.content = buildToolParseFailureMessage('闪卡', fullResponse)
         showStatus('未能解析闪卡结构，已展示模型原始输出', 'error')
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
       }
 
@@ -1615,12 +1915,7 @@ export function setupChatHandlers(): void {
       assistantMsg.content = fullResponse
       renderMessages(messages, overlayElement)
 
-      await saveChatHistory(activeCourseId, {
-        courseId: activeCourseId,
-        courseName: activeCourseName,
-        messages,
-        updatedAt: Date.now()
-      })
+      await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
 
     } catch (error) {
       if (isStreamAbortError(error) && run.stoppedByUser) {
@@ -1628,16 +1923,14 @@ export function setupChatHandlers(): void {
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
           : '[已手动停止]'
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
         console.error('Flashcard generation error:', error)
         const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
-        assistantMsg.content = `❌ ${errorMsg}`
+        const partial = loadingHandle.bufferedText.trim()
+        assistantMsg.content = partial
+          ? `${partial}\n\n[错误: ${errorMsg}]`
+          : `❌ ${errorMsg}`
         renderMessages(messages, overlayElement)
       }
     } finally {
@@ -1650,7 +1943,7 @@ export function setupChatHandlers(): void {
 
   const sendMindmapMessage = async () => {
     const content = input?.value.trim() || ''
-    const selectedMaterialCount = getSelectedCourseMaterials().size
+    const selectedMaterialCount = getSelectedMaterialCount()
 
     const activeCourseId = getCurrentCourseId()
     const activeSettings = getCurrentSettings()
@@ -1667,7 +1960,7 @@ export function setupChatHandlers(): void {
 
     let processedAttachments: Attachment[] = []
     try {
-      processedAttachments = await processAttachments()
+      processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
       console.error('Attachment processing failed:', e)
       showStatus(`附件处理失败: ${String(e)}`, 'error')
@@ -1684,8 +1977,10 @@ export function setupChatHandlers(): void {
     }
 
     const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成思维导图' : '生成思维导图'))
-    if (processedAttachments.length > 0) {
-      userMsg.attachments = processedAttachments
+    const selectedHistoryAttachments = await getSelectedHistoryAttachments()
+    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    if (mergedAttachments.length > 0) {
+      userMsg.attachments = mergedAttachments
     }
 
     messages.push(userMsg)
@@ -1774,12 +2069,7 @@ export function setupChatHandlers(): void {
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
           : '[已手动停止]'
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
       }
 
@@ -1788,12 +2078,7 @@ export function setupChatHandlers(): void {
         assistantMsg.content = buildToolParseFailureMessage('思维导图', fullResponse)
         showStatus('未能解析思维导图结构，已展示模型原始输出', 'error')
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
       }
 
@@ -1802,28 +2087,21 @@ export function setupChatHandlers(): void {
       setActiveMindmapMessageId(assistantMsg.id)
       renderMessages(messages, overlayElement)
 
-      await saveChatHistory(activeCourseId, {
-        courseId: activeCourseId,
-        courseName: activeCourseName,
-        messages,
-        updatedAt: Date.now()
-      })
+      await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
     } catch (error) {
       if (isStreamAbortError(error) && run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
           : '[已手动停止]'
         renderMessages(messages, overlayElement)
-        await saveChatHistory(activeCourseId, {
-          courseId: activeCourseId,
-          courseName: activeCourseName,
-          messages,
-          updatedAt: Date.now()
-        })
+        await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
         console.error('Mindmap generation error:', error)
         const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成思维导图时发生错误'
-        assistantMsg.content = `❌ ${errorMsg}`
+        const partial = loadingHandle.bufferedText.trim()
+        assistantMsg.content = partial
+          ? `${partial}\n\n[错误: ${errorMsg}]`
+          : `❌ ${errorMsg}`
         renderMessages(messages, overlayElement)
       }
     } finally {

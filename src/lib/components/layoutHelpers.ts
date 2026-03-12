@@ -6,6 +6,7 @@ import { Storage } from "@plasmohq/storage"
 import { createRoot } from "react-dom/client"
 import React from "react"
 import { AvatarUpload } from "../../components/ui/avatar-upload"
+import type { AssistantUploadHistoryItem } from "../../assistant/types";
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -32,10 +33,18 @@ interface SidebarMaterialFile {
   size: number;
   downloadUrl: string;
   materialTitle: string;
+  sourceType: "courseware" | "history_upload";
+  historyId?: string;
+  historyPayloadRef?: string;
+  historyMimeType?: string;
+  historyStatus?: "ready" | "missing" | "session_only";
+  createdAt?: number;
 }
 
 let sidebarMaterialCourseId: string | null = null;
 const selectedSidebarMaterialUrls = new Set<string>();
+let assistantHistoryManageMode = false;
+const selectedHistoryDeleteIds = new Set<string>();
 
 /**
  * Render the common header with logo, theme toggle, and user profile
@@ -615,6 +624,8 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
   if (!activeCourseId) {
     sidebarMaterialCourseId = null;
     selectedSidebarMaterialUrls.clear();
+    selectedHistoryDeleteIds.clear();
+    assistantHistoryManageMode = false;
     materialListEl.innerHTML = '<div class="submenu-empty">请选择课程后加载资料</div>';
     return;
   }
@@ -622,30 +633,97 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
   if (sidebarMaterialCourseId !== activeCourseId) {
     sidebarMaterialCourseId = activeCourseId;
     selectedSidebarMaterialUrls.clear();
+    selectedHistoryDeleteIds.clear();
+    assistantHistoryManageMode = false;
   }
 
   materialListEl.innerHTML = '<div class="submenu-loading">加载资料中...</div>';
 
   try {
-    const { fetchCourseMaterials } = await import('../../assistant/services/courseDataService');
-    const materials = await fetchCourseMaterials(activeCourseId);
+    const [
+      { fetchCourseMaterials },
+      { getAssistantUploadHistory, deleteAssistantUploadHistoryItems },
+    ] = await Promise.all([
+      import("../../assistant/services/courseDataService"),
+      import("../../assistant/storage"),
+    ]);
+    const [materials, historyItems] = await Promise.all([
+      fetchCourseMaterials(activeCourseId),
+      getAssistantUploadHistory(activeCourseId),
+    ]);
 
-    const files: SidebarMaterialFile[] = materials.flatMap(material =>
-      (material.files || []).map(file => ({
-        ...file,
-        materialTitle: material.title
-      }))
+    const coursewareFiles: SidebarMaterialFile[] = materials.flatMap(
+      (material) =>
+        (material.files || []).map((file) => ({
+          ...file,
+          materialTitle: material.title,
+          sourceType: "courseware",
+        })),
     );
 
-    if (files.length === 0) {
-      materialListEl.innerHTML = '<div class="submenu-empty">当前课程暂无可用资料</div>';
+    const historyFiles: SidebarMaterialFile[] = historyItems.map((item) => ({
+      id: Number.isFinite(Number(item.id)) ? Number(item.id) : 0,
+      name: item.name,
+      size: item.size,
+      downloadUrl: `assistant-history://${encodeURIComponent(item.id)}`,
+      materialTitle: "历史上传",
+      sourceType: "history_upload",
+      historyId: item.id,
+      historyPayloadRef: item.payloadRef,
+      historyMimeType: item.mimeType,
+      historyStatus: item.status,
+      createdAt: item.createdAt,
+    }));
+
+    if (coursewareFiles.length === 0 && historyFiles.length === 0) {
+      materialListEl.innerHTML =
+        '<div class="submenu-empty">当前课程暂无可用资料</div>';
       return;
     }
 
-    const materialItemsHtml = files.map((file) => {
-      const checked = selectedSidebarMaterialUrls.has(file.downloadUrl) ? 'checked' : '';
+    const fileByUrl = new Map<string, SidebarMaterialFile>();
+    for (const file of [...coursewareFiles, ...historyFiles]) {
+      fileByUrl.set(file.downloadUrl, file);
+    }
+    const historyById = new Map<string, AssistantUploadHistoryItem>();
+    for (const item of historyItems) {
+      historyById.set(item.id, item);
+    }
+
+    const getHistoryStatusLabel = (
+      status?: SidebarMaterialFile["historyStatus"],
+    ): string => {
+      if (status === "missing") return "载入失败";
+      if (status === "session_only") return "仅本次";
+      return "可复用";
+    };
+
+    const getHistoryStatusClass = (
+      status?: SidebarMaterialFile["historyStatus"],
+    ): string => {
+      if (status === "missing") return "status-missing";
+      if (status === "session_only") return "status-session";
+      return "status-ready";
+    };
+
+    const renderMaterialOption = (file: SidebarMaterialFile): string => {
+      const checked = selectedSidebarMaterialUrls.has(file.downloadUrl)
+        ? "checked"
+        : "";
+      const disabled =
+        file.sourceType === "history_upload" &&
+        file.historyStatus &&
+        file.historyStatus !== "ready";
+      const metaText =
+        file.sourceType === "history_upload"
+          ? `历史上传 · ${new Date(file.createdAt || Date.now()).toLocaleString("zh-CN")}`
+          : file.materialTitle;
+      const statusLabel =
+        file.sourceType === "history_upload"
+          ? `<span class="material-history-status ${getHistoryStatusClass(file.historyStatus)}">${getHistoryStatusLabel(file.historyStatus)}</span>`
+          : "";
       return `
-        <label class="material-submenu-item" title="${escapeHtml(file.materialTitle)}">
+        <label class="material-submenu-item${disabled ? " is-disabled" : ""}" title="${escapeHtml(metaText)}">
           <input
             class="material-submenu-checkbox"
             type="checkbox"
@@ -654,15 +732,59 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
             data-file-size="${file.size}"
             data-download-url="${encodeURIComponent(file.downloadUrl)}"
             data-material-title="${encodeURIComponent(file.materialTitle)}"
+            data-source-type="${file.sourceType}"
+            data-history-id="${encodeURIComponent(file.historyId || "")}"
+            ${checked}
+            ${disabled ? "disabled" : ""}
+          />
+          <span class="material-submenu-content">
+            <span class="material-submenu-name">${escapeHtml(file.name)}</span>
+            <span class="material-submenu-meta">${escapeHtml(metaText)}${statusLabel}</span>
+          </span>
+        </label>
+      `;
+    };
+
+    const renderHistoryManageOption = (file: SidebarMaterialFile): string => {
+      const historyId = file.historyId || "";
+      const checked =
+        historyId && selectedHistoryDeleteIds.has(historyId) ? "checked" : "";
+      return `
+        <label class="material-submenu-item material-submenu-item-manage" title="${escapeHtml(file.name)}">
+          <input
+            class="material-history-delete-checkbox"
+            type="checkbox"
+            data-history-id="${encodeURIComponent(historyId)}"
             ${checked}
           />
           <span class="material-submenu-content">
             <span class="material-submenu-name">${escapeHtml(file.name)}</span>
-            <span class="material-submenu-meta">${escapeHtml(file.materialTitle)}</span>
+            <span class="material-submenu-meta">历史上传 · ${new Date(file.createdAt || Date.now()).toLocaleString("zh-CN")}</span>
           </span>
         </label>
       `;
-    }).join('');
+    };
+
+    const coursewareHtml =
+      coursewareFiles.length > 0
+        ? coursewareFiles.map(renderMaterialOption).join("")
+        : '<div class="submenu-empty material-group-empty">暂无课程课件</div>';
+
+    const historyHtml =
+      historyFiles.length > 0
+        ? assistantHistoryManageMode
+          ? historyFiles.map(renderHistoryManageOption).join("")
+          : historyFiles.map(renderMaterialOption).join("")
+        : '<div class="submenu-empty material-group-empty">暂无历史上传</div>';
+
+    const historyManageActionsHtml = assistantHistoryManageMode
+      ? `
+        <div class="material-history-manage-actions">
+          <button id="assistant-history-delete-selected" class="material-action-btn danger" type="button">删除选中</button>
+          <button id="assistant-history-manage-cancel" class="material-action-btn" type="button">完成</button>
+        </div>
+      `
+      : "";
 
     materialListEl.innerHTML = `
       <div class="material-submenu-actions">
@@ -670,13 +792,49 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
         <button id="assistant-material-invert" class="material-action-btn material-action-center" type="button">反选</button>
         <button id="assistant-material-select-all" class="material-action-btn material-action-right" type="button">全选</button>
       </div>
-      ${materialItemsHtml}
+      <div class="material-group">
+        <div class="material-group-header">
+          <span class="material-group-title">课程课件</span>
+          <span class="material-group-count">${coursewareFiles.length}</span>
+        </div>
+        ${coursewareHtml}
+      </div>
+      <div class="material-group">
+        <div class="material-group-header">
+          <span class="material-group-title">历史上传</span>
+          <div class="material-group-header-actions">
+            <button id="assistant-history-manage-toggle" class="material-manage-btn" type="button">
+              ${assistantHistoryManageMode ? "退出管理" : "管理"}
+            </button>
+            <span class="material-group-count">${historyFiles.length}</span>
+          </div>
+        </div>
+        ${historyManageActionsHtml}
+        ${historyHtml}
+      </div>
     `;
 
     const checkboxes = Array.from(materialListEl.querySelectorAll<HTMLInputElement>('.material-submenu-checkbox'));
     const clearAllBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-clear-all');
     const invertBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-invert');
     const selectAllBtn = materialListEl.querySelector<HTMLButtonElement>('#assistant-material-select-all');
+    const historyManageToggleBtn =
+      materialListEl.querySelector<HTMLButtonElement>(
+        "#assistant-history-manage-toggle",
+      );
+    const historyDeleteSelectedBtn =
+      materialListEl.querySelector<HTMLButtonElement>(
+        "#assistant-history-delete-selected",
+      );
+    const historyManageCancelBtn =
+      materialListEl.querySelector<HTMLButtonElement>(
+        "#assistant-history-manage-cancel",
+      );
+    const historyDeleteCheckboxes = Array.from(
+      materialListEl.querySelectorAll<HTMLInputElement>(
+        ".material-history-delete-checkbox",
+      ),
+    );
 
     const updateSelectAllState = () => {
       const anyChecked = checkboxes.some(input => input.checked);
@@ -692,6 +850,15 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       }
     };
 
+    const updateDeleteSelectionState = () => {
+      if (!historyDeleteSelectedBtn) return;
+      historyDeleteSelectedBtn.disabled = selectedHistoryDeleteIds.size === 0;
+      historyDeleteSelectedBtn.textContent =
+        selectedHistoryDeleteIds.size > 0
+          ? `删除选中 (${selectedHistoryDeleteIds.size})`
+          : "删除选中";
+    };
+
     checkboxes.forEach((checkboxEl) => {
       checkboxEl.addEventListener('change', (event) => {
         const input = event.currentTarget as HTMLInputElement;
@@ -699,25 +866,37 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
         const downloadUrl = decodeURIComponent(input.dataset.downloadUrl || '');
         if (!downloadUrl) return;
 
+        const file = fileByUrl.get(downloadUrl);
+        if (!file) return;
+
         if (checked) {
           selectedSidebarMaterialUrls.add(downloadUrl);
         } else {
           selectedSidebarMaterialUrls.delete(downloadUrl);
         }
 
-        window.dispatchEvent(new CustomEvent('xzzd:assistant-material-toggle', {
-          detail: {
-            courseId: activeCourseId,
-            checked,
-            file: {
-              id: Number(input.dataset.fileId || 0),
-              name: decodeURIComponent(input.dataset.fileName || ''),
-              size: Number(input.dataset.fileSize || 0),
-              downloadUrl,
-              materialTitle: decodeURIComponent(input.dataset.materialTitle || '')
-            }
-          }
-        }));
+        window.dispatchEvent(
+          new CustomEvent("xzzd:assistant-material-toggle", {
+            detail: {
+              courseId: activeCourseId,
+              checked,
+              file: {
+                id: file.historyId || Number(input.dataset.fileId || 0),
+                name: decodeURIComponent(input.dataset.fileName || ""),
+                size: Number(input.dataset.fileSize || 0),
+                downloadUrl,
+                materialTitle: decodeURIComponent(
+                  input.dataset.materialTitle || "",
+                ),
+                sourceType: file.sourceType,
+                historyId: file.historyId,
+                historyPayloadRef: file.historyPayloadRef,
+                historyMimeType: file.historyMimeType,
+                historyStatus: file.historyStatus,
+              },
+            },
+          }),
+        );
 
         updateSelectAllState();
       });
@@ -749,7 +928,72 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       updateSelectAllState();
     });
 
+    historyManageToggleBtn?.addEventListener("click", () => {
+      assistantHistoryManageMode = !assistantHistoryManageMode;
+      selectedHistoryDeleteIds.clear();
+      void loadAssistantMaterials(activeCourseId);
+    });
+
+    historyManageCancelBtn?.addEventListener("click", () => {
+      assistantHistoryManageMode = false;
+      selectedHistoryDeleteIds.clear();
+      void loadAssistantMaterials(activeCourseId);
+    });
+
+    historyDeleteCheckboxes.forEach((checkboxEl) => {
+      checkboxEl.addEventListener("change", (event) => {
+        const input = event.currentTarget as HTMLInputElement;
+        const historyId = decodeURIComponent(input.dataset.historyId || "");
+        if (!historyId) return;
+        if (input.checked) {
+          selectedHistoryDeleteIds.add(historyId);
+        } else {
+          selectedHistoryDeleteIds.delete(historyId);
+        }
+        updateDeleteSelectionState();
+      });
+    });
+
+    historyDeleteSelectedBtn?.addEventListener("click", async () => {
+      if (selectedHistoryDeleteIds.size === 0) return;
+      const idsToDelete = Array.from(selectedHistoryDeleteIds);
+      await deleteAssistantUploadHistoryItems(activeCourseId, idsToDelete);
+
+      idsToDelete.forEach((historyId) => {
+        const downloadUrl = `assistant-history://${encodeURIComponent(historyId)}`;
+        if (!selectedSidebarMaterialUrls.has(downloadUrl)) return;
+        selectedSidebarMaterialUrls.delete(downloadUrl);
+        const item = historyById.get(historyId);
+        if (!item) return;
+        window.dispatchEvent(
+          new CustomEvent("xzzd:assistant-material-toggle", {
+            detail: {
+              courseId: activeCourseId,
+              checked: false,
+              file: {
+                id: historyId,
+                name: item.name,
+                size: item.size,
+                downloadUrl,
+                materialTitle: "历史上传",
+                sourceType: "history_upload",
+                historyId,
+                historyPayloadRef: item.payloadRef,
+                historyMimeType: item.mimeType,
+                historyStatus: item.status,
+              },
+            },
+          }),
+        );
+      });
+
+      assistantHistoryManageMode = false;
+      selectedHistoryDeleteIds.clear();
+      await loadAssistantMaterials(activeCourseId);
+    });
+
     updateSelectAllState();
+    updateDeleteSelectionState();
   } catch (error) {
     console.error('XZZDPRO: Failed to load assistant materials', error);
     materialListEl.innerHTML = '<div class="submenu-error">加载资料失败</div>';
