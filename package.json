@@ -11,12 +11,11 @@
   "scripts": {
     "dev": "plasmo dev",
     "dev:firefox": "plasmo dev --target=firefox-mv3",
-    "build": "plasmo build && pnpm run fix:locales",
-    "build:firefox": "plasmo build --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id && pnpm run fix:locales",
-    "package": "plasmo package && pnpm run fix:locales",
-    "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id && pnpm run fix:locales",
-    "fix:firefox:addon-id": "node scripts/inject-firefox-addon-id.mjs",
-    "fix:locales": "node scripts/inject-locales.mjs"
+    "build": "plasmo build",
+    "build:firefox": "plasmo build --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id",
+    "package": "plasmo package",
+    "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id",
+    "fix:firefox:addon-id": "node scripts/inject-firefox-addon-id.mjs"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.2.3",
@@ -64,9 +63,8 @@
     "typescript": "5.3.3"
   },
   "manifest": {
-    "name": "__MSG_extensionName__",
-    "description": "__MSG_extensionDescription__",
-    "default_locale": "en",
+    "name": "Xzzd",
+    "description": "Enhanced tools for Zhejiang University Courses.",
     "permissions": [
       "storage",
       "tabs"
