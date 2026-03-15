@@ -1,17 +1,15 @@
-@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @font-face {
   font-family: 'LXGW WenKai Screen';
-  src: url('../assets/LXGWWenKaiScreen.ttf') format('truetype');
+  src: url('data-url:../assets/LXGWWenKaiScreen.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-@layer base {
-  :root {
+:root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -34,7 +32,7 @@
     --radius: 0.5rem;
   }
 
-  [data-theme='dark'] {
+.xzzdpro[data-theme='dark'] {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -56,32 +54,11 @@
     --ring: 212.7 26.8% 83.9%;
   }
 
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: "LXGW WenKai Screen", sans-serif !important;
-  }
 
   /* 强制应用字体到所有元素 */
-  * {
-    font-family: "LXGW WenKai Screen", sans-serif !important;
-  }
-
   /* 特别针对常见的文本元素 */
-  h1, h2, h3, h4, h5, h6,
-  p, span, div, a, button,
-  input, textarea, select,
-  label, li, td, th {
-    font-family: "LXGW WenKai Screen", sans-serif !important;
-  }
-}
-
 .xzzdpro-root {
   --xzzd-sidebar-width: 280px;
-  font-family: "LXGW WenKai Screen", sans-serif !important;
   display: grid;
   grid-template-areas:
     "header header"
@@ -98,6 +75,18 @@
   color: hsl(var(--foreground));
   margin: 0;
   padding: 0;
+}
+
+.xzzdpro-body,
+.xzzdpro-body * {
+  font-family: "LXGW WenKai Screen", sans-serif !important;
+}
+
+.xzzdpro-root,
+.xzzdpro-root *,
+.xzzdpro-root *::before,
+.xzzdpro-root *::after {
+  border-color: hsl(var(--border));
 }
 
 .xzzdpro-main {
@@ -117,7 +106,6 @@
 .widget-card h2,
 .widget-card h3,
 .widget-card h4 {
-  font-family: "LXGW WenKai Screen", sans-serif !important;
   margin: 0 0 16px 0;
   font-weight: 600;
   color: hsl(var(--foreground));
@@ -197,19 +185,7 @@
   overflow: hidden;
 }
 
-.xzzdpro-sidebar .sidebar-nav > li > a {
-  display: flex;
-  align-items: center;
-  color: hsl(var(--muted-foreground));
-  gap: 12px;
-  padding: 10px 14px;
-  font-size: 16px;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  border-radius: var(--radius);
-  text-decoration: none;
-}
-
+.xzzdpro-sidebar .sidebar-nav > li > a,
 .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn {
   display: flex;
   align-items: center;
@@ -228,11 +204,7 @@
   text-align: left;
 }
 
-.xzzdpro-sidebar .sidebar-nav > li > a:hover {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
-}
-
+.xzzdpro-sidebar .sidebar-nav > li > a:hover,
 .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn:hover,
 .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn.active {
   background-color: hsl(var(--accent));
@@ -981,7 +953,6 @@
   color: hsl(var(--muted-foreground));
   font-size: 16px;
   font-weight: 500;
-  font-family: "LXGW WenKai Screen", sans-serif;
   transition: color 0.15s ease;
 }
 

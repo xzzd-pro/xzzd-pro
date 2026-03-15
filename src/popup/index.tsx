@@ -1,7 +1,8 @@
 import { useStorage } from "@plasmohq/storage/hook"
 import { storage } from "@/lib/storage"
 import { Switch } from "@/components/ui/switch"
-import { Component, type ErrorInfo, type ReactNode, useEffect } from "react"
+import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react"
+import "../styles/global.css"
 import "../styles/popup.css"
 
 class PopupErrorBoundary extends Component<
@@ -39,14 +40,12 @@ function PopupContent() {
     key: "beautify-enabled",
     instance: storage
   }, true)
-
-  useEffect(() => {
-    console.log('XZZDPRO Popup: beautifyEnabled =', beautifyEnabled)
-  }, [beautifyEnabled])
+  const [needsRefresh, setNeedsRefresh] = useState(false)
 
   const handleToggle = (checked: boolean) => {
     console.log('XZZDPRO Popup: 切换美化功能为:', checked)
     setBeautifyEnabled(checked)
+    setNeedsRefresh(true)
   }
 
   return (
@@ -75,10 +74,16 @@ function PopupContent() {
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground pt-4 border-t">
-          <p>💡 更改设置后需要刷新页面才能生效</p>
-          <p className="mt-2">调试: beautifyEnabled = {String(beautifyEnabled)}</p>
-        </div>
+        {needsRefresh && (
+          <div className="text-xs text-amber-600 pt-3 border-t border-amber-200 bg-amber-50 -mx-6 px-6 pb-3 -mb-6 rounded-b-lg">
+            设置已保存，请刷新页面以生效
+          </div>
+        )}
+        {!needsRefresh && (
+          <div className="text-xs text-muted-foreground pt-4 border-t">
+            更改设置后需要刷新页面才能生效
+          </div>
+        )}
       </div>
     </div>
   )
@@ -86,9 +91,11 @@ function PopupContent() {
 
 function IndexPopup() {
   return (
-    <PopupErrorBoundary>
-      <PopupContent />
-    </PopupErrorBoundary>
+    <div className="xzzdpro">
+      <PopupErrorBoundary>
+        <PopupContent />
+      </PopupErrorBoundary>
+    </div>
   )
 }
 

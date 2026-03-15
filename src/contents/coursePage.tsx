@@ -16,7 +16,7 @@ const CoursePageInjector = () => {
     key: "theme",
     instance: storage
   }, "light")
-  const [beautifyEnabled, , { isLoading }] = useStorage({
+  const [beautifyEnabled, , { isLoading }] = useStorage<boolean>({
     key: "beautify-enabled",
     instance: storage
   }, true)
@@ -32,6 +32,9 @@ const CoursePageInjector = () => {
 
     if (beautifyEnabled === false) {
       console.log('XZZDPRO: beautification is disabled')
+      rootElement.classList.remove(rootClassName)
+      rootElement.removeAttribute("data-theme")
+      document.body.classList.add('xzzdpro-disabled')
       return
     }
 

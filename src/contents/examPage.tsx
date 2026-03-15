@@ -33,6 +33,8 @@ const ExamPageInjector = () => {
 
     if (beautifyEnabled === false) {
       console.log('XZZDPRO: beautification is disabled')
+      rootElement.classList.remove(rootClassName)
+      rootElement.removeAttribute("data-theme")
       document.body.classList.add('xzzdpro-disabled')
       return
     }

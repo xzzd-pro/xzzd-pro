@@ -27,6 +27,7 @@ const AirPageInjector = () => {
 
         if (beautifyEnabled === false) {
             console.log('XZZDPRO: beautification is disabled')
+            document.body.classList.add('xzzdpro-disabled')
             return
         }
 

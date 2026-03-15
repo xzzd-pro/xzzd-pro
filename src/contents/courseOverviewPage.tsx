@@ -32,7 +32,8 @@ const CourseOverviewPageInjector = () => {
 
     if (beautifyEnabled === false) {
       console.log('XZZDPRO: beautification is disabled')
-      // Add class to show original page
+      rootElement.classList.remove(rootClassName)
+      rootElement.removeAttribute("data-theme")
       document.body.classList.add('xzzdpro-disabled')
       return
     }
