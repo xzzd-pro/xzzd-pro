@@ -3,6 +3,7 @@
 import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "./layoutHelpers"
 import { courseDetailIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
+import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/lib/myCoursesApi"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -43,20 +44,9 @@ export async function getCourseName(): Promise<string> {
 // Get user ID by fetching from API - iterates through all courses until a valid userId is found
 export async function getUserId(): Promise<string | null> {
   try {
-    const coursesResponse = await fetch('https://courses.zju.edu.cn/api/my-courses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conditions: {
-          semester_id: [],
-          status: ["ongoing", "notStarted", "closed"],
-          keyword: "",
-          classify_type: "recently_started",
-          display_studio_list: false
-        },
-        showScorePassedStatus: false
-      })
-    });
+    const coursesResponse = await fetchMyCoursesResponse(
+      createMyCoursesPayload()
+    );
 
     if (!coursesResponse.ok) {
       console.error('XZZDPRO: 获取课程列表失败');

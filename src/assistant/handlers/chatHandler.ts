@@ -724,7 +724,10 @@ function isStreamAbortError(error: unknown): boolean {
   return error instanceof Error && error.message === 'STREAM_ABORTED'
 }
 
-function setMaterialLoadState(selectionKey: string, next: MaterialLoadState): void {
+function setMaterialLoadState(
+  selectionKey: string,
+  next: Omit<MaterialLoadState, 'updatedAt'>
+): void {
   materialLoadStates.set(selectionKey, {
     ...next,
     updatedAt: Date.now()
@@ -732,7 +735,8 @@ function setMaterialLoadState(selectionKey: string, next: MaterialLoadState): vo
 }
 
 function startSelectedMaterialPreload(selectionKey: string, file: MaterialFile, materialTitle: string): void {
-  const preloadPromise = (async () => {
+  let preloadPromise!: Promise<void>
+  preloadPromise = (async () => {
     try {
       const { preloadSelectedMaterial } = await import('./courseHandler')
       await preloadSelectedMaterial(file, materialTitle)

@@ -2,6 +2,7 @@ import * as React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Storage } from "@plasmohq/storage"
 import { NotificationCard } from "./NotificationCard"
+import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/lib/myCoursesApi"
 import type { ApiNotificationData, ProcessedNotification, ReadTimestamps, NotificationType } from "../../types"
 
 const storage = new Storage()
@@ -62,20 +63,9 @@ async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
 
 async function getUserId(): Promise<string | null> {
   try {
-    const coursesResponse = await fetch('https://courses.zju.edu.cn/api/my-courses', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        conditions: {
-          semester_id: [],
-          status: ["ongoing", "notStarted", "closed"],
-          keyword: "",
-          classify_type: "recently_started",
-          display_studio_list: false
-        },
-        showScorePassedStatus: false
-      })
-    })
+    const coursesResponse = await fetchMyCoursesResponse(
+      createMyCoursesPayload()
+    )
 
     if (!coursesResponse.ok) {
       console.error('XZZDPRO: 获取课程列表失败', coursesResponse.status)

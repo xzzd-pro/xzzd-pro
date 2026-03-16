@@ -2,14 +2,7 @@ import type { MindmapData } from "../types/mindmap"
 import { Markmap } from "markmap-view"
 import { Transformer } from "markmap-lib"
 
-interface MarkmapInstance {
-  fit?: () => void | Promise<void>
-  renderData?: (originData?: MindmapNode) => Promise<void>
-  state?: {
-    data?: MindmapNode
-  }
-  destroy?: () => void
-}
+type MarkmapInstance = ReturnType<typeof Markmap.create>
 
 interface MindmapBinding {
   svg: SVGSVGElement

@@ -1,4 +1,5 @@
 import type { CourseInfo, MaterialSummary, HomeworkSummary, CourseContext } from '../types'
+import { createMyCoursesPayload, fetchMyCoursesResponse } from '@/lib/myCoursesApi'
 
 interface ApiCourseData {
     id: number
@@ -17,23 +18,11 @@ interface HomeworkActivity {
 }
 
 export async function fetchAllCourses(): Promise<CourseInfo[]> {
-    const payload = {
-        conditions: {
-            semester_id: [],
-            status: ['ongoing', 'notStarted'],
-            keyword: '',
-            classify_type: 'recently_started',
-            display_studio_list: false
-        },
-        showScorePassedStatus: false
-    }
-
-    const response = await fetch('https://courses.zju.edu.cn/api/my-courses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-    })
+    const response = await fetchMyCoursesResponse(
+        createMyCoursesPayload({
+            status: ['ongoing', 'notStarted']
+        })
+    )
 
     if (!response.ok) {
         throw new Error(`Failed to fetch courses: ${response.status}`)

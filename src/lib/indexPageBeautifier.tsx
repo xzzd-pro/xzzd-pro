@@ -19,6 +19,7 @@ import {
 
 import { TodayCoursesPanel, type TodayCourse } from "@/components/index/TodayCoursesPanel"
 import { TodoPanel, type TodoItem } from "@/components/index/TodoPanel"
+import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/lib/myCoursesApi"
 
 import type { ApiTodoData, ApiCourseData } from "../types"
 
@@ -72,25 +73,16 @@ async function fetchTodosFromApi(): Promise<ApiTodoData[]> {
 /* get courses api */
 async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
   try {
-    const payload = {
-      conditions: {
-        // Do not hardcode semester_id, otherwise links break after term switch.
-        semester_id: [],
-        status: ["ongoing", "notStarted", "closed"],
-        keyword: "",
-        classify_type: "recently_started",
-        display_studio_list: false,
-      },
-      showScorePassedStatus: false,
-    }
-
-    const response = await fetch("https://courses.zju.edu.cn/api/my-courses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    const payload = createMyCoursesPayload({
+      // Do not hardcode semester_id, otherwise links break after term switch.
+      semester_id: [],
+      status: ["ongoing", "notStarted", "closed"],
+      keyword: "",
+      classify_type: "recently_started",
+      display_studio_list: false
     })
+
+    const response = await fetchMyCoursesResponse(payload)
 
     if (!response.ok) {
       console.error("XZZDPRO: 课程API请求失败", response.status)

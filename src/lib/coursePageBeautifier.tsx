@@ -12,6 +12,7 @@ import {
   setupAvatarUpload,
 } from "./components/layoutHelpers"
 import { CoursePage } from "@/components/course/CoursePage"
+import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/lib/myCoursesApi"
 import type { ApiCourseData } from "../types"
 
 const $ = (selector: string): HTMLElement | null =>
@@ -34,24 +35,15 @@ async function fetchCoursesFromApi(
   filters: CourseFilters = {}
 ): Promise<ApiCourseData[]> {
   try {
-    const payload = {
-      conditions: {
-        semester_id: filters.semester_id || [],
-        status: filters.status || ["ongoing", "notStarted", "closed"],
-        keyword: filters.keyword || "",
-        classify_type: filters.classify_type || "recently_started",
-        display_studio_list: false,
-      },
-      showScorePassedStatus: false,
-    }
-
-    const response = await fetch("https://courses.zju.edu.cn/api/my-courses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+    const payload = createMyCoursesPayload({
+      semester_id: filters.semester_id || [],
+      status: filters.status || ["ongoing", "notStarted", "closed"],
+      keyword: filters.keyword || "",
+      classify_type: filters.classify_type || "recently_started",
+      display_studio_list: false
     })
+
+    const response = await fetchMyCoursesResponse(payload)
 
     if (!response.ok) {
       console.error("XZZDPRO: 课程API请求失败", response.status)

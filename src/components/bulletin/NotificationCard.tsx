@@ -13,6 +13,7 @@ export interface NotificationCardProps {
   showBadges?: boolean
   onMarkAsRead?: (type: string) => void
   isLoading?: boolean
+  tempReadTypes?: Set<string>
 }
 
 function filterNotifications(
@@ -108,7 +109,8 @@ export function NotificationCard({
   onFilterChange,
   showBadges = false,
   onMarkAsRead,
-  isLoading = false
+  isLoading = false,
+  tempReadTypes
 }: NotificationCardProps) {
   const filteredNotifications = filterNotifications(notifications, filter)
   const counts = calculateCounts(notifications)
@@ -126,6 +128,7 @@ export function NotificationCard({
             counts={counts}
             showBadges={showBadges}
             onMarkAsRead={onMarkAsRead}
+            tempReadTypes={tempReadTypes}
           />
         </div>
 

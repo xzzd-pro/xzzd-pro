@@ -6,6 +6,7 @@ import { Storage } from "@plasmohq/storage"
 import { createRoot } from "react-dom/client"
 import React from "react"
 import { AvatarUpload } from "../../components/ui/avatar-upload"
+import { fetchAllCourses } from "../../assistant/services/courseDataService"
 import type { AssistantUploadHistoryItem } from "../../assistant/types";
 
 const storage = new Storage()
@@ -555,8 +556,6 @@ async function loadAssistantCourses(): Promise<void> {
 
   try {
     const activeCourseId = new URLSearchParams(window.location.search).get('courseId');
-    // Dynamically import fetchAllCourses from assistant services
-    const { fetchAllCourses } = await import('../../assistant/services/courseDataService');
     const courses = await fetchAllCourses();
 
     if (courses.length === 0) {

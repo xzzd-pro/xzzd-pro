@@ -49,43 +49,37 @@ export const navIcons = {
 // 课程详情页图标
 export const courseDetailIcons = {
   overview: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M3 13H11L13 9H21L19 13H13L11 17H3L5 13Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M13 13H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M3 7H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M3 17H21" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="3.25" y="3.25" width="8" height="8" rx="2.25" fill="currentColor"/>
+<rect x="12.75" y="3.25" width="8" height="5.5" rx="2.25" fill="currentColor"/>
+<rect x="3.25" y="12.75" width="8" height="8" rx="2.25" fill="currentColor"/>
+<rect x="12.75" y="10.25" width="8" height="10.5" rx="2.25" fill="currentColor"/>
 </svg>`,
 
   courseware: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 2.58579 20.4142C2.21071 20.0391 2 19.5304 2 19V15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M7 10L12 15L17 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M12 15V3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M7.25 2.5C5.73122 2.5 4.5 3.73122 4.5 5.25V18.75C4.5 20.2688 5.73122 21.5 7.25 21.5H16.75C18.2688 21.5 19.5 20.2688 19.5 18.75V9.41421C19.5 8.68595 19.2107 7.98718 18.695 7.47146L14.5285 3.30498C14.0128 2.78926 13.314 2.5 12.5858 2.5H7.25ZM13.5 4.56066V7.5C13.5 8.05228 13.9477 8.5 14.5 8.5H17.4393L13.5 4.56066ZM12 10C12.4142 10 12.75 10.3358 12.75 10.75V14.1893L14.2197 12.7197C14.5126 12.4268 14.9874 12.4268 15.2803 12.7197C15.5732 13.0126 15.5732 13.4874 15.2803 13.7803L12.5303 16.5303C12.2374 16.8232 11.7626 16.8232 11.4697 16.5303L8.71967 13.7803C8.42678 13.4874 8.42678 13.0126 8.71967 12.7197C9.01256 12.4268 9.48744 12.4268 9.78033 12.7197L11.25 14.1893V10.75C11.25 10.3358 11.5858 10 12 10Z" fill="currentColor"/>
 </svg>`,
 
   homework: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M9 11H15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M9 15H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M16.5 3.5C16.8978 3.10218 17.4374 2.87868 18 2.87868C18.5626 2.87868 19.1022 3.10218 19.5 3.5C19.8978 3.89782 20.1213 4.43739 20.1213 5C20.1213 5.56261 19.8978 6.10218 19.5 6.5L7 19L3 20L4 16L16.5 3.5Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M9 2.75C8.0335 2.75 7.25 3.5335 7.25 4.5V5H6.75C5.23122 5 4 6.23122 4 7.75V18.75C4 20.2688 5.23122 21.5 6.75 21.5H17.25C18.7688 21.5 20 20.2688 20 18.75V7.75C20 6.23122 18.7688 5 17.25 5H16.75V4.5C16.75 3.5335 15.9665 2.75 15 2.75H9ZM9.5 4C9.08579 4 8.75 4.33579 8.75 4.75V5.5H15.25V4.75C15.25 4.33579 14.9142 4 14.5 4H9.5ZM15.8343 10.1657C16.1467 10.4781 16.1467 10.9846 15.8343 11.297L11.297 15.8343C10.9846 16.1467 10.4781 16.1467 10.1657 15.8343L8.16569 13.8343C7.85328 13.5219 7.85328 13.0154 8.16569 12.703C8.47809 12.3905 8.98462 12.3905 9.29702 12.703L10.7314 14.1375L14.703 10.1657C15.0154 9.8533 15.5219 9.8533 15.8343 10.1657Z" fill="currentColor"/>
 </svg>`,
 
   quiz: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M9 11H15" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M9 15H12" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M9 7H13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M16 3H8L6 5V19C6 19.5304 6.21071 20.0391 6.58579 20.4142C6.96086 20.7893 7.46957 21 8 21H16C16.5304 21 17.0391 20.7893 17.4142 20.4142C17.7893 20.0391 18 19.5304 18 19V5C18 4.46957 17.7893 3.96086 17.4142 3.58579C17.0391 3.21071 16.5304 3 16 3Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.75C6.48122 2.75 5.25 3.98122 5.25 5.5V18.5C5.25 20.0188 6.48122 21.25 8 21.25H16C17.5188 21.25 18.75 20.0188 18.75 18.5V8.91421C18.75 8.18595 18.4607 7.48718 17.945 6.97146L14.5285 3.55498C14.0128 3.03926 13.314 2.75 12.5858 2.75H8ZM13.25 4.81066V7.75C13.25 8.30228 13.6977 8.75 14.25 8.75H17.1893L13.25 4.81066ZM12 10C10.6193 10 9.5 11.1193 9.5 12.5C9.5 12.9142 9.83579 13.25 10.25 13.25C10.6642 13.25 11 12.9142 11 12.5C11 11.9477 11.4477 11.5 12 11.5C12.5523 11.5 13 11.9477 13 12.5C13 13.0245 12.7194 13.2545 12.1339 13.686C11.3775 14.2445 10.75 14.8078 10.75 16C10.75 16.4142 11.0858 16.75 11.5 16.75C11.9142 16.75 12.25 16.4142 12.25 16C12.25 15.6072 12.4266 15.4149 13.0239 14.9749C13.6585 14.5074 14.5 13.7871 14.5 12.5C14.5 11.1193 13.3807 10 12 10ZM12 17.75C11.4477 17.75 11 18.1977 11 18.75C11 19.3023 11.4477 19.75 12 19.75C12.5523 19.75 13 19.3023 13 18.75C13 18.1977 12.5523 17.75 12 17.75Z" fill="currentColor"/>
 </svg>`,
 
   discussion: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M8 9H16" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M8 13H14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 4C4.12665 4 2 6.01472 2 8.5V11.5C2 13.9853 4.12665 16 6.75 16H7.5V20L11.5714 16H17.25C19.8734 16 22 13.9853 22 11.5V8.5C22 6.01472 19.8734 4 17.25 4H6.75ZM7.75 9C7.33579 9 7 9.33579 7 9.75C7 10.1642 7.33579 10.5 7.75 10.5H14.25C14.6642 10.5 15 10.1642 15 9.75C15 9.33579 14.6642 9 14.25 9H7.75ZM7.75 12C7.33579 12 7 12.3358 7 12.75C7 13.1642 7.33579 13.5 7.75 13.5H11.25C11.6642 13.5 12 13.1642 12 12.75C12 12.3358 11.6642 12 11.25 12H7.75Z" fill="currentColor"/>
 </svg>`,
 
   grades: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M12 2L15.09 8.26L22 9L17 14L18.18 21L12 17.77L5.82 21L7 14L2 9L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="4.25" y="11.5" width="3.5" height="8.25" rx="1.2" fill="currentColor"/>
+<rect x="10.25" y="8.25" width="3.5" height="11.5" rx="1.2" fill="currentColor"/>
+<rect x="16.25" y="4.75" width="3.5" height="15" rx="1.2" fill="currentColor"/>
+<path d="M4 6.75C4 6.33579 4.33579 6 4.75 6C5.16421 6 5.5 6.33579 5.5 6.75V7.42439L9.64246 5.35316C9.91068 5.21905 10.2337 5.26165 10.4586 5.46038L13.173 7.85989L18.7197 3.70033C19.0511 3.45181 19.5212 3.51904 19.7697 3.85045C20.0182 4.18186 19.951 4.65192 19.6196 4.90045L13.5843 9.42695C13.2993 9.64073 12.9061 9.62389 12.6405 9.38688L9.89106 6.95626L6.17082 8.81638H7.25C7.66421 8.81638 8 9.15217 8 9.56638C8 9.9806 7.66421 10.3164 7.25 10.3164H4.75C4.33579 10.3164 4 9.9806 4 9.56638V6.75Z" fill="currentColor"/>
 </svg>`,
 
   back: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M19 12H5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M13.5 4C13.5 3.44772 13.9477 3 14.5 3H18C19.6569 3 21 4.34315 21 6V18C21 19.6569 19.6569 21 18 21H14.5C13.9477 21 13.5 20.5523 13.5 20C13.5 19.4477 13.9477 19 14.5 19H18C18.5523 19 19 18.5523 19 18V6C19 5.44772 18.5523 5 18 5H14.5C13.9477 5 13.5 4.55228 13.5 4Z" fill="currentColor"/>
+<path d="M9.46967 5.46967C9.76256 5.76256 9.76256 6.23744 9.46967 6.53033L5.28033 10.7197H14.25C14.6642 10.7197 15 11.0555 15 11.4697C15 11.8839 14.6642 12.2197 14.25 12.2197H5.28033L9.46967 16.409C9.76256 16.7019 9.76256 17.1768 9.46967 17.4697C9.17678 17.7626 8.7019 17.7626 8.40901 17.4697L2.93934 12C2.64645 11.7071 2.64645 11.2322 2.93934 10.9393L8.40901 5.46967C8.7019 5.17678 9.17678 5.17678 9.46967 5.46967Z" fill="currentColor"/>
 </svg>`
 }
