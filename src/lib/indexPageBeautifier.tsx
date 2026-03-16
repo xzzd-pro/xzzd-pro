@@ -551,7 +551,7 @@ export async function indexPageBeautifier(): Promise<void> {
 
   document.body.innerHTML = ""
   const root = document.createElement("div")
-  root.className = "xzzdpro-root"
+  root.className = "xzzdpro-root xzzdpro"
 
   root.innerHTML = `
     ${renderHeader({ username, showUsername: true })}
@@ -581,7 +581,7 @@ export async function indexPageBeautifier(): Promise<void> {
   `
 
   document.body.appendChild(root)
-  document.body.classList.add("xzzdpro-body")
+  document.body.classList.add("xzzdpro-body", "xzzdpro")
 
   console.log("XZZDPRO: 主页接管完成！")
 

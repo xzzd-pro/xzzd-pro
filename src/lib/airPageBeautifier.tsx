@@ -26,7 +26,7 @@ export async function mountAirPage() {
   // Using the same structure as standard pages
   const root = document.createElement('div');
   root.id = 'xzzdpro-root';
-  root.className = 'xzzdpro-root';
+  root.className = 'xzzdpro-root xzzdpro';
   root.innerHTML = `
     ${renderHeader({ username: '', showUsername: false })}
     ${renderSidebar({ currentPage: 'assistant' })}
@@ -39,7 +39,7 @@ export async function mountAirPage() {
   `;
 
   document.body.appendChild(root);
-  document.body.classList.add('xzzdpro-body');
+  document.body.classList.add('xzzdpro-body', 'xzzdpro');
   document.documentElement.classList.add('xzzdpro');
 
   console.log('XZZDPRO: Air Page Layout rendered');

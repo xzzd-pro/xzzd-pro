@@ -139,7 +139,7 @@ export function coursePageBeautifier(): void {
 
   document.body.innerHTML = ""
   const root = document.createElement("div")
-  root.className = "xzzdpro-root"
+  root.className = "xzzdpro-root xzzdpro"
 
   root.innerHTML = `
     ${renderHeader({ username, showUsername: true })}
@@ -156,7 +156,7 @@ export function coursePageBeautifier(): void {
   `
 
   document.body.appendChild(root)
-  document.body.classList.add("xzzdpro-body")
+  document.body.classList.add("xzzdpro-body", "xzzdpro")
 
   setupThemeToggle()
   setupHelpModal()
