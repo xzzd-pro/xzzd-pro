@@ -1,32 +1,34 @@
 import * as React from "react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
-import { HomeworkContent } from "./HomeworkContent"
+import { Card, CardHeader } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { getUserId } from "@/lib/components/courseDetailHelpers"
-import type { HomeworkApiResponse, HomeworkActivity, ProcessedHomework } from "@/types"
+import { cn } from "@/lib/utils"
+import type { HomeworkActivity, HomeworkApiResponse, ProcessedHomework } from "@/types"
+import { HomeworkContent } from "./HomeworkContent"
 
-// Fetch homework list
 async function fetchHomeworkList(courseId: string): Promise<HomeworkActivity[]> {
   try {
     const response = await fetch(
-      `
-https://courses.zju.edu.cn/api/courses/${courseId}/homework-activities?conditions=%7B%22itemsSortBy%22:%7B%22predicate%22:%22module%22,%22reverse%22:false%7D%7D&page=1&page_size=100&reloadPage=false`
+      `https://courses.zju.edu.cn/api/courses/${courseId}/homework-activities?conditions=%7B%22itemsSortBy%22:%7B%22predicate%22:%22module%22,%22reverse%22:false%7D%7D&page=1&page_size=100&reloadPage=false`
     )
+
     if (!response.ok) return []
+
     const data: HomeworkApiResponse = await response.json()
     return data.homework_activities || []
   } catch (error) {
-    console.error('XZZDPRO: 获取作业列表时出错', error)
+    console.error("XZZDPRO: failed to fetch homework list", error)
     return []
   }
 }
 
-// Process homework list
-function processHomeworks(homeworks: HomeworkActivity[], courseId: string): ProcessedHomework[] {
-  const processed = homeworks.map(hw => ({
+function processHomeworks(
+  homeworks: HomeworkActivity[],
+  courseId: string
+): ProcessedHomework[] {
+  const processed = homeworks.map((hw) => ({
     id: hw.id,
     title: hw.title,
     score: hw.score,
@@ -45,26 +47,73 @@ function processHomeworks(homeworks: HomeworkActivity[], courseId: string): Proc
   })
 }
 
-// Skeleton loader
+type DeadlineVariant = "overdue" | "urgent" | "soon" | "normal"
+
+function getDeadlineInfo(
+  deadline: Date,
+  isClosed: boolean
+): {
+  variant: DeadlineVariant
+  text: string
+} | null {
+  if (isClosed) return null
+
+  const diff = deadline.getTime() - Date.now()
+  if (diff <= 0) {
+    return { variant: "overdue", text: "\u5df2\u622a\u6b62" }
+  }
+
+  const totalMinutesLeft = Math.max(1, Math.ceil(diff / (1000 * 60)))
+  const daysLeft = Math.floor(totalMinutesLeft / (60 * 24))
+  const remainingMinutesAfterDays = totalMinutesLeft % (60 * 24)
+  const hoursLeft = Math.floor(remainingMinutesAfterDays / 60)
+  const minutesLeft = remainingMinutesAfterDays % 60
+
+  const paddedHours = String(hoursLeft).padStart(2, "0")
+  const paddedMinutes = String(minutesLeft).padStart(2, "0")
+  const timeText =
+    `\u5269\u4f59 ${daysLeft}\u5929${paddedHours}\u5c0f\u65f6${paddedMinutes}\u5206\u949f`
+
+  if (diff <= 3 * 24 * 60 * 60 * 1000) {
+    return { variant: "urgent", text: timeText }
+  }
+
+  if (diff <= 7 * 24 * 60 * 60 * 1000) {
+    return { variant: "soon", text: timeText }
+  }
+
+  return { variant: "normal", text: timeText }
+}
+
+function formatAbsoluteDeadline(deadline: Date): string {
+  return deadline.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  })
+}
+
 function HomeworkSkeleton() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden">
-          <CardHeader className="p-6">
-            <div className="flex items-start gap-3">
-              <Skeleton className="w-6 h-6 rounded" />
-              <div className="flex-1">
-                <div className="flex justify-between items-start gap-4 mb-4">
-                  <Skeleton className="h-6 w-3/4 max-w-[300px]" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-6 w-16 rounded-full" />
-                    <Skeleton className="h-6 w-16 rounded-full" />
-                  </div>
+        <Card key={i} className="overflow-hidden border-border/70">
+          <CardHeader className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-5 w-4/5 max-w-[360px]" />
+                  <Skeleton className="h-4 w-2/5 max-w-[220px]" />
                 </div>
-                <div className="pt-3 border-t border-border">
-                  <Skeleton className="h-4 w-48" />
-                </div>
+                <Skeleton className="mt-1 h-4 w-4" />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
               </div>
             </div>
           </CardHeader>
@@ -92,23 +141,24 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
       try {
         const uid = await getUserId()
         if (!uid) {
-          setError('无法获取用户信息')
+          setError("\u65e0\u6cd5\u83b7\u53d6\u7528\u6237\u4fe1\u606f")
           return
         }
+
         setUserId(uid)
 
         const homeworkList = await fetchHomeworkList(courseId)
         const processed = processHomeworks(homeworkList, courseId)
         setHomeworks(processed)
       } catch (err) {
-        setError('加载作业列表失败，请刷新重试')
-        console.error('XZZDPRO: 加载作业时出错', err)
+        setError("\u52a0\u8f7d\u4f5c\u4e1a\u5217\u8868\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5")
+        console.error("XZZDPRO: failed to load homework data", err)
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadData()
+    void loadData()
   }, [courseId])
 
   if (isLoading) {
@@ -116,92 +166,98 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
   }
 
   if (error) {
-    return (
-      <p className="text-center text-destructive py-10 text-base">
-        {error}
-      </p>
-    )
+    return <p className="py-10 text-center text-base text-destructive">{error}</p>
   }
 
   if (homeworks.length === 0) {
     return (
-      <p className="text-center text-muted-foreground py-10 text-base">
-        暂无作业
+      <p className="py-10 text-center text-base text-muted-foreground">
+        {"\u6682\u65e0\u4f5c\u4e1a"}
       </p>
     )
   }
 
-  const formatDeadline = (deadline: Date, isClosed: boolean): string => {
-    if (isClosed) return `已于 ${deadline.toLocaleDateString('zh-CN')} 截止`
-    const now = new Date()
-    const diff = deadline.getTime() - now.getTime()
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    if (days > 0) return `还剩 ${days} 天 ${hours} 小时`
-    if (hours > 0) {
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-      return `还剩 ${hours} 小时 ${minutes} 分钟`
-    }
-    return '即将截止'
-  }
-
   return (
-    <Accordion type="multiple" className="w-full space-y-4">
-      {homeworks.map(homework => (
-        <Card key={homework.id} className="overflow-hidden transition-all duration-200 hover:shadow-md">
-          <AccordionItem
-            value={homework.id.toString()}
-            className="border-none"
+    <Accordion type="multiple" className="w-full space-y-3">
+      {homeworks.map((homework) => {
+        const deadlineInfo = getDeadlineInfo(homework.deadline, homework.isClosed)
+
+        return (
+          <Card
+            key={homework.id}
+            className={cn(
+              "overflow-hidden border border-border/70 bg-card/95 shadow-sm transition-all duration-200",
+              "hover:border-primary/30 hover:shadow-md",
+              !homework.isClosed && "hover:-translate-y-0.5"
+            )}
           >
-            <AccordionTrigger className="flex items-start gap-3 p-6 hover:bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-start gap-4 mb-4">
-                  <h3 className="flex-1 min-w-0">
-                    <a
-                      href={homework.link}
-                      className="text-xl font-semibold text-foreground hover:text-primary transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {homework.title}
-                    </a>
-                  </h3>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <Badge variant={homework.isClosed ? "secondary" : "default"}>
-                      {homework.isClosed ? '已结束' : '进行中'}
-                    </Badge>
-                    <Badge
-                      variant={homework.submitted ? "default" : "outline"}
-                      className={cn(!homework.submitted && "bg-yellow-500 text-gray-900 border-transparent")}
-                    >
-                      {homework.submitted ? '已提交' : '未提交'}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex gap-6 flex-wrap pt-3 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">截止时间:</span>
-                    <span className={cn(
-                      "text-[15px] font-semibold",
-                      !homework.isClosed && "text-destructive animate-pulse"
-                    )}>
-                      {formatDeadline(homework.deadline, homework.isClosed)}
-                    </span>
-                  </div>
-                  {homework.scorePublished && homework.submitted && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">成绩:</span>
-                      <span className="text-lg font-bold text-primary">{homework.score}</span>
+            <AccordionItem value={homework.id.toString()} className="border-none">
+              <AccordionTrigger className="items-start gap-3 bg-transparent px-4 py-3 text-left hover:bg-muted/20 hover:no-underline [&>svg]:mt-1 [&>svg]:text-muted-foreground">
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <h3 className="line-clamp-2 text-lg font-semibold leading-6 text-foreground">
+                        {homework.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {`\u622a\u6b62\u65f6\u95f4\uff1a${formatAbsoluteDeadline(homework.deadline)}`}
+                      </p>
                     </div>
-                  )}
+                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                      <Badge
+                        variant={homework.isClosed ? "secondary" : "outline"}
+                        className={cn(
+                          "border-transparent text-xs",
+                          !homework.isClosed && "border-primary/20 bg-primary/10 text-primary"
+                        )}
+                      >
+                        {homework.isClosed ? "\u5df2\u7ed3\u675f" : "\u8fdb\u884c\u4e2d"}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-xs",
+                          homework.submitted
+                            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
+                            : "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300"
+                        )}
+                      >
+                        {homework.submitted ? "\u5df2\u63d0\u4ea4" : "\u672a\u63d0\u4ea4"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {deadlineInfo ? (
+                      <Badge variant={deadlineInfo.variant} className="text-xs">
+                        {deadlineInfo.text}
+                      </Badge>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                        {"\u5df2\u622a\u6b62"}
+                      </span>
+                    )}
+                    <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      {homework.scorePublished
+                        ? "\u5df2\u53d1\u5e03\u6210\u7ee9"
+                        : "\u6210\u7ee9\u672a\u53d1\u5e03"}
+                    </span>
+                    {homework.scorePublished && homework.submitted && (
+                      <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                        {`\u6210\u7ee9\uff1a${homework.score}`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-6 pb-6 pl-[60px]">
-              <HomeworkContent homework={homework} userId={userId!} />
-            </AccordionContent>
-          </AccordionItem>
-        </Card>
-      ))}
+              </AccordionTrigger>
+              <AccordionContent className="px-4 !pb-0 pt-0">
+                <div className="border-t border-border/70 pt-4">
+                  <HomeworkContent homework={homework} userId={userId!} />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Card>
+        )
+      })}
     </Accordion>
   )
 }
