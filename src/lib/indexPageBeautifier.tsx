@@ -120,8 +120,14 @@ function stripHtmlToText(raw: string): string {
 
 function normalizeCourseName(raw: string): string {
   return stripHtmlToText(raw)
-    .replace(/[（(][^）)]*[）)]/g, "")
-    .replace(/[【】\[\]（）()_\-\s]/g, "")
+    .replace(/[\(\[\uFF08\u3010][^\)\]\uFF09\u3011]*[\)\]\uFF09\u3011]/g, "")
+    .replace(/[._\-\s]/g, "")
+    .toLowerCase()
+}
+
+function normalizeTeacherName(raw: string): string {
+  return stripHtmlToText(raw)
+    .replace(/[\u3001,\uFF0C\/.\s]/g, "")
     .toLowerCase()
 }
 
@@ -274,6 +280,76 @@ async function loadAndRenderCourses(studentId: string) {
         .filter(Boolean)
     }
 
+    const getNormalizedApiCourseNames = (course: ApiCourseData): string[] => {
+      return Array.from(
+        new Set(
+          [course.name, course.display_name]
+            .map(normalizeCourseName)
+            .filter(Boolean)
+        )
+      )
+    }
+
+    const narrowMatchesByTeacher = (
+      matches: ApiCourseData[],
+      teacherName: string
+    ): ApiCourseData[] => {
+      const normalizedTeacher = normalizeTeacherName(teacherName)
+      if (!normalizedTeacher) return matches
+
+      const teacherMatches = matches.filter((apiCourse) =>
+        (apiCourse.instructors || []).some((instructor) => {
+          const apiTeacher = normalizeTeacherName(instructor.name)
+          return (
+            Boolean(apiTeacher) &&
+            (normalizedTeacher.includes(apiTeacher) ||
+              apiTeacher.includes(normalizedTeacher))
+          )
+        })
+      )
+
+      return teacherMatches.length > 0 ? teacherMatches : matches
+    }
+
+    const findMatchingApiCourse = (
+      course: any,
+      details: { name: string; teacher: string; location: string }
+    ): ApiCourseData | null => {
+      const zdbkNames = Array.from(
+        new Set(
+          getCandidateCourseNames(course, details.name)
+            .map(normalizeCourseName)
+            .filter(Boolean)
+        )
+      )
+
+      if (zdbkNames.length === 0) return null
+
+      const exactMatches = apiCourses.filter((apiCourse) => {
+        const apiNames = getNormalizedApiCourseNames(apiCourse)
+        return apiNames.some((apiName) => zdbkNames.includes(apiName))
+      })
+
+      const narrowedMatches = narrowMatchesByTeacher(exactMatches, details.teacher)
+      if (narrowedMatches.length === 1) {
+        return narrowedMatches[0]
+      }
+
+      if (exactMatches.length > 1) {
+        console.warn("XZZDPRO: Skip ambiguous homepage course match", {
+          zdbkNames,
+          teacher: details.teacher,
+          candidateCourses: exactMatches.map((apiCourse) => ({
+            id: apiCourse.id,
+            name: apiCourse.name,
+            displayName: apiCourse.display_name,
+          })),
+        })
+      }
+
+      return null
+    }
+
     const apiCourseIdSet = new Set(apiCourses.map((course) => course.id))
     const getDirectCourseId = (course: any): number | null => {
       const idCandidates = [
@@ -312,26 +388,7 @@ async function loadAndRenderCourses(studentId: string) {
           if (directCourseId) {
             link = generateCourseUrlById(directCourseId)
           } else {
-            const zdbkNames = getCandidateCourseNames(course, details.name)
-              .map(normalizeCourseName)
-              .filter(Boolean)
-
-            const matched = apiCourses.find((apiCourse) => {
-              const apiName = normalizeCourseName(apiCourse.name)
-              const apiDisplayName = normalizeCourseName(apiCourse.display_name)
-              if (!apiName && !apiDisplayName) return false
-
-              return zdbkNames.some((zdbkName) => {
-                if (!zdbkName) return false
-                const nameMatch =
-                  apiName && (zdbkName.includes(apiName) || apiName.includes(zdbkName))
-                const displayMatch =
-                  apiDisplayName &&
-                  (zdbkName.includes(apiDisplayName) || apiDisplayName.includes(zdbkName))
-                return Boolean(nameMatch || displayMatch)
-              })
-            })
-
+            const matched = findMatchingApiCourse(course, details)
             if (matched) {
               link = generateCourseUrl(matched)
             }
