@@ -35,6 +35,14 @@ export class ThemeToggle {
     } else {
       html.classList.remove('dark');
     }
+    // Helps the browser render built-in controls (scrollbars, form controls) correctly.
+    html.style.colorScheme = theme === "dark" ? "dark" : "light";
+
+    // Some CSS is scoped to `.xzzdpro[data-theme=...]` (and popup may not share the same root).
+    document.body?.setAttribute("data-theme", theme);
+    document
+      .querySelectorAll<HTMLElement>(".xzzdpro")
+      .forEach((el) => el.setAttribute("data-theme", theme));
     this.updateThemeIcon(theme);
   }
 
@@ -48,8 +56,15 @@ export class ThemeToggle {
     }
 
     // 初始化图标
+    const fallbackTheme =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+    this.applyTheme(fallbackTheme);
+
     this.storage.get('theme').then((currentTheme) => {
-      const theme = currentTheme || 'light';
+      const theme = (currentTheme || fallbackTheme) as string;
       this.applyTheme(theme);
     });
 

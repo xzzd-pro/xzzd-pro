@@ -63,8 +63,8 @@
     "typescript": "5.3.3"
   },
   "manifest": {
-    "name": "Xzzd",
-    "description": "Enhanced tools for Zhejiang University Courses.",
+    "name": "XZZD-Pro",
+    "description": "Enhanced tools for Learning in ZJU(xzzd).",
     "permissions": [
       "storage",
       "tabs"

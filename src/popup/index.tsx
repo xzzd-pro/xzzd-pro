@@ -2,8 +2,24 @@ import { useStorage } from "@plasmohq/storage/hook"
 import { storage } from "@/lib/storage"
 import { Switch } from "@/components/ui/switch"
 import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react"
-import "../styles/global.css"
 import "../styles/popup.css"
+
+function normalizeTheme(theme: unknown): "light" | "dark" {
+  return theme === "dark" ? "dark" : "light"
+}
+
+function applyThemeToPopupDom(theme: "light" | "dark") {
+  const html = document.documentElement
+  html.setAttribute("data-theme", theme)
+  html.classList.toggle("dark", theme === "dark")
+  html.style.colorScheme = theme
+
+  // Some styles are scoped to `.xzzdpro[data-theme=...]`
+  document.body?.setAttribute("data-theme", theme)
+  document
+    .querySelectorAll<HTMLElement>(".xzzdpro")
+    .forEach((el) => el.setAttribute("data-theme", theme))
+}
 
 class PopupErrorBoundary extends Component<
   { children: ReactNode },
@@ -40,7 +56,12 @@ function PopupContent() {
     key: "beautify-enabled",
     instance: storage
   }, true)
+  const [theme] = useStorage({ key: "theme", instance: storage }, "light")
   const [needsRefresh, setNeedsRefresh] = useState(false)
+
+  useEffect(() => {
+    applyThemeToPopupDom(normalizeTheme(theme))
+  }, [theme])
 
   const handleToggle = (checked: boolean) => {
     console.log('XZZDPRO Popup: 切换美化功能为:', checked)
@@ -49,7 +70,7 @@ function PopupContent() {
   }
 
   return (
-    <div className="w-80 p-6 bg-background">
+    <div className="w-full min-w-[320px] p-6 bg-background">
       <div className="space-y-6">
         <div className="border-b pb-4">
           <h2 className="text-2xl font-bold text-foreground">XZZDPRO</h2>
@@ -57,8 +78,8 @@ function PopupContent() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="space-y-0.5 min-w-0">
               <label htmlFor="beautify-toggle" className="text-sm font-medium text-foreground cursor-pointer">
                 页面美化
               </label>

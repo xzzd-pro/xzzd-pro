@@ -141,7 +141,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
               value={section.id.toString()}
               className="border-none"
             >
-              <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-muted/50 transition-colors [&[data-state=open]>svg]:rotate-180">
+              <AccordionTrigger className="flex items-center gap-3 p-5 bg-card hover:bg-muted/50 data-[state=open]:bg-muted/30 transition-colors [&[data-state=open]>svg]:rotate-180">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
                     {section.title}

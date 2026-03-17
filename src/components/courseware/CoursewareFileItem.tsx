@@ -102,8 +102,8 @@ export function CoursewareFileItem({ file, className }: CoursewareFileItemProps)
   return (
     <>
       <div className={cn(
-        "flex items-center gap-4 p-4 bg-card rounded-lg transition-all duration-200",
-        "hover:translate-x-1 hover:shadow-md",
+        "flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/50 text-foreground transition-all duration-200",
+        "hover:translate-x-1 hover:bg-muted hover:shadow-md",
         className
       )}>
         <div className="w-9 h-9 flex-shrink-0 text-primary">

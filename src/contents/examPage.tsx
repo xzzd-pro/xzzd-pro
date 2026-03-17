@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react"
 
 import { examBeautifier } from "../lib/examBeautifier"
 import { storage } from "@/lib/storage"
+import { applyThemeToDocument, bootstrapStoredTheme, normalizeTheme } from "@/lib/themeDom"
+
+bootstrapStoredTheme(storage)
 
 export const config: PlasmoCSConfig = {
   //  abolished
@@ -29,12 +32,15 @@ const ExamPageInjector = () => {
 
     const rootElement = document.documentElement
     rootElement.classList.add(rootClassName)
-    rootElement.setAttribute("data-theme", theme)
+    applyThemeToDocument(normalizeTheme(theme))
 
     if (beautifyEnabled === false) {
       console.log('XZZDPRO: beautification is disabled')
       rootElement.classList.remove(rootClassName)
       rootElement.removeAttribute("data-theme")
+      rootElement.classList.remove("dark")
+      rootElement.style.removeProperty("color-scheme")
+      document.body?.removeAttribute("data-theme")
       document.body.classList.add('xzzdpro-disabled')
       return
     }
