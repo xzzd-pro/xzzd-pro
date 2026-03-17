@@ -1,8 +1,25 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
-import { X, Download, Eye, FileText, Image, Video, Music, Archive, File } from "lucide-react"
+import {
+  Archive,
+  Download,
+  File,
+  FileText,
+  Image,
+  Maximize2,
+  Minimize2,
+  Music,
+  Video,
+  X
+} from "lucide-react"
+
+import {
+  convertPdfToImages,
+  fetchFileContent,
+  fetchPdfBlob
+} from "@/assistant/services/fileService"
 import { Button } from "@/components/ui/button"
-import { fetchFileContent, fetchPdfBlob, convertPdfToImages } from "@/assistant/services/fileService"
+import { cn } from "@/lib/utils"
 
 interface FilePreviewModalProps {
   isOpen: boolean
@@ -13,244 +30,440 @@ interface FilePreviewModalProps {
   canDownload?: boolean
 }
 
-// Get file type and icon
+const WORD_EXTENSIONS = ["doc", "docx"]
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp", "svg"]
+const VIDEO_EXTENSIONS = ["mp4", "avi", "mov"]
+const AUDIO_EXTENSIONS = ["mp3", "wav"]
+const TEXT_EXTENSIONS = [
+  ...WORD_EXTENSIONS,
+  "ppt",
+  "pptx",
+  "txt",
+  "md",
+  "json",
+  "py",
+  "java",
+  "js",
+  "ts",
+  "c",
+  "cpp",
+  "h"
+]
+
 function getFileTypeInfo(filename: string) {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  const ext = filename.split(".").pop()?.toLowerCase() || ""
 
-  const typeMap: Record<string, { type: string; icon: React.ReactNode; color: string }> = {
-    // Documents
-    'pdf': { type: 'PDF文档', icon: <FileText className="w-5 h-5" />, color: 'text-red-500' },
-    'doc': { type: 'Word文档', icon: <FileText className="w-5 h-5" />, color: 'text-blue-500' },
-    'docx': { type: 'Word文档', icon: <FileText className="w-5 h-5" />, color: 'text-blue-500' },
-    'ppt': { type: 'PowerPoint', icon: <FileText className="w-5 h-5" />, color: 'text-orange-500' },
-    'pptx': { type: 'PowerPoint', icon: <FileText className="w-5 h-5" />, color: 'text-orange-500' },
-    'xls': { type: 'Excel表格', icon: <FileText className="w-5 h-5" />, color: 'text-green-500' },
-    'xlsx': { type: 'Excel表格', icon: <FileText className="w-5 h-5" />, color: 'text-green-500' },
-
-    // Text files
-    'txt': { type: '文本文件', icon: <FileText className="w-5 h-5" />, color: 'text-gray-500' },
-    'md': { type: 'Markdown', icon: <FileText className="w-5 h-5" />, color: 'text-gray-500' },
-    'json': { type: 'JSON文件', icon: <FileText className="w-5 h-5" />, color: 'text-yellow-500' },
-
-    // Code files
-    'py': { type: 'Python代码', icon: <FileText className="w-5 h-5" />, color: 'text-blue-400' },
-    'java': { type: 'Java代码', icon: <FileText className="w-5 h-5" />, color: 'text-red-400' },
-    'js': { type: 'JavaScript', icon: <FileText className="w-5 h-5" />, color: 'text-yellow-400' },
-    'ts': { type: 'TypeScript', icon: <FileText className="w-5 h-5" />, color: 'text-blue-400' },
-    'c': { type: 'C代码', icon: <FileText className="w-5 h-5" />, color: 'text-gray-600' },
-    'cpp': { type: 'C++代码', icon: <FileText className="w-5 h-5" />, color: 'text-gray-600' },
-    'h': { type: '头文件', icon: <FileText className="w-5 h-5" />, color: 'text-gray-600' },
-
-    // Images
-    'jpg': { type: '图片', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-    'jpeg': { type: '图片', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-    'png': { type: '图片', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-    'gif': { type: '动图', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-    'webp': { type: '图片', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-    'svg': { type: '矢量图', icon: <Image className="w-5 h-5" />, color: 'text-purple-500' },
-
-    // Media
-    'mp4': { type: '视频', icon: <Video className="w-5 h-5" />, color: 'text-red-500' },
-    'avi': { type: '视频', icon: <Video className="w-5 h-5" />, color: 'text-red-500' },
-    'mov': { type: '视频', icon: <Video className="w-5 h-5" />, color: 'text-red-500' },
-    'mp3': { type: '音频', icon: <Music className="w-5 h-5" />, color: 'text-green-500' },
-    'wav': { type: '音频', icon: <Music className="w-5 h-5" />, color: 'text-green-500' },
-
-    // Archives
-    'zip': { type: '压缩包', icon: <Archive className="w-5 h-5" />, color: 'text-yellow-600' },
-    'rar': { type: '压缩包', icon: <Archive className="w-5 h-5" />, color: 'text-yellow-600' },
-    '7z': { type: '压缩包', icon: <Archive className="w-5 h-5" />, color: 'text-yellow-600' },
+  const typeMap: Record<
+    string,
+    { type: string; icon: React.ReactNode; color: string }
+  > = {
+    pdf: {
+      type: "PDF 文档",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-red-500"
+    },
+    doc: {
+      type: "Word 文档",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-blue-500"
+    },
+    docx: {
+      type: "Word 文档",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-blue-500"
+    },
+    ppt: {
+      type: "PowerPoint",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-orange-500"
+    },
+    pptx: {
+      type: "PowerPoint",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-orange-500"
+    },
+    xls: {
+      type: "Excel 表格",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-green-500"
+    },
+    xlsx: {
+      type: "Excel 表格",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-green-500"
+    },
+    txt: {
+      type: "文本文件",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-gray-500"
+    },
+    md: {
+      type: "Markdown",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-gray-500"
+    },
+    json: {
+      type: "JSON 文件",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-yellow-500"
+    },
+    py: {
+      type: "Python 代码",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-blue-400"
+    },
+    java: {
+      type: "Java 代码",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-red-400"
+    },
+    js: {
+      type: "JavaScript",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-yellow-400"
+    },
+    ts: {
+      type: "TypeScript",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-blue-400"
+    },
+    c: {
+      type: "C 代码",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-gray-600"
+    },
+    cpp: {
+      type: "C++ 代码",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-gray-600"
+    },
+    h: {
+      type: "头文件",
+      icon: <FileText className="h-5 w-5" />,
+      color: "text-gray-600"
+    },
+    jpg: {
+      type: "图片",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    jpeg: {
+      type: "图片",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    png: {
+      type: "图片",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    gif: {
+      type: "动图",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    webp: {
+      type: "图片",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    svg: {
+      type: "矢量图",
+      icon: <Image className="h-5 w-5" />,
+      color: "text-purple-500"
+    },
+    mp4: {
+      type: "视频",
+      icon: <Video className="h-5 w-5" />,
+      color: "text-red-500"
+    },
+    avi: {
+      type: "视频",
+      icon: <Video className="h-5 w-5" />,
+      color: "text-red-500"
+    },
+    mov: {
+      type: "视频",
+      icon: <Video className="h-5 w-5" />,
+      color: "text-red-500"
+    },
+    mp3: {
+      type: "音频",
+      icon: <Music className="h-5 w-5" />,
+      color: "text-green-500"
+    },
+    wav: {
+      type: "音频",
+      icon: <Music className="h-5 w-5" />,
+      color: "text-green-500"
+    },
+    zip: {
+      type: "压缩包",
+      icon: <Archive className="h-5 w-5" />,
+      color: "text-yellow-600"
+    },
+    rar: {
+      type: "压缩包",
+      icon: <Archive className="h-5 w-5" />,
+      color: "text-yellow-600"
+    },
+    "7z": {
+      type: "压缩包",
+      icon: <Archive className="h-5 w-5" />,
+      color: "text-yellow-600"
+    }
   }
 
-  return typeMap[ext] || { type: '未知文件', icon: <File className="w-5 h-5" />, color: 'text-gray-400' }
+  return (
+    typeMap[ext] || {
+      type: "未知文件",
+      icon: <File className="h-5 w-5" />,
+      color: "text-gray-400"
+    }
+  )
 }
 
-// Check if file can be previewed
 function canPreviewFile(filename: string): boolean {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
-  const previewableTypes = [
-    'pdf', 'ppt', 'pptx', 'txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h',
-    'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg',
-    'mp4', 'avi', 'mov', 'mp3', 'wav'
-  ]
-  return previewableTypes.includes(ext)
+  const ext = filename.split(".").pop()?.toLowerCase() || ""
+  return [
+    "pdf",
+    ...TEXT_EXTENSIONS,
+    ...IMAGE_EXTENSIONS,
+    ...VIDEO_EXTENSIONS,
+    ...AUDIO_EXTENSIONS
+  ].includes(ext)
 }
 
-export function FilePreviewModal({ isOpen, onClose, fileName, fileUrl, fileSize, canDownload = true }: FilePreviewModalProps) {
-  const [content, setContent] = React.useState<string>('')
+export function FilePreviewModal({
+  isOpen,
+  onClose,
+  fileName,
+  fileUrl,
+  fileSize,
+  canDownload = true
+}: FilePreviewModalProps) {
+  const [content, setContent] = React.useState("")
   const [pdfImages, setPdfImages] = React.useState<string[]>([])
   const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string>('')
+  const [error, setError] = React.useState("")
+  const [isFullscreen, setIsFullscreen] = React.useState(false)
+  const [totalPdfPages, setTotalPdfPages] = React.useState(0)
 
   const fileInfo = getFileTypeInfo(fileName)
-  const ext = fileName.split('.').pop()?.toLowerCase() || ''
+  const ext = fileName.split(".").pop()?.toLowerCase() || ""
   const isPreviewable = canPreviewFile(fileName)
+  const isPdf = ext === "pdf"
+  const isImage = IMAGE_EXTENSIONS.includes(ext)
+  const isVideo = VIDEO_EXTENSIONS.includes(ext)
+  const isAudio = AUDIO_EXTENSIONS.includes(ext)
+  const isText = TEXT_EXTENSIONS.includes(ext)
 
-  // Load file content when modal opens
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsFullscreen(false)
+    }
+  }, [isOpen])
+
   React.useEffect(() => {
     if (!isOpen || !isPreviewable) return
 
+    let active = true
+
     setLoading(true)
-    setError('')
-    setContent('')
+    setError("")
+    setContent("")
     setPdfImages([])
+    setTotalPdfPages(0)
 
     const loadContent = async () => {
       try {
-        if (ext === 'pdf') {
-          // For PDF, get both text content and images
-          const [textContent, pdfBlob] = await Promise.all([
-            fetchFileContent(fileUrl, fileName),
-            fetchPdfBlob(fileUrl)
-          ])
-          setContent(textContent)
-
-          if (pdfBlob) {
-            const images = await convertPdfToImages(pdfBlob)
-            setPdfImages(images)
+        if (isPdf) {
+          const pdfBlob = await fetchPdfBlob(fileUrl)
+          if (!pdfBlob) {
+            throw new Error("无法加载 PDF 文件")
           }
-        } else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) {
-          // For images, just set the URL as content
-          setContent(fileUrl)
-        } else if (['mp4', 'avi', 'mov', 'mp3', 'wav'].includes(ext)) {
-          // For media files, set URL as content
-          setContent(fileUrl)
-        } else {
-          // For text files
+
+          await convertPdfToImages(pdfBlob, {
+            maxPages: Number.POSITIVE_INFINITY,
+            onPageRendered: (imageDataUrl, pageNumber, totalPages) => {
+              if (!active) return
+              setPdfImages((prev) => [...prev, imageDataUrl])
+              setTotalPdfPages(totalPages)
+            },
+            shouldContinue: () => active
+          })
+          return
+        }
+
+        if (isImage || isVideo || isAudio) {
+          if (active) {
+            setContent(fileUrl)
+          }
+          return
+        }
+
+        if (isText) {
           const textContent = await fetchFileContent(fileUrl, fileName)
-          setContent(textContent)
+          if (active) {
+            setContent(textContent)
+          }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : '加载文件失败')
+        if (active) {
+          setError(err instanceof Error ? err.message : "加载文件失败")
+        }
       } finally {
-        setLoading(false)
+        if (active) {
+          setLoading(false)
+        }
       }
     }
 
-    loadContent()
-  }, [isOpen, fileUrl, fileName, ext, isPreviewable])
+    void loadContent()
 
-  // Handle escape key
+    return () => {
+      active = false
+    }
+  }, [
+    fileName,
+    fileUrl,
+    isAudio,
+    isImage,
+    isOpen,
+    isPdf,
+    isPreviewable,
+    isText,
+    isVideo
+  ])
+
   React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         onClose()
       }
     }
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden'
+      document.addEventListener("keydown", handleEscape)
+      document.body.style.overflow = "hidden"
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'unset'
+      document.removeEventListener("keydown", handleEscape)
+      document.body.style.overflow = ""
     }
   }, [isOpen, onClose])
 
   if (!isOpen) return null
 
+  const hasLoadedPreview = isPdf ? pdfImages.length > 0 : Boolean(content)
+  const showInitialLoadingState = loading && !hasLoadedPreview
+
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4"
-      style={{ zIndex: 9999 }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
+      className={cn(
+        "fixed inset-0 z-[9999] flex bg-black/60",
+        isFullscreen
+          ? "items-stretch justify-stretch p-0"
+          : "items-center justify-center p-4"
+      )}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
           onClose()
         }
       }}
     >
       <div
-        className="bg-background rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "flex flex-col overflow-hidden border border-border/70 bg-background shadow-2xl",
+          isFullscreen
+            ? "h-full w-full rounded-none"
+            : "max-h-[90vh] w-full max-w-5xl rounded-xl"
+        )}
+        onClick={(event) => event.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className={fileInfo.color}>
+        <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className={cn("mt-1 flex-shrink-0", fileInfo.color)}>
               {fileInfo.icon}
             </div>
-            <div>
-              <h3 className="font-semibold text-lg break-all">{fileName}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="min-w-0">
+              <h3 className="break-all text-lg font-semibold">{fileName}</h3>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span>{fileInfo.type}</span>
                 {fileSize && (
                   <>
-                    <span>•</span>
+                    <span>·</span>
                     <span>{fileSize}</span>
+                  </>
+                )}
+                {isPdf && totalPdfPages > 0 && (
+                  <>
+                    <span>·</span>
+                    <span>{totalPdfPages} 页</span>
                   </>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-shrink-0 items-center gap-2">
             {canDownload && (
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-              >
+              <Button asChild size="sm" variant="outline" className="gap-1.5">
                 <a
                   href={fileUrl}
                   download={fileName}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="h-4 w-4" />
                   下载
                 </a>
               </Button>
             )}
+
             <Button
-              size="sm"
+              size="icon"
+              variant="ghost"
+              onClick={() => setIsFullscreen((prev) => !prev)}
+              title={isFullscreen ? "退出全屏" : "全屏预览"}
+              aria-label={isFullscreen ? "退出全屏" : "全屏预览"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
+            </Button>
+
+            <Button
+              size="icon"
               variant="ghost"
               onClick={onClose}
+              title="关闭"
+              aria-label="关闭"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto bg-muted/20 p-4 md:p-6">
           {!isPreviewable ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <File className="w-16 h-16 text-muted-foreground mb-4" />
-              <h4 className="text-lg font-medium mb-2">无法预览此文件类型</h4>
-              <p className="text-muted-foreground mb-4">
-                {fileInfo.type} 文件不支持在线预览，请下载后查看
+            <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
+              <File className="mb-4 h-16 w-16 text-muted-foreground" />
+              <h4 className="mb-2 text-lg font-medium">无法预览此文件类型</h4>
+              <p className="mb-4 text-muted-foreground">
+                {fileInfo.type} 暂不支持在线预览，请下载后查看。
               </p>
-              {canDownload && (
-                <Button asChild>
-                  <a
-                    href={fileUrl}
-                    download={fileName}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    下载文件
-                  </a>
-                </Button>
-              )}
-            </div>
-          ) : loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">正在加载预览...</p>
-              </div>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="text-destructive mb-4">
-                <X className="w-16 h-16 mx-auto mb-2" />
+            <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
+              <div className="mb-4 text-destructive">
+                <X className="mx-auto mb-2 h-16 w-16" />
                 <h4 className="text-lg font-medium">预览失败</h4>
               </div>
-              <p className="text-muted-foreground mb-4">{error}</p>
+              <p className="mb-4 text-muted-foreground">{error}</p>
               {canDownload && (
                 <Button asChild variant="outline">
                   <a
@@ -259,108 +472,106 @@ export function FilePreviewModal({ isOpen, onClose, fileName, fileUrl, fileSize,
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="mr-2 h-4 w-4" />
                     下载文件
                   </a>
                 </Button>
               )}
             </div>
+          ) : showInitialLoadingState ? (
+            <div className="flex h-full min-h-64 items-center justify-center">
+              <div className="text-center">
+                <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+                <p className="text-muted-foreground">正在加载预览...</p>
+              </div>
+            </div>
           ) : (
             <div className="space-y-4">
-              {/* PDF Preview */}
-              {ext === 'pdf' && (
-                <div className="space-y-6">
-                  {pdfImages.length > 0 && (
-                    <div>
-                      <h4 className="font-medium mb-3">PDF页面预览</h4>
-                      <div className="space-y-4">
-                        {pdfImages.map((imageUrl, index) => (
-                          <div key={index} className="border border-border rounded-lg overflow-hidden">
-                            <div className="bg-muted px-3 py-2 text-sm font-medium">
-                              第 {index + 1} 页
-                            </div>
-                            <div className="p-4 bg-white">
-                              <img
-                                src={imageUrl}
-                                alt={`PDF第${index + 1}页`}
-                                className="max-w-full h-auto mx-auto shadow-sm"
-                              />
-                            </div>
-                          </div>
-                        ))}
+              {isPdf && (
+                <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-5">
+                  {pdfImages.map((imageUrl, index) => (
+                    <section
+                      key={`${fileName}-page-${index + 1}`}
+                      className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+                    >
+                      <div className="border-b border-border bg-muted/60 px-4 py-2 text-sm font-medium">
+                        第 {index + 1} 页
                       </div>
-                    </div>
-                  )}
-
-                  {content && !content.startsWith('[') && (
-                    <div>
-                      <h4 className="font-medium mb-3">文本内容</h4>
-                      <div className="bg-muted rounded-lg p-4">
-                        <pre className="whitespace-pre-wrap text-sm font-mono overflow-auto max-h-96">
-                          {content}
-                        </pre>
+                      <div className="flex justify-center overflow-auto bg-white p-4 md:p-6">
+                        <img
+                          src={imageUrl}
+                          alt={`${fileName} 第 ${index + 1} 页`}
+                          className="block h-auto max-w-full rounded-sm shadow-sm"
+                        />
                       </div>
-                    </div>
-                  )}
+                    </section>
+                  ))}
                 </div>
               )}
 
-              {/* Image Preview */}
-              {['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext) && (
+              {isImage && (
                 <div className="text-center">
                   <img
                     src={content}
                     alt={fileName}
-                    className="max-w-full max-h-[60vh] mx-auto rounded-lg shadow-sm"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.style.display = 'none'
-                      setError('图片加载失败')
-                    }}
+                    className={cn(
+                      "mx-auto rounded-lg shadow-sm",
+                      isFullscreen
+                        ? "max-h-none max-w-full"
+                        : "max-h-[70vh] max-w-full"
+                    )}
+                    onError={() => setError("图片加载失败")}
                   />
                 </div>
               )}
 
-              {/* Video Preview */}
-              {['mp4', 'avi', 'mov'].includes(ext) && (
+              {isVideo && (
                 <div className="text-center">
                   <video
                     src={content}
                     controls
-                    className="max-w-full max-h-[60vh] mx-auto rounded-lg shadow-sm"
-                    onError={() => setError('视频加载失败')}
+                    className={cn(
+                      "mx-auto w-full max-w-5xl rounded-lg shadow-sm",
+                      isFullscreen ? "max-h-[calc(100dvh-10rem)]" : "max-h-[70vh]"
+                    )}
+                    onError={() => setError("视频加载失败")}
                   >
-                    您的浏览器不支持视频播放
+                    您的浏览器不支持视频播放。
                   </video>
                 </div>
               )}
 
-              {/* Audio Preview */}
-              {['mp3', 'wav'].includes(ext) && (
+              {isAudio && (
                 <div className="text-center">
-                  <div className="inline-flex flex-col items-center gap-4 p-8 bg-muted rounded-lg">
-                    <Music className="w-16 h-16 text-muted-foreground" />
+                  <div className="inline-flex flex-col items-center gap-4 rounded-lg bg-muted p-8">
+                    <Music className="h-16 w-16 text-muted-foreground" />
                     <audio
                       src={content}
                       controls
                       className="w-full max-w-md"
-                      onError={() => setError('音频加载失败')}
+                      onError={() => setError("音频加载失败")}
                     >
-                      您的浏览器不支持音频播放
+                      您的浏览器不支持音频播放。
                     </audio>
                   </div>
                 </div>
               )}
 
-              {/* Text Preview */}
-              {['ppt', 'pptx', 'txt', 'md', 'json', 'py', 'java', 'js', 'ts', 'c', 'cpp', 'h'].includes(ext) && content && (
-                <div>
-                  <h4 className="font-medium mb-3">文件内容</h4>
-                  <div className="bg-muted rounded-lg p-4">
-                    <pre className="whitespace-pre-wrap text-sm font-mono overflow-auto max-h-96">
-                      {content}
-                    </pre>
+              {isText && content && (
+                <div className="mx-auto w-full max-w-[1180px] rounded-lg border border-border bg-background shadow-sm">
+                  <div className="border-b border-border px-4 py-3 text-sm font-medium">
+                    文件内容
                   </div>
+                  <pre
+                    className={cn(
+                      "overflow-auto whitespace-pre-wrap p-4 text-sm font-mono",
+                      isFullscreen
+                        ? "min-h-[calc(100dvh-12rem)] max-h-none"
+                        : "max-h-[70vh]"
+                    )}
+                  >
+                    {content}
+                  </pre>
                 </div>
               )}
             </div>
@@ -370,6 +581,5 @@ export function FilePreviewModal({ isOpen, onClose, fileName, fileUrl, fileSize,
     </div>
   )
 
-  // Use portal to render modal at document body level
   return createPortal(modalContent, document.body)
 }
