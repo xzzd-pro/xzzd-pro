@@ -17,6 +17,13 @@ export const config: PlasmoCSConfig = {
   run_at: "document_end"
 }
 
+// Match patterns do not include the URL hash (#...), so `exclude_matches` cannot
+// reliably exclude `#/exam/...` routes. Preemptively disable our hiding CSS on
+// exam routes to avoid blank pages.
+if (window.location.hash.startsWith("#/exam")) {
+  document.body?.classList.add("xzzdpro-disabled")
+}
+
 const LearningActivityPageInjector = () => {
   const [theme] = useStorage({
     key: "theme",
@@ -30,6 +37,12 @@ const LearningActivityPageInjector = () => {
   const isBeautifying = useRef(false)
 
   useEffect(() => {
+    if (window.location.hash.startsWith("#/exam")) {
+      console.log("XZZDPRO: exam route detected, skipping learning-activity beautification")
+      document.body?.classList.add("xzzdpro-disabled")
+      return
+    }
+
     if (isLoading) return
 
     const rootElement = document.documentElement
