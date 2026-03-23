@@ -5,7 +5,13 @@ import { Card, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getUserId } from "@/lib/components/courseDetailHelpers"
 import { cn } from "@/lib/utils"
-import type { HomeworkActivity, HomeworkApiResponse, ProcessedHomework } from "@/types"
+import type {
+  HomeworkActivity,
+  HomeworkApiResponse,
+  HomeworkScoreItem,
+  HomeworkScoresResponse,
+  ProcessedHomework
+} from "@/types"
 import { HomeworkContent } from "./HomeworkContent"
 
 async function fetchHomeworkList(courseId: string): Promise<HomeworkActivity[]> {
@@ -24,19 +30,76 @@ async function fetchHomeworkList(courseId: string): Promise<HomeworkActivity[]> 
   }
 }
 
+async function fetchHomeworkScores(
+  courseId: string
+): Promise<HomeworkScoreItem[]> {
+  try {
+    const response = await fetch(
+      `https://courses.zju.edu.cn/api/course/${courseId}/homework-scores`
+    )
+
+    if (!response.ok) return []
+
+    const data: HomeworkScoresResponse = await response.json()
+    return data.scores || []
+  } catch (error) {
+    console.error("XZZDPRO: failed to fetch homework scores", error)
+    return []
+  }
+}
+
+function resolveHomeworkScore(
+  score?: string | null,
+  finalScore?: number | null
+): string {
+  const normalizedScore = (score || "").trim()
+  if (normalizedScore) return normalizedScore
+  if (finalScore !== null && finalScore !== undefined) return String(finalScore)
+  return ""
+}
+
+function hasReviewResult(scoreItem?: HomeworkScoreItem): boolean {
+  if (!scoreItem) return false
+
+  return Boolean(
+    resolveHomeworkScore(scoreItem.score, scoreItem.final_score) ||
+      scoreItem.instructor_comment?.trim()
+  )
+}
+
 function processHomeworks(
   homeworks: HomeworkActivity[],
+  scoreItems: HomeworkScoreItem[],
   courseId: string
 ): ProcessedHomework[] {
+  const scoreMap = new Map<number, HomeworkScoreItem>()
+  scoreItems.forEach((item) => {
+    scoreMap.set(item.activity_id, item)
+  })
+
   const processed = homeworks.map((hw) => ({
+    ...(() => {
+      const scoreItem = scoreMap.get(hw.id)
+      const resolvedScore =
+        resolveHomeworkScore(scoreItem?.score, scoreItem?.final_score) ||
+        (hw.score || "").trim()
+      const instructorComment = scoreItem?.instructor_comment?.trim() || ""
+      const isReviewed =
+        hasReviewResult(scoreItem) || Boolean(resolvedScore && hw.submitted)
+
+      return {
+        score: resolvedScore,
+        scorePublished: hw.score_published || isReviewed,
+        isReviewed,
+        instructorComment
+      }
+    })(),
     id: hw.id,
     title: hw.title,
-    score: hw.score,
     submitted: hw.submitted,
     isClosed: hw.is_closed,
     endTime: hw.end_time,
     deadline: new Date(hw.end_time),
-    scorePublished: hw.score_published,
     link: `https://courses.zju.edu.cn/course/${courseId}/learning-activity#/${hw.id}`
   }))
 
@@ -147,8 +210,15 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
 
         setUserId(uid)
 
-        const homeworkList = await fetchHomeworkList(courseId)
-        const processed = processHomeworks(homeworkList, courseId)
+        const [homeworkList, homeworkScores] = await Promise.all([
+          fetchHomeworkList(courseId),
+          fetchHomeworkScores(courseId)
+        ])
+        const processed = processHomeworks(
+          homeworkList,
+          homeworkScores,
+          courseId
+        )
         setHomeworks(processed)
       } catch (err) {
         setError("\u52a0\u8f7d\u4f5c\u4e1a\u5217\u8868\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5")
@@ -236,12 +306,26 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                         {"\u5df2\u622a\u6b62"}
                       </span>
                     )}
+                    {homework.submitted && (
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+                          homework.isReviewed
+                            ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {homework.isReviewed
+                          ? "\u5df2\u6279\u6539"
+                          : "\u672a\u6279\u6539"}
+                      </span>
+                    )}
                     <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                       {homework.scorePublished
                         ? "\u5df2\u53d1\u5e03\u6210\u7ee9"
                         : "\u6210\u7ee9\u672a\u53d1\u5e03"}
                     </span>
-                    {homework.scorePublished && homework.submitted && (
+                    {homework.isReviewed && homework.score && (
                       <span className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                         {`\u6210\u7ee9\uff1a${homework.score}`}
                       </span>

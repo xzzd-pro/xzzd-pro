@@ -245,6 +245,8 @@ export interface ProcessedHomework {
   endTime: string;
   deadline: Date;
   scorePublished: boolean;
+  isReviewed: boolean;
+  instructorComment: string;
   link: string;
 }
 

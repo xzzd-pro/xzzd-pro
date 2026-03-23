@@ -362,6 +362,54 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
         )}
       </div>
 
+      <div className={sectionClassName}>
+        <h4 className="mb-3 text-sm font-semibold text-foreground">
+          {"\u6279\u6539\u7ed3\u679c"}
+        </h4>
+        {!homework.submitted ? (
+          <p className="text-sm text-muted-foreground">
+            {"\u63d0\u4ea4\u4f5c\u4e1a\u540e\u53ef\u67e5\u770b\u6210\u7ee9\u548c\u8001\u5e08\u8bc4\u8bed"}
+          </p>
+        ) : homework.isReviewed ? (
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {"\u6279\u6539\u72b6\u6001\uff1a"}
+              </span>
+              <span className="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300">
+                {"\u5df2\u6279\u6539"}
+              </span>
+              <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                {homework.scorePublished
+                  ? "\u5df2\u53d1\u5e03\u6210\u7ee9"
+                  : "\u6210\u7ee9\u672a\u53d1\u5e03"}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {"\u6210\u7ee9\uff1a"}
+              </span>
+              <span className="text-lg font-semibold text-primary">
+                {homework.score || "--"}
+              </span>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                {"\u8001\u5e08\u8bc4\u8bed"}
+              </p>
+              <div className="rounded-lg bg-card/70 p-4 text-sm leading-7 text-foreground whitespace-pre-wrap break-words">
+                {homework.instructorComment ||
+                  "\u6682\u65e0\u8001\u5e08\u8bc4\u8bed"}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {"\u8001\u5e08\u5c1a\u672a\u6279\u6539"}
+          </p>
+        )}
+      </div>
+
       {!homework.isClosed && (
         <div className={sectionClassName}>
           <h4 className="mb-3 text-sm font-semibold text-foreground">
