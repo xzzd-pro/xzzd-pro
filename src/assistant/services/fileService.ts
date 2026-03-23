@@ -10,6 +10,18 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 const DEFAULT_PDF_IMAGE_MAX_PAGES = 6
 const DEFAULT_PDF_IMAGE_SCALE = 1.25
 
+async function fetchBlobDirect(url: string): Promise<Blob> {
+  const response = await fetch(url, {
+    credentials: "include"
+  })
+
+  if (!response.ok) {
+    throw new Error(`Direct fetch failed: ${response.status} ${response.statusText}`)
+  }
+
+  return await response.blob()
+}
+
 async function fetchBlobViaBackground(url: string): Promise<Blob> {
   const res = await sendToBackground({
     name: "fetch-file",
@@ -28,12 +40,24 @@ async function fetchBlobViaBackground(url: string): Promise<Blob> {
   return await response.blob()
 }
 
+async function fetchBlob(url: string): Promise<Blob> {
+  try {
+    return await fetchBlobDirect(url)
+  } catch (error) {
+    console.warn("XZZDPRO: direct file fetch failed, falling back to background", {
+      url,
+      error: error instanceof Error ? error.message : String(error)
+    })
+    return await fetchBlobViaBackground(url)
+  }
+}
+
 export async function fetchFileContent(
   url: string,
   filename: string
 ): Promise<string> {
   try {
-    const blob = await fetchBlobViaBackground(url)
+    const blob = await fetchBlob(url)
     const ext = filename.split(".").pop()?.toLowerCase() || ""
 
     if (ext === "pdf") {
@@ -84,7 +108,7 @@ export async function fetchFileContent(
 
 export async function fetchPdfBlob(url: string): Promise<Blob | null> {
   try {
-    return await fetchBlobViaBackground(url)
+    return await fetchBlob(url)
   } catch {
     return null
   }

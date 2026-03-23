@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
+import { uploadHomeworkAttachment } from "@/lib/homeworkUpload"
 import type {
   HomeworkDetailResponse,
   HomeworkDetailUpload,
@@ -63,27 +64,7 @@ async function fetchSubmissionList(
 }
 
 async function uploadFile(file: File): Promise<number | null> {
-  try {
-    const fileData = await file.arrayBuffer()
-    const fileArray = Array.from(new Uint8Array(fileData))
-
-    const response = await chrome.runtime.sendMessage({
-      type: "UPLOAD_FILE",
-      fileName: file.name,
-      fileSize: file.size,
-      fileData: fileArray
-    })
-
-    if (response && response.success) {
-      return response.uploadId
-    }
-
-    console.error("XZZDPRO: upload failed", response?.error)
-    return null
-  } catch (error) {
-    console.error("XZZDPRO: failed to upload file", error)
-    return null
-  }
+  return uploadHomeworkAttachment(file)
 }
 
 async function submitHomework(

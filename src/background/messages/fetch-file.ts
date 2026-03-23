@@ -37,7 +37,10 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
     };
   } catch (error) {
     console.error("Background fetch error:", error);
-    res.send({ error: String(error) });
+    res.send({
+      error:
+        "Background fetch failed. VPN/proxy may trigger extension CORS restrictions."
+    });
   }
 };
 

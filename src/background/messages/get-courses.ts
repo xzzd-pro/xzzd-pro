@@ -411,6 +411,11 @@ async function requestTimetable(form: URLSearchParams, queryUrl: string) {
       response.status,
       response.statusText
     );
+    if (response.status === 901) {
+      throw new Error(
+        "Fetch failed: 901. VPN/proxy may be interfering with ZDBK access."
+      );
+    }
     throw new Error(`Fetch failed: ${response.status}`);
   }
 
@@ -579,7 +584,7 @@ async function performBackgroundLogin() {
 
     if (ssoRes.status === 0) {
       console.error(
-        "XZZDPRO: Login Failed! Got Status 0 (Opaque Response). This usually means a CORS/Permission issue."
+        "XZZDPRO: Login Failed! Got Status 0 (Opaque Response). This usually means a CORS/Permission issue, often triggered by VPN/proxy interception."
       );
       console.log(
         "XZZDPRO: Trying fallback with redirect: 'follow' to inspect final URL..."
