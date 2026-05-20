@@ -75,8 +75,18 @@ function getExpectedTermCodes(termName: string): string[] {
     冬: ["2"],
     春: ["2", "3"],
     夏: ["4"],
+    秋冬: ["1", "2"],
+    春夏: ["2", "3", "4"],
   }
   return codeMap[termName] || []
+}
+
+function getExpectedTermNames(termName: string): string[] {
+  const nameMap: Record<string, string[]> = {
+    秋冬: ["秋冬", "秋", "冬"],
+    春夏: ["春夏", "春", "夏"],
+  }
+  return nameMap[termName] || [termName]
 }
 
 function includesAny(source: string, expected: string[]) {
@@ -126,7 +136,7 @@ function getPayloadContextMatchStatus(payload: any, context: QueryContext) {
   const expectedYear = normalizeText(context.xnm)
   const expectedStartYear = expectedYear.split("-")[0] || expectedYear
   const contextTermText = normalizeText(context.xqmmc || context.xqm.split("|")[1] || "")
-  const expectedTermNames = [contextTermText].filter(Boolean)
+  const expectedTermNames = getExpectedTermNames(contextTermText).filter(Boolean)
   const expectedTermCodes = Array.from(
     new Set([
       ...getExpectedTermCodes(contextTermText),
@@ -160,7 +170,7 @@ function filterKbListByContext(payload: any, context: QueryContext) {
   const expectedYear = normalizeText(context.xnm)
   const expectedStartYear = expectedYear.split("-")[0] || expectedYear
   const contextTermText = normalizeText(context.xqmmc || context.xqm.split("|")[1] || "")
-  const expectedTermNames = [contextTermText].filter(Boolean)
+  const expectedTermNames = getExpectedTermNames(contextTermText).filter(Boolean)
   const expectedTermCodes = Array.from(
     new Set([
       ...getExpectedTermCodes(contextTermText),
@@ -218,18 +228,23 @@ function filterKbListByContext(payload: any, context: QueryContext) {
     }
   }
 
-  // Defensive fallback: never drop to empty when server payload lacks term fields.
+  // Only allow row metadata fallback when the payload itself confirms the context.
   if (filtered.length === 0) {
     if (metadataHitCount === 0) {
-      console.warn("XZZDPRO: Term filter found no usable term metadata, fallback to raw kbList")
+      console.warn("XZZDPRO: Term filter found no usable row-level term metadata")
       const firstItem = kbList[0]
       if (firstItem && typeof firstItem === "object") {
         console.warn("XZZDPRO: First kbList item keys:", Object.keys(firstItem))
       }
       if (payloadHasMetadata) {
         console.warn("XZZDPRO: Top-level metadata matched context, allowing raw kbList fallback")
+        return payload
       }
-      return payload
+      console.warn("XZZDPRO: Rejecting kbList because neither payload nor rows expose term metadata")
+      return {
+        ...payloadObj,
+        kbList: [],
+      }
     }
     console.warn("XZZDPRO: Term filter removed all entries by strict year/term match")
     return {
@@ -271,6 +286,8 @@ function getXqmVariants(xqm: string, xqmmc: string): QueryContext[] {
     冬: "2",
     春: "2",
     夏: "4",
+    秋冬: "1",
+    春夏: "3",
   }
 
   const code = termCodeMap[termText] || ""
@@ -310,11 +327,7 @@ function getTermContext() {
   let xnm = "";
   let termName = ""
 
-  // ZJU Quarter System (Approximate)
-  // Fall: Sept - Nov
-  // Winter: Nov - Jan
-  // Spring: Feb - Apr
-  // Summer: Apr - Jun
+  // Fallback only. Prefer the selected context from ZDBK timetable page.
 
   // Academic Year Calculation
   // If we are in Aug-Dec, academic year starts this year.
@@ -326,14 +339,14 @@ function getTermContext() {
   }
   xnm = `${startYear}-${startYear + 1}`;
 
-  // Term Calculation
+  // Match the ZDBK selector labels used by the timetable page.
   if (month >= 9 && month <= 11) {
     termName = month === 11 ? "冬" : "秋"
-  } else if (month == 12 || month == 1) {
+  } else if (month === 12 || month === 1) {
     termName = "冬"
-  } else if (month >= 2 && month <= 4) {
+  } else if (month >= 2 && month <= 5) {
     termName = "春"
-  } else if (month >= 5 && month <= 7) {
+  } else if (month >= 6 && month <= 7) {
     termName = "夏"
   } else {
     termName = "秋"
@@ -344,6 +357,8 @@ function getTermContext() {
     冬: "2",
     春: "2",
     夏: "4",
+    秋冬: "1",
+    春夏: "3",
   }
   const termCode = termCodeMap[termName] || "1"
   const xqm = `${termCode}|${termName}`
@@ -377,6 +392,79 @@ function buildForm(studentId: string, context?: QueryContext): URLSearchParams {
   form.set("gnmkdm", DEFAULT_GNMKDM);
   form.set("su", studentId);
   return form;
+}
+
+function decodeHtmlText(value: string): string {
+  return value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+      String.fromCharCode(parseInt(code, 16))
+    )
+}
+
+function stripTags(value: string): string {
+  return decodeHtmlText(value.replace(/<[^>]*>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function getAttributeValue(tag: string, attribute: string): string {
+  const match = tag.match(
+    new RegExp(`\\s${attribute}\\s*=\\s*["']([^"']*)["']`, "i")
+  )
+  return match ? decodeHtmlText(match[1]).trim() : ""
+}
+
+function getSelectedOptionFromSelect(html: string, fieldName: string) {
+  const selectRegex = /<select\b[^>]*>[\s\S]*?<\/select>/gi
+  let selectMatch: RegExpExecArray | null
+
+  while ((selectMatch = selectRegex.exec(html))) {
+    const selectHtml = selectMatch[0]
+    const openTag = selectHtml.match(/<select\b[^>]*>/i)?.[0] || ""
+    const id = getAttributeValue(openTag, "id")
+    const name = getAttributeValue(openTag, "name")
+    if (id !== fieldName && name !== fieldName) continue
+
+    const optionMatches = Array.from(
+      selectHtml.matchAll(/<option\b([^>]*)>([\s\S]*?)<\/option>/gi)
+    )
+    const selected =
+      optionMatches.find((option) => /\sselected(?:\s|=|>)/i.test(option[1])) ||
+      optionMatches[0]
+
+    if (!selected) return null
+
+    return {
+      value: getAttributeValue(selected[0], "value"),
+      label: stripTags(selected[2]),
+    }
+  }
+
+  return null
+}
+
+function parseContextFromTimetableIndex(html: string): QueryContext | null {
+  const yearOption = getSelectedOptionFromSelect(html, "xnm")
+  const termOption = getSelectedOptionFromSelect(html, "xqm")
+
+  const xnm = yearOption?.value || yearOption?.label || ""
+  const xqmValue = termOption?.value || ""
+  const xqmmc = termOption?.label || xqmValue.split("|")[1] || ""
+  const xqm = xqmValue.includes("|") || !xqmmc ? xqmValue : `${xqmValue}|${xqmmc}`
+
+  if (!xnm || !xqm) {
+    console.warn("XZZDPRO: Could not parse selected term context from timetable page")
+    return null
+  }
+
+  return { xnm, xqm, xqmmc }
 }
 
 async function requestTimetable(form: URLSearchParams, queryUrl: string) {
@@ -432,7 +520,7 @@ async function requestTimetable(form: URLSearchParams, queryUrl: string) {
   }
 }
 
-async function initTimetablePageContext(su: string) {
+async function initTimetablePageContext(su: string): Promise<QueryContext | null> {
   const indexUrl = `https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=${encodeURIComponent(DEFAULT_GNMKDM)}&layout=default&su=${encodeURIComponent(su)}`
   console.log("XZZDPRO: Initializing timetable index context:", indexUrl)
   const indexRes = await fetch(indexUrl, {
@@ -440,7 +528,18 @@ async function initTimetablePageContext(su: string) {
     credentials: "include",
   })
   console.log("XZZDPRO: Timetable index status:", indexRes.status, indexRes.statusText)
-  return indexUrl
+  const contentType = indexRes.headers.get("content-type") || ""
+  if (!indexRes.ok || !contentType.includes("text/html")) {
+    console.warn("XZZDPRO: Skip parsing timetable index context", {
+      status: indexRes.status,
+      contentType,
+    })
+    return null
+  }
+  const indexHtml = await indexRes.text()
+  const context = parseContextFromTimetableIndex(indexHtml)
+  console.log("XZZDPRO: Timetable index selected context:", context)
+  return context
 }
 
 async function applyTermContext(su: string, context: QueryContext) {
@@ -460,27 +559,27 @@ async function applyTermContext(su: string, context: QueryContext) {
 async function fetchTimetable(studentId: string) {
   console.log("XZZDPRO: Starting fetchTimetable...");
   const su = sanitizeStudentId(studentId) || DEFAULT_STUDENT_ID;
-  const strictContext = getTermContext()
 
   try {
     // Step 1: Initialize index page context, then set term context.
-    await initTimetablePageContext(su)
+    const indexContext = await initTimetablePageContext(su)
+    const strictContext = indexContext || getTermContext()
+    console.log("XZZDPRO: Final timetable query context:", strictContext)
     console.log(`XZZDPRO: Setting context to Year ${strictContext.xnm}, Term ${strictContext.xqm}`);
     await applyTermContext(su, strictContext)
 
     // Step 2: Get Data (cxXsKb)
     const queryUrl = `${API_URL}?gnmkdm=${encodeURIComponent(DEFAULT_GNMKDM)}&layout=default&su=${encodeURIComponent(su)}`
-    const primaryForm = buildForm(su)
+    const primaryForm = buildForm(su, strictContext)
     const primaryRawData = await requestTimetable(primaryForm, queryUrl)
     const primaryData = filterKbListByContext(primaryRawData, strictContext)
 
     // If empty timetable, retry with alternate xnm/xqm formats.
     if (primaryData && getKbListLength(primaryData) === 0) {
-      const defaultTerm = getTermContext()
-      const xnmVariants = normalizeXnmVariants(String(primaryData?.xnm || defaultTerm.xnm))
+      const xnmVariants = normalizeXnmVariants(String(primaryData?.xnm || strictContext.xnm))
       const xqmVariants = getXqmVariants(
-        String(primaryData?.xqm || defaultTerm.xqm),
-        String(primaryData?.xqmmc || defaultTerm.xqmmc)
+        String(primaryData?.xqm || strictContext.xqm),
+        String(primaryData?.xqmmc || strictContext.xqmmc)
       )
       console.log("XZZDPRO: Retry variants:", { xnmVariants, xqmVariants })
 
