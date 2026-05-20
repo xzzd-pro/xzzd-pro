@@ -71,19 +71,59 @@ async function uploadFileContent(
   uploadUrl: string,
   fileData: UploadFileRequest["fileData"],
   fileName: string
-): Promise<boolean> {
-  try {
-    const bytes = normalizeFileData(fileData)
-    const blob = new Blob([bytes], { type: getContentType(fileName) })
-    const formData = new FormData()
-    formData.append("file", blob, fileName)
+): Promise<{ success: boolean; error?: string }> {
+  const bytes = normalizeFileData(fileData)
+  const contentType = getContentType(fileName)
+  const blob = new Blob([bytes], { type: contentType })
 
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      body: formData
-    })
+  const uploadAttempts: Array<{
+    label: string
+    request: () => Promise<Response>
+  }> = [
+    {
+      label: "POST multipart/form-data",
+      request: async () => {
+        const formData = new FormData()
+        formData.append("file", blob, fileName)
+        return await fetch(uploadUrl, {
+          method: "POST",
+          body: formData
+        })
+      }
+    },
+    {
+      label: "PUT raw blob",
+      request: async () =>
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": contentType
+          },
+          body: blob
+        })
+    },
+    {
+      label: "POST raw blob",
+      request: async () =>
+        await fetch(uploadUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": contentType
+          },
+          body: blob
+        })
+    }
+  ]
 
-    if (!response.ok) {
+  const errors: string[] = []
+
+  for (const attempt of uploadAttempts) {
+    try {
+      const response = await attempt.request()
+      if (response.ok) {
+        return { success: true }
+      }
+
       let errorText = ""
       try {
         errorText = await response.text()
@@ -91,19 +131,29 @@ async function uploadFileContent(
         errorText = "Unable to read upload error response"
       }
 
+      const errorSummary = `${attempt.label}: ${response.status} ${response.statusText}${errorText ? ` - ${errorText.slice(0, 200)}` : ""}`
+      errors.push(errorSummary)
       console.error("XZZDPRO Background: file content upload failed", {
+        attempt: attempt.label,
         status: response.status,
         statusText: response.statusText,
         error: errorText,
         url: uploadUrl
       })
-      return false
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      errors.push(`${attempt.label}: ${errorMessage}`)
+      console.error("XZZDPRO Background: file content upload threw", {
+        attempt: attempt.label,
+        error
+      })
     }
+  }
 
-    return true
-  } catch (error) {
-    console.error("XZZDPRO Background: file content upload threw", error)
-    return false
+  return {
+    success: false,
+    error: errors.join(" | ")
   }
 }
 
@@ -140,15 +190,15 @@ export async function uploadHomeworkFile(
     }
   }
 
-  const uploadSuccess = await uploadFileContent(
+  const uploadResult = await uploadFileContent(
     preRegResult.uploadUrl,
     request.fileData,
     request.fileName
   )
-  if (!uploadSuccess) {
+  if (!uploadResult.success) {
     return {
       success: false,
-      error: "Failed to upload file content."
+      error: uploadResult.error || "Failed to upload file content."
     }
   }
 

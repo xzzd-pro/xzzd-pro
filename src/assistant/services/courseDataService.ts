@@ -1,5 +1,5 @@
 import type { CourseInfo, MaterialSummary, HomeworkSummary, CourseContext } from '../types'
-import { createMyCoursesPayload, fetchMyCoursesResponse } from '@/lib/myCoursesApi'
+import { createMyCoursesPayload, fetchMyCoursesResponse } from '@/shared/api/myCoursesApi'
 
 interface ApiCourseData {
     id: number

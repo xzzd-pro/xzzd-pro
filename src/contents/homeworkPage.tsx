@@ -1,12 +1,7 @@
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
-import { useStorage } from "@plasmohq/storage/hook"
-import { useEffect, useRef } from "react"
 
-import { homeworkBeautifier } from "../lib/homeworkBeautifier"
-import { storage } from "@/lib/storage"
-import { applyThemeToDocument, bootstrapStoredTheme, normalizeTheme } from "@/lib/themeDom"
-
-bootstrapStoredTheme(storage)
+import { homeworkBeautifier } from "@/features/homework/homeworkBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/homework*"],
@@ -14,53 +9,9 @@ export const config: PlasmoCSConfig = {
   run_at: "document_end"
 }
 
-const HomeworkPageInjector = () => {
-  const [theme] = useStorage({
-    key: "theme",
-    instance: storage
-  }, "light")
-  const [beautifyEnabled, , { isLoading }] = useStorage({
-    key: "beautify-enabled",
-    instance: storage
-  }, true)
-  const rootClassName = "xzzdpro"
-  const isBeautifying = useRef(false)
-
-  useEffect(() => {
-    if (isLoading) return
-
-    const rootElement = document.documentElement
-    rootElement.classList.add(rootClassName)
-    applyThemeToDocument(normalizeTheme(theme))
-
-    if (beautifyEnabled === false) {
-      console.log('XZZDPRO: beautification is disabled')
-      rootElement.classList.remove(rootClassName)
-      rootElement.removeAttribute("data-theme")
-      rootElement.classList.remove("dark")
-      rootElement.style.removeProperty("color-scheme")
-      document.body?.removeAttribute("data-theme")
-      document.body.classList.add('xzzdpro-disabled')
-      return
-    }
-
-    if (document.querySelector('.xzzdpro-root')) {
-      console.log('XZZDPRO: beautification already applied, skipping...')
-      return
-    }
-
-    if (isBeautifying.current) {
-      console.log('XZZDPRO: beautification in progress, skipping...')
-      return
-    }
-
-    isBeautifying.current = true
-    console.log('XZZDPRO: starting homework page beautification...')
-
-    homeworkBeautifier()
-  }, [theme, beautifyEnabled, isLoading])
-
-  return null
-}
+const HomeworkPageInjector = createBeautifierInjector({
+  pageName: "homework page",
+  beautify: homeworkBeautifier
+})
 
 export default HomeworkPageInjector

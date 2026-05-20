@@ -1,18 +1,19 @@
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
-import { useStorage } from "@plasmohq/storage/hook"
-import { useEffect, useRef } from "react"
 
-import { homeworkBeautifier } from "../lib/homeworkBeautifier"
-import { coursewareBeautifier } from "../lib/coursewareBeautifier"
-import { getUserId, detectActivityType, getActivityIdFromUrl } from "../lib/components/courseDetailHelpers"
-import { storage } from "@/lib/storage"
-import { applyThemeToDocument, bootstrapStoredTheme, normalizeTheme } from "@/lib/themeDom"
-
-bootstrapStoredTheme(storage)
+import {
+  detectActivityType,
+  getActivityIdFromUrl,
+  getUserId
+} from "@/shared/course-detail/courseDetailHelpers"
+import { coursewareBeautifier } from "@/features/courseware/coursewareBeautifier"
+import { homeworkBeautifier } from "@/features/homework/homeworkBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/learning-activity*"],
-  exclude_matches: ["https://courses.zju.edu.cn/course/*/learning-activity#/exam*"],
+  exclude_matches: [
+    "https://courses.zju.edu.cn/course/*/learning-activity#/exam*"
+  ],
   css: ["../styles/global.css", "../styles/courseDetail.css"],
   run_at: "document_end"
 }
@@ -24,86 +25,44 @@ if (window.location.hash.startsWith("#/exam")) {
   document.body?.classList.add("xzzdpro-disabled")
 }
 
-const LearningActivityPageInjector = () => {
-  const [theme] = useStorage({
-    key: "theme",
-    instance: storage
-  }, "light")
-  const [beautifyEnabled, , { isLoading }] = useStorage({
-    key: "beautify-enabled",
-    instance: storage
-  }, true)
-  const rootClassName = "xzzdpro"
-  const isBeautifying = useRef(false)
-
-  useEffect(() => {
+const LearningActivityPageInjector = createBeautifierInjector({
+  pageName: "learning activity page",
+  shouldSkip: () => {
     if (window.location.hash.startsWith("#/exam")) {
-      console.log("XZZDPRO: exam route detected, skipping learning-activity beautification")
+      console.log(
+        "XZZDPRO: exam route detected, skipping learning-activity beautification"
+      )
       document.body?.classList.add("xzzdpro-disabled")
+      return true
+    }
+
+    return false
+  },
+  beautify: async () => {
+    const activityId = getActivityIdFromUrl()
+
+    if (!activityId) {
+      console.error("XZZDPRO: 无法提取活动ID")
       return
     }
 
-    if (isLoading) return
-
-    const rootElement = document.documentElement
-    rootElement.classList.add(rootClassName)
-    applyThemeToDocument(normalizeTheme(theme))
-
-    if (beautifyEnabled === false) {
-      console.log('XZZDPRO: beautification is disabled')
-      rootElement.classList.remove(rootClassName)
-      rootElement.removeAttribute("data-theme")
-      rootElement.classList.remove("dark")
-      rootElement.style.removeProperty("color-scheme")
-      document.body?.removeAttribute("data-theme")
-      document.body.classList.add('xzzdpro-disabled')
+    const userId = await getUserId()
+    if (!userId) {
+      console.error("XZZDPRO: 无法获取用户ID")
       return
     }
 
-    if (document.querySelector('.xzzdpro-root')) {
-      console.log('XZZDPRO: beautification already applied, skipping...')
-      return
+    const activityType = await detectActivityType(activityId, userId)
+    console.log("XZZDPRO: 检测到活动类型:", activityType)
+
+    if (activityType === "courseware") {
+      await coursewareBeautifier()
+    } else if (activityType === "homework") {
+      await homeworkBeautifier()
+    } else {
+      console.error("XZZDPRO: 未知的活动类型")
     }
-
-    if (isBeautifying.current) {
-      console.log('XZZDPRO: beautification in progress, skipping...')
-      return
-    }
-
-    isBeautifying.current = true
-    console.log('XZZDPRO: starting learning activity page beautification...')
-
-    // Detect activity type and call appropriate beautifier
-    const detectAndBeautify = async () => {
-      const activityId = getActivityIdFromUrl()
-
-      if (!activityId) {
-        console.error('XZZDPRO: 无法提取活动ID')
-        return
-      }
-
-      const userId = await getUserId()
-      if (!userId) {
-        console.error('XZZDPRO: 无法获取用户ID')
-        return
-      }
-
-      const activityType = await detectActivityType(activityId, userId)
-      console.log('XZZDPRO: 检测到活动类型:', activityType)
-
-      if (activityType === 'courseware') {
-        void coursewareBeautifier()
-      } else if (activityType === 'homework') {
-        void homeworkBeautifier()
-      } else {
-        console.error('XZZDPRO: 未知的活动类型')
-      }
-    }
-
-    detectAndBeautify()
-  }, [theme, beautifyEnabled, isLoading])
-
-  return null
-}
+  }
+})
 
 export default LearningActivityPageInjector

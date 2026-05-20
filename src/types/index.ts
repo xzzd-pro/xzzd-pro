@@ -154,6 +154,21 @@ export interface CoursewareUpload {
   size: number;
 }
 
+export interface CourseModule {
+  id: number;
+  imported_from: number | null;
+  is_hidden: number;
+  lesson_time_id: number;
+  name: string;
+  sort: number;
+  sticky_time: string | null;
+  syllabuses: any[];
+}
+
+export interface CourseModulesResponse {
+  modules: CourseModule[];
+}
+
 export interface CoursewareActivity {
   completion_criterion: string;
   course_id: number;
@@ -162,6 +177,13 @@ export interface CoursewareActivity {
   is_closed: boolean;
   is_in_progress: boolean;
   is_started: boolean;
+  module?: {
+    id?: number | string | null;
+    name?: string;
+  };
+  module_id?: number | string | null;
+  sort?: number | string | null;
+  teaching_unit_id?: number | string | null;
   title: string;
   updated_at: string;
   uploads: CoursewareUpload[];
@@ -174,6 +196,7 @@ export interface CoursewareApiResponse {
 export interface ProcessedCoursewareSection {
   id: number;
   title: string;
+  moduleName?: string;
   isStarted: boolean;
   isClosed: boolean;
   completionCriterion: string;
@@ -242,6 +265,10 @@ export interface ProcessedHomework {
   score: string;
   submitted: boolean;
   isClosed: boolean;
+  isNotStarted: boolean;
+  canSubmit: boolean;
+  startTime: string;
+  startAt: Date;
   endTime: string;
   deadline: Date;
   scorePublished: boolean;

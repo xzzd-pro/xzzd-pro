@@ -1,9 +1,7 @@
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
-import { useStorage } from "@plasmohq/storage/hook"
-import { storage } from "@/lib/storage"
-import { useEffect, useRef, useState } from "react"
 
-import { indexPageBeautifier } from "../lib/indexPageBeautifier"
+import { indexPageBeautifier } from "@/features/home/indexPageBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: [
@@ -14,59 +12,9 @@ export const config: PlasmoCSConfig = {
   run_at: "document_end"
 }
 
-const IndexPageInjector = () => {
-  const [theme] = useStorage({
-    key: "theme",
-    instance: storage
-  }, "light")
-  const [beautifyEnabled, , { isLoading }] = useStorage<boolean>({
-    key: "beautify-enabled",
-    instance: storage
-  }, true)
-  const rootClassName = "xzzdpro"
-  const isBeautifying = useRef(false)
-
-  useEffect(() => {
-    // Wait for storage to load
-    if (isLoading) {
-      console.log('XZZDPRO: Waiting for storage to load...')
-      return
-    }
-
-    console.log('XZZDPRO: beautifyEnabled =', beautifyEnabled, 'type:', typeof beautifyEnabled)
-
-    const rootElement = document.documentElement
-    rootElement.classList.add(rootClassName)
-    rootElement.setAttribute("data-theme", theme)
-
-    // check if beautification is disabled
-    if (beautifyEnabled === false) {
-      console.log('XZZDPRO: beautification is disabled')
-      rootElement.classList.remove(rootClassName)
-      rootElement.removeAttribute("data-theme")
-      document.body.classList.add('xzzdpro-disabled')
-      return
-    }
-
-    // check if already beautified
-    if (document.querySelector('.xzzdpro-root')) {
-      console.log('XZZDPRO: beautification already applied, skipping...')
-      return
-    }
-
-    // prevent multiple beautification processes
-    if (isBeautifying.current) {
-      console.log('XZZDPRO: beautification in progress, skipping...')
-      return
-    }
-
-    isBeautifying.current = true
-    console.log('XZZDPRO: starting index page beautification...')
-
-    indexPageBeautifier()
-  }, [theme, beautifyEnabled, isLoading])
-
-  return null
-}
+const IndexPageInjector = createBeautifierInjector({
+  pageName: "index page",
+  beautify: indexPageBeautifier
+})
 
 export default IndexPageInjector

@@ -1,12 +1,7 @@
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
-import { useStorage } from "@plasmohq/storage/hook"
-import { useEffect, useRef } from "react"
 
-import { examBeautifier } from "../lib/examBeautifier"
-import { storage } from "@/lib/storage"
-import { applyThemeToDocument, bootstrapStoredTheme, normalizeTheme } from "@/lib/themeDom"
-
-bootstrapStoredTheme(storage)
+import { examBeautifier } from "@/features/exam/examBeautifier"
 
 export const config: PlasmoCSConfig = {
   //  abolished
@@ -15,53 +10,9 @@ export const config: PlasmoCSConfig = {
   run_at: "document_end"
 }
 
-const ExamPageInjector = () => {
-  const [theme] = useStorage({
-    key: "theme",
-    instance: storage
-  }, "light")
-  const [beautifyEnabled, , { isLoading }] = useStorage({
-    key: "beautify-enabled",
-    instance: storage
-  }, true)
-  const rootClassName = "xzzdpro"
-  const isBeautifying = useRef(false)
-
-  useEffect(() => {
-    if (isLoading) return
-
-    const rootElement = document.documentElement
-    rootElement.classList.add(rootClassName)
-    applyThemeToDocument(normalizeTheme(theme))
-
-    if (beautifyEnabled === false) {
-      console.log('XZZDPRO: beautification is disabled')
-      rootElement.classList.remove(rootClassName)
-      rootElement.removeAttribute("data-theme")
-      rootElement.classList.remove("dark")
-      rootElement.style.removeProperty("color-scheme")
-      document.body?.removeAttribute("data-theme")
-      document.body.classList.add('xzzdpro-disabled')
-      return
-    }
-
-    if (document.querySelector('.xzzdpro-root')) {
-      console.log('XZZDPRO: beautification already applied, skipping...')
-      return
-    }
-
-    if (isBeautifying.current) {
-      console.log('XZZDPRO: beautification in progress, skipping...')
-      return
-    }
-
-    isBeautifying.current = true
-    console.log('XZZDPRO: starting exam page beautification...')
-
-    void examBeautifier()
-  }, [theme, beautifyEnabled, isLoading])
-
-  return null
-}
+const ExamPageInjector = createBeautifierInjector({
+  pageName: "exam page",
+  beautify: examBeautifier
+})
 
 export default ExamPageInjector

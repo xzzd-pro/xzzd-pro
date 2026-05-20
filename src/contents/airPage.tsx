@@ -1,7 +1,7 @@
 import type { PlasmoCSConfig } from "plasmo"
 import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect, useRef } from "react"
-import { mountAirPage } from "../lib/airPageBeautifier"
+import { mountAirPage } from "@/features/air/airPageBeautifier"
 import { storage } from "@/lib/storage"
 
 export const config: PlasmoCSConfig = {

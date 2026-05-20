@@ -1,11 +1,16 @@
-import * as pdfjsLib from "pdfjs-dist"
-import { sendToBackground } from "@plasmohq/messaging"
 import { strFromU8, unzipSync } from "fflate"
-
+import * as pdfjsLib from "pdfjs-dist"
 // @ts-ignore
 import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
 
+import { sendToBackground } from "@plasmohq/messaging"
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
+
+interface FetchFileResponse {
+  dataUri?: string
+  error?: string
+}
 
 const DEFAULT_PDF_IMAGE_MAX_PAGES = 6
 const DEFAULT_PDF_IMAGE_SCALE = 1.25
@@ -16,17 +21,19 @@ async function fetchBlobDirect(url: string): Promise<Blob> {
   })
 
   if (!response.ok) {
-    throw new Error(`Direct fetch failed: ${response.status} ${response.statusText}`)
+    throw new Error(
+      `Direct fetch failed: ${response.status} ${response.statusText}`
+    )
   }
 
   return await response.blob()
 }
 
 async function fetchBlobViaBackground(url: string): Promise<Blob> {
-  const res = await sendToBackground({
+  const res = (await sendToBackground({
     name: "fetch-file",
     body: { url }
-  })
+  } as any)) as FetchFileResponse
 
   if (res.error) {
     throw new Error(res.error)
@@ -44,10 +51,13 @@ async function fetchBlob(url: string): Promise<Blob> {
   try {
     return await fetchBlobDirect(url)
   } catch (error) {
-    console.warn("XZZDPRO: direct file fetch failed, falling back to background", {
-      url,
-      error: error instanceof Error ? error.message : String(error)
-    })
+    console.warn(
+      "XZZDPRO: direct file fetch failed, falling back to background",
+      {
+        url,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    )
     return await fetchBlobViaBackground(url)
   }
 }
@@ -95,7 +105,11 @@ export async function fetchFileContent(
       return "[PPT 文档暂不支持在线解析，请优先使用 pptx 或 pdf]"
     }
 
-    if (["txt", "md", "json", "py", "java", "js", "ts", "c", "cpp", "h"].includes(ext)) {
+    if (
+      ["txt", "md", "json", "py", "java", "js", "ts", "c", "cpp", "h"].includes(
+        ext
+      )
+    ) {
       return await parseText(blob)
     }
 
@@ -329,7 +343,7 @@ function decodeXmlEntities(input: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, "\"")
+    .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&#x([0-9a-fA-F]+);/g, (_match, hex) =>
       String.fromCodePoint(parseInt(hex, 16))
