@@ -62,8 +62,6 @@ export async function applySavedLayout(): Promise<void> {
   const mainContentWrapper = document.querySelector('.main-content-wrapper') as HTMLElement
   const handleLeft = document.querySelector('.resize-handle-left') as HTMLElement
   const handleRight = document.querySelector('.resize-handle-right') as HTMLElement
-  const root = document.querySelector('.xzzdpro-root') as HTMLElement
-
   if (mainGrid && handleLeft && handleRight) {
     mainGrid.style.gridTemplateColumns = `${state.leftHandleWidth}px 1fr ${state.rightHandleWidth}px`
     handleLeft.style.width = `${state.leftHandleWidth}px`
@@ -73,11 +71,6 @@ export async function applySavedLayout(): Promise<void> {
   if (mainContentWrapper) {
     mainContentWrapper.style.gridTemplateRows = `${state.welcomeCardHeight}px 12px 1fr`
     mainContentWrapper.style.gridTemplateColumns = `${state.coursesCardFlex}fr 12px ${state.todoCardFlex}fr`
-  }
-
-  // Apply sidebar collapsed state
-  if (root && state.sidebarCollapsed) {
-    root.classList.add('sidebar-collapsed')
   }
 
   console.log('XZZDPRO: Layout state applied', state)
@@ -276,24 +269,6 @@ export function setupResizeHandlers(): void {
           todoCardFlex: rightWidth / totalWidth
         })
       }
-    })
-  }
-
-  // Handle sidebar toggle button
-  const toggleBtn = document.getElementById('sidebar-toggle')
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', async () => {
-      const root = document.querySelector('.xzzdpro-root') as HTMLElement
-      if (!root) return
-
-      const isCollapsed = root.classList.toggle('sidebar-collapsed')
-
-      // Update title
-      toggleBtn.setAttribute('title', isCollapsed ? '展开侧边栏' : '收缩侧边栏')
-
-      // Save state
-      await saveLayoutState({ sidebarCollapsed: isCollapsed })
-      console.log('XZZDPRO: Sidebar toggled', { collapsed: isCollapsed })
     })
   }
 }

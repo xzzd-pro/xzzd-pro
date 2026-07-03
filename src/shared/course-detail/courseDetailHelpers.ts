@@ -4,6 +4,7 @@ import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setu
 import { courseDetailIcons } from "./icons"
 import { Storage } from "@plasmohq/storage"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -216,6 +217,70 @@ export function renderCourseDetailPage(
       <div class="resize-handle resize-handle-right"></div>
     </main>
   `;
+}
+
+interface MountCourseDetailPageOptions {
+  currentPage: string;
+  pageTitle: string;
+  contentHtml: string;
+  courseName?: string;
+}
+
+interface MountedCourseDetailPage {
+  courseId: string;
+  root: HTMLElement;
+  titleElement: HTMLElement | null;
+  contentSection: HTMLElement | null;
+  getMountPoint: (id: string) => HTMLElement | null;
+}
+
+function setupCourseDetailLayout(): void {
+  setupThemeToggle();
+  setupHelpModal();
+  setupAvatarUpload();
+  void setupSidebarToggle();
+}
+
+export async function mountCourseDetailPage({
+  currentPage,
+  pageTitle,
+  contentHtml,
+  courseName
+}: MountCourseDetailPageOptions): Promise<MountedCourseDetailPage | null> {
+  suppressAirChatbot();
+
+  document.body.innerHTML = '';
+  const root = document.createElement('div');
+  root.className = 'xzzdpro-root xzzdpro';
+
+  const courseId = getCourseIdFromUrl();
+  if (!courseId) {
+    console.error('XZZDPRO: 鏃犳硶鎻愬彇璇剧▼ID');
+    return null;
+  }
+
+  const resolvedCourseName = courseName ?? (await getCourseName());
+
+  root.innerHTML = renderCourseDetailPage(
+    courseId,
+    resolvedCourseName,
+    currentPage,
+    pageTitle,
+    contentHtml
+  );
+
+  document.body.appendChild(root);
+  document.body.classList.add('xzzdpro-body', 'xzzdpro');
+
+  setupCourseDetailLayout();
+
+  return {
+    courseId,
+    root,
+    titleElement: document.querySelector('.title-card h2'),
+    contentSection: document.querySelector('.content-section.active'),
+    getMountPoint: (id: string) => document.getElementById(id)
+  };
 }
 
 // Re-export setup functions from layoutHelpers for convenience

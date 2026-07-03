@@ -1,6 +1,14 @@
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
-import { uploadHomeworkAttachment } from "@/features/homework/homeworkUpload"
+import {
+  createSubmissionUpload,
+  fetchHomeworkSubmissions,
+  getLatestSubmittedFiles,
+  mergeSubmittedFiles,
+  submitHomework,
+  uploadHomeworkFile
+} from "@/features/homework/homeworkSubmission"
+import { formatFileSize } from "@/lib/fileFormat"
 import type {
   HomeworkDetailResponse,
   HomeworkDetailUpload,
@@ -10,15 +18,6 @@ import type {
 } from "@/types"
 import { Download, Eye, FileDown, FileText, Upload, X } from "lucide-react"
 import * as React from "react"
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B"
-
-  const k = 1024
-  const sizes = ["B", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`
-}
 
 function getFileKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`
@@ -53,171 +52,6 @@ async function fetchHomeworkDetail(
   } catch (error) {
     console.error("XZZDPRO: failed to fetch homework detail", error)
     return null
-  }
-}
-
-async function fetchSubmissionList(
-  activityId: number,
-  userId: string
-): Promise<HomeworkSubmission[]> {
-  try {
-    const response = await fetch(
-      `https://courses.zju.edu.cn/api/activities/${activityId}/students/${userId}/submission_list`
-    )
-
-    if (!response.ok) return []
-
-    const data = await response.json()
-    return data.list || []
-  } catch (error) {
-    console.error("XZZDPRO: failed to fetch submission list", error)
-    return []
-  }
-}
-
-async function uploadFile(file: File): Promise<number | null> {
-  return uploadHomeworkAttachment(file)
-}
-
-async function submitHomework(
-  activityId: number,
-  uploadIds: number[]
-): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `https://courses.zju.edu.cn/api/course/activities/${activityId}/submissions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          comment: "",
-          uploads: uploadIds,
-          slides: [],
-          is_draft: false,
-          mode: "normal",
-          other_resources: [],
-          uploads_in_rich_text: []
-        })
-      }
-    )
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error("XZZDPRO: submit homework failed", {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      })
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error("XZZDPRO: failed to submit homework", error)
-    return false
-  }
-}
-
-function getSubmissionUploads(
-  submission: HomeworkSubmission
-): SubmissionUpload[] {
-  const uploads = Array.isArray(submission.uploads) ? submission.uploads : []
-  const singleUpload = (submission as unknown as { upload?: SubmissionUpload })
-    .upload
-
-  if (singleUpload) {
-    return [...uploads, singleUpload]
-  }
-
-  return uploads
-}
-
-function getSubmissionTimestamp(submission: HomeworkSubmission): number {
-  const timestamp = Date.parse(submission.submitted_at || "")
-  return Number.isNaN(timestamp) ? 0 : timestamp
-}
-
-function getLatestSubmittedFiles(
-  submissions: HomeworkSubmission[] | null
-): { submittedAt: string; uploads: SubmissionUpload[] } | null {
-  if (!submissions?.length) return null
-
-  const submitted = submissions.filter(
-    (submission) => submission.marked_submitted
-  )
-  if (submitted.length === 0) return null
-
-  const latest = submitted.filter((submission) => submission.is_latest_version)
-  const newestSubmission = [...submitted].sort(
-    (a, b) => getSubmissionTimestamp(b) - getSubmissionTimestamp(a)
-  )[0]
-  const latestTimestamp =
-    latest.length > 0
-      ? Math.max(...latest.map(getSubmissionTimestamp))
-      : getSubmissionTimestamp(newestSubmission)
-  const visibleSubmissions =
-    latest.length > 0
-      ? submitted.filter(
-          (submission) =>
-            submission.is_latest_version ||
-            getSubmissionTimestamp(submission) === latestTimestamp
-        )
-      : submitted.filter(
-          (submission) => getSubmissionTimestamp(submission) === latestTimestamp
-        )
-  const submittedAt =
-    visibleSubmissions
-      .map((submission) => submission.submitted_at)
-      .filter(Boolean)
-      .sort()
-      .at(-1) || ""
-  const seenUploads = new Set<string>()
-  const uploads: SubmissionUpload[] = []
-
-  for (const submission of visibleSubmissions) {
-    for (const upload of getSubmissionUploads(submission)) {
-      const key = upload.id
-        ? `id:${upload.id}`
-        : `file:${upload.name}:${upload.size}`
-
-      if (seenUploads.has(key)) continue
-
-      seenUploads.add(key)
-      uploads.push(upload)
-    }
-  }
-
-  return {
-    submittedAt,
-    uploads
-  }
-}
-
-function mergeSubmittedFiles(
-  primary: { submittedAt: string; uploads: SubmissionUpload[] } | null,
-  fallback: { submittedAt: string; uploads: SubmissionUpload[] } | null
-): { submittedAt: string; uploads: SubmissionUpload[] } | null {
-  if (!primary) return fallback
-  if (!fallback) return primary
-
-  const seenUploads = new Set<string>()
-  const uploads: SubmissionUpload[] = []
-
-  for (const upload of [...primary.uploads, ...fallback.uploads]) {
-    const key = upload.id
-      ? `id:${upload.id}`
-      : `file:${upload.name}:${upload.size}`
-
-    if (seenUploads.has(key)) continue
-
-    seenUploads.add(key)
-    uploads.push(upload)
-  }
-
-  return {
-    submittedAt: primary.submittedAt || fallback.submittedAt,
-    uploads
   }
 }
 
@@ -347,7 +181,7 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
 
     Promise.all([
       fetchHomeworkDetail(homework.id),
-      fetchSubmissionList(homework.id, userId)
+      fetchHomeworkSubmissions(homework.id, userId)
     ]).then(([detail, submissionData]) => {
       setHomeworkDetail(detail)
       setSubmissions(submissionData)
@@ -390,21 +224,14 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
     const uploadedFiles: SubmissionUpload[] = []
 
     for (const file of selectedFiles) {
-      const uploadId = await uploadFile(file)
+      const uploadId = await uploadHomeworkFile(file)
       if (typeof uploadId !== "number") {
         setSubmitStatus("error")
         return
       }
 
       uploadedIds.push(uploadId)
-      uploadedFiles.push({
-        id: uploadId,
-        name: file.name,
-        size: file.size,
-        type: file.type || "application/octet-stream",
-        created_at: new Date().toISOString(),
-        allow_download: true
-      })
+      uploadedFiles.push(createSubmissionUpload(uploadId, file))
     }
 
     if (uploadedIds.length !== selectedFiles.length) {
@@ -423,7 +250,7 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
         uploads: uploadedFiles
       })
 
-      const newSubmissions = await fetchSubmissionList(homework.id, userId)
+      const newSubmissions = await fetchHomeworkSubmissions(homework.id, userId)
       setSubmissions(newSubmissions)
       window.setTimeout(() => setSubmitStatus("idle"), 2000)
       return

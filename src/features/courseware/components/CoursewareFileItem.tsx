@@ -94,10 +94,19 @@ function getFileIcon(filename: string): React.ReactNode {
 interface CoursewareFileItemProps {
   file: ProcessedCoursewareFile
   className?: string
+  isSelected?: boolean
+  onSelectedChange?: (fileId: number, selected: boolean) => void
 }
 
-export function CoursewareFileItem({ file, className }: CoursewareFileItemProps) {
+export function CoursewareFileItem({
+  file,
+  className,
+  isSelected = false,
+  onSelectedChange
+}: CoursewareFileItemProps) {
   const [showPreview, setShowPreview] = React.useState(false)
+  const selectionId = React.useId()
+  const isSelectable = file.canDownload && Boolean(onSelectedChange)
 
   return (
     <>
@@ -106,6 +115,21 @@ export function CoursewareFileItem({ file, className }: CoursewareFileItemProps)
         "hover:translate-x-1 hover:bg-muted hover:shadow-md",
         className
       )}>
+        {onSelectedChange && (
+          <div className="flex h-9 w-5 flex-shrink-0 items-center justify-center">
+            <input
+              id={selectionId}
+              type="checkbox"
+              checked={isSelected}
+              disabled={!isSelectable}
+              aria-label={`选择 ${file.name}`}
+              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+              onChange={(event) =>
+                onSelectedChange(file.id, event.currentTarget.checked)
+              }
+            />
+          </div>
+        )}
         <div className="w-9 h-9 flex-shrink-0 text-primary">
           {getFileIcon(file.name)}
         </div>

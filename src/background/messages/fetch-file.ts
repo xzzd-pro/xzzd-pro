@@ -1,5 +1,18 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, offset + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const { url } = req.body;
 
@@ -9,8 +22,9 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   }
 
   try {
-    // Fetch from background
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      credentials: "include"
+    });
 
     if (!response.ok) {
       res.send({
@@ -19,22 +33,16 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
       return;
     }
 
-    const blob = await response.blob();
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+    const dataUri = `data:${contentType};base64,${arrayBufferToBase64(
+      await response.arrayBuffer()
+    )}`;
 
-    // Convert Blob to Base64 Data URI
-    const reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = () => {
-      const base64DataUri = reader.result as string;
-      // Send the full Data URL (e.g. "data:application/pdf;base64,.....")
-      res.send({
-        dataUri: base64DataUri,
-        contentType: response.headers.get("content-type") || blob.type,
-      });
-    };
-    reader.onerror = () => {
-      res.send({ error: "Failed to read blob" });
-    };
+    res.send({
+      dataUri,
+      contentType,
+    });
   } catch (error) {
     console.error("Background fetch error:", error);
     res.send({

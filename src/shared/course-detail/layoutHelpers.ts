@@ -252,7 +252,7 @@ export async function setupSidebarToggle(): Promise<void> {
   const resizeHandle = document.getElementById('sidebar-resize-handle');
   const root = document.querySelector('.xzzdpro-root') as HTMLElement;
 
-  if (!toggleBtn || !resizeHandle || !root) return;
+  if (!toggleBtn || !root) return;
 
   const clampSidebarWidth = (width: number): number => {
     return Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
@@ -328,6 +328,8 @@ export async function setupSidebarToggle(): Promise<void> {
       console.error('XZZDPRO: Failed to save sidebar state', error);
     }
   });
+
+  if (!resizeHandle) return;
 
   let isResizing = false;
   let resizeStartX = 0;

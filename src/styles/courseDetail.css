@@ -26,7 +26,7 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
   grid-template-areas:
     "header header"
     "sidebar main";
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: var(--xzzd-sidebar-width, 280px) 1fr;
   grid-template-rows: auto 1fr;
   height: 100vh;
   overflow: hidden;

@@ -1,10 +1,15 @@
 import * as React from "react"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader } from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger
+} from "@/components/ui/collapsible"
 import { Skeleton } from "@/components/ui/skeleton"
 import { getUserId } from "@/shared/course-detail/courseDetailHelpers"
 import { cn } from "@/lib/utils"
+import { ChevronDown } from "lucide-react"
 import type {
   HomeworkActivity,
   HomeworkApiResponse,
@@ -224,6 +229,9 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
   const [userId, setUserId] = React.useState<string | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [openHomeworkIds, setOpenHomeworkIds] = React.useState<Set<number>>(
+    () => new Set()
+  )
 
   React.useEffect(() => {
     async function loadData() {
@@ -249,6 +257,14 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
           courseId
         )
         setHomeworks(processed)
+        setOpenHomeworkIds(
+          (previous) =>
+            new Set(
+              [...previous].filter((homeworkId) =>
+                processed.some((homework) => homework.id === homeworkId)
+              )
+            )
+        )
       } catch (err) {
         setError("\u52a0\u8f7d\u4f5c\u4e1a\u5217\u8868\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5")
         console.error("XZZDPRO: failed to load homework data", err)
@@ -276,8 +292,21 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
     )
   }
 
+  const handleHomeworkOpenChange = (homeworkId: number, open: boolean) => {
+    setOpenHomeworkIds((previous) => {
+      const next = new Set(previous)
+      if (open) {
+        next.add(homeworkId)
+      } else {
+        next.delete(homeworkId)
+      }
+
+      return next
+    })
+  }
+
   return (
-    <Accordion type="multiple" className="w-full space-y-3">
+    <div className="w-full space-y-3">
       {homeworks.map((homework) => {
         const deadlineInfo = getDeadlineInfo(
           homework.deadline,
@@ -290,6 +319,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
           : homework.isClosed
             ? "\u5df2\u7ed3\u675f"
             : "\u8fdb\u884c\u4e2d"
+        const isOpen = openHomeworkIds.has(homework.id)
 
         return (
           <Card
@@ -300,8 +330,12 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
               homework.canSubmit && "hover:-translate-y-0.5"
             )}
           >
-            <AccordionItem value={homework.id.toString()} className="border-none">
-              <AccordionTrigger className="items-start gap-3 bg-transparent px-4 py-3 text-left hover:bg-muted/20 hover:no-underline [&>svg]:mt-1 [&>svg]:text-muted-foreground">
+            <Collapsible
+              open={isOpen}
+              onOpenChange={(open) =>
+                handleHomeworkOpenChange(homework.id, open)
+              }>
+              <CollapsibleTrigger className="flex w-full items-start justify-between gap-3 bg-transparent px-4 py-3 text-left transition-colors hover:bg-muted/20">
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <div className="flex min-w-0 items-start justify-between gap-3">
                     <div className="min-w-0 flex-1 space-y-0.5">
@@ -373,16 +407,24 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                     )}
                   </div>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="px-4 !pb-0 pt-0">
-                <div className="border-t border-border/70 pt-4">
-                  <HomeworkContent homework={homework} userId={userId!} />
+                <ChevronDown
+                  className={cn(
+                    "mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                    isOpen && "rotate-180"
+                  )}
+                />
+              </CollapsibleTrigger>
+              <CollapsibleContent unmountOnExit>
+                <div className="px-4">
+                  <div className="border-t border-border/70 pt-4">
+                    <HomeworkContent homework={homework} userId={userId!} />
+                  </div>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
+              </CollapsibleContent>
+            </Collapsible>
           </Card>
         )
       })}
-    </Accordion>
+    </div>
   )
 }
