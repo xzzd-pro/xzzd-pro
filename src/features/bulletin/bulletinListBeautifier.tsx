@@ -1,7 +1,9 @@
 // lib/bulletinListBeautifier
 
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 import { createRoot } from "react-dom/client"
-import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAssistantNavigation, setupAvatarUpload } from "@/shared/course-detail/layoutHelpers"
+import { renderHeader, renderSidebar, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAvatarUpload } from "@/shared/layout"
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import { NotificationsPanel } from "./components"
 
 const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
@@ -24,19 +26,7 @@ export function bulletinListBeautifier(): void {
   const usernameElement = $('#userCurrentName');
   const username = usernameElement?.textContent?.trim() ?? '';
 
-  // 移除 chatbot 并监视动态添加
-  const removeChatbot = () => {
-    document.querySelectorAll('air-chatbot-app').forEach(el => el.remove());
-  };
-  removeChatbot();
-
-  const observer = new MutationObserver(() => {
-    removeChatbot();
-  });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-
-  // 5秒后停止监视
-  setTimeout(() => observer.disconnect(), 5000);
+  suppressAirChatbot()
 
   document.body.innerHTML = '';
   const root = document.createElement('div');

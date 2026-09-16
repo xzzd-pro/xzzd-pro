@@ -1,4 +1,4 @@
-import { themeIcons, navIcons } from "../../shared/course-detail/icons";
+import { themeIcons, navIcons } from "@/shared/layout/icons";
 import { PROVIDER_LABELS, PROVIDER_MODELS, PROVIDER_DEFAULTS } from "../config";
 import type {
   ChatMessage,

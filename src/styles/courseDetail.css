@@ -1,5 +1,102 @@
 /* styles/courseDetail.css */
 
+/* The course workspace shares the site's type, color and border tokens.
+   Keep these selectors local: global pages and homework cards are unchanged. */
+.xzzdpro-main.course-detail-main {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  background: hsl(var(--muted) / 0.3);
+}
+
+.course-detail-main .course-detail-content {
+  width: 100%;
+  max-width: 1240px;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 32px clamp(20px, 3vw, 44px) 48px;
+  gap: 28px;
+  overflow: visible;
+}
+
+.course-detail-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.course-detail-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.course-detail-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.course-detail-breadcrumb a:hover {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.course-detail-course-name { overflow-wrap: anywhere; }
+
+.course-detail-heading h1 {
+  margin: 4px 0 0;
+  font-size: clamp(26px, 2.2vw, 32px);
+  font-weight: 600;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+.course-detail-heading p {
+  margin: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.course-detail-main .course-detail-panel,
+.course-detail-main .course-detail-panel:hover {
+  min-width: 0;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.course-detail-panel > .content-section { min-width: 0; }
+
+.course-detail-list-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: hsl(var(--muted-foreground));
+  padding: 0 2px 4px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .course-detail-main .course-detail-content { padding: 24px 16px 32px; gap: 20px; }
+  .course-detail-heading { padding-bottom: 20px; }
+}
+
 /* Hide original page content before beautification */
 body:not(.xzzdpro-body):not(.xzzdpro-disabled) > * {
   display: none !important;
@@ -40,7 +137,7 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
 }
 
 .sidebar-section {
-  flex: 0 1 auto;
+  flex: 1;
   overflow-y: auto;
 }
 
@@ -90,15 +187,7 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
   transform: translateX(-2px);
 }
 
-/* --- sidebar footer --- */
-.sidebar-footer {
-  padding: 16px 15px;
-  border-top: 2px solid hsl(var(--border));
-  flex: 0 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+/* Sidebar footer uses the same bottom alignment and spacing as global pages. */
 
 
 /* --- main area layout --- */
@@ -1042,8 +1131,9 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
     grid-template-areas:
       "header"
       "main";
-    grid-template-columns: 1fr;
-    grid-template-rows: 100px 1fr;
+    /* The shared sidebar controller stores desktop widths inline. */
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto 1fr;
   }
 
   .xzzdpro-sidebar {
@@ -1757,14 +1847,8 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
   display: none;
 }
 
-.xzzdpro-root.sidebar-collapsed .sidebar-footer {
-  padding: 16px 8px;
-  width: 100%;
-  align-self: stretch;
-}
-
 .xzzdpro-root.sidebar-collapsed .sidebar-section {
-  flex: 0 1 auto;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;

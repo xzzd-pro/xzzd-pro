@@ -2,6 +2,7 @@
 
 import { Storage } from "@plasmohq/storage"
 import type { LayoutState } from "../../types"
+import { bindLayoutControl } from "./bindings"
 
 const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
@@ -94,6 +95,13 @@ export function setupResizeHandlers(): void {
     console.warn('XZZDPRO: .main-content-wrapper element not found, skipping resize handlers')
     return
   }
+  const binding = bindLayoutControl('layout-resize', mainContentWrapper)
+  if (!binding) return
+  const { signal } = binding
+  binding.onCleanup(() => {
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+  })
 
   // Handle resize-handle-left (adjusts left column width)
   const handleLeft = document.querySelector('.resize-handle-left') as HTMLElement
@@ -109,7 +117,7 @@ export function setupResizeHandlers(): void {
       document.body.style.cursor = 'ew-resize'
       document.body.style.userSelect = 'none'
       e.preventDefault()
-    })
+    }, { signal })
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!isResizingLeft) return
@@ -120,7 +128,7 @@ export function setupResizeHandlers(): void {
       const currentRightWidth = handleRight?.offsetWidth || 100
       mainGrid.style.gridTemplateColumns = `${newWidth}px 1fr ${currentRightWidth}px`
       handleLeft.style.width = `${newWidth}px`
-    })
+    }, { signal })
 
     document.addEventListener('mouseup', () => {
       if (isResizingLeft) {
@@ -131,7 +139,7 @@ export function setupResizeHandlers(): void {
         // Save state
         saveLayoutState({ leftHandleWidth: handleLeft.offsetWidth })
       }
-    })
+    }, { signal })
   }
 
   // Handle resize-handle-right (adjusts right column width)
@@ -148,7 +156,7 @@ export function setupResizeHandlers(): void {
       document.body.style.cursor = 'ew-resize'
       document.body.style.userSelect = 'none'
       e.preventDefault()
-    })
+    }, { signal })
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!isResizingRight) return
@@ -159,7 +167,7 @@ export function setupResizeHandlers(): void {
       const currentLeftWidth = handleLeft?.offsetWidth || 100
       mainGrid.style.gridTemplateColumns = `${currentLeftWidth}px 1fr ${newWidth}px`
       handleRight.style.width = `${newWidth}px`
-    })
+    }, { signal })
 
     document.addEventListener('mouseup', () => {
       if (isResizingRight) {
@@ -170,7 +178,7 @@ export function setupResizeHandlers(): void {
         // Save state
         saveLayoutState({ rightHandleWidth: handleRight.offsetWidth })
       }
-    })
+    }, { signal })
   }
 
   // Handle resize-handle-horizontal (adjusts welcome card height)
@@ -188,7 +196,7 @@ export function setupResizeHandlers(): void {
       document.body.style.cursor = 'ns-resize'
       document.body.style.userSelect = 'none'
       e.preventDefault()
-    })
+    }, { signal })
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!isResizingHorizontal) return
@@ -197,7 +205,7 @@ export function setupResizeHandlers(): void {
       const newHeight = Math.max(80, startHeight + deltaY)
 
       mainContentWrapper.style.gridTemplateRows = `${newHeight}px 12px 1fr`
-    })
+    }, { signal })
 
     document.addEventListener('mouseup', () => {
       if (isResizingHorizontal) {
@@ -211,7 +219,7 @@ export function setupResizeHandlers(): void {
           saveLayoutState({ welcomeCardHeight: welcomeCard.offsetHeight })
         }
       }
-    })
+    }, { signal })
   }
 
   // Handle resize-handle-vertical (adjusts cards' width ratio)
@@ -237,7 +245,7 @@ export function setupResizeHandlers(): void {
       document.body.style.cursor = 'ew-resize'
       document.body.style.userSelect = 'none'
       e.preventDefault()
-    })
+    }, { signal })
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!isResizingVertical) return
@@ -250,7 +258,7 @@ export function setupResizeHandlers(): void {
       let newRightFlex = 1 - newLeftFlex
 
       mainContentWrapper.style.gridTemplateColumns = `${newLeftFlex}fr 12px ${newRightFlex}fr`
-    })
+    }, { signal })
 
     document.addEventListener('mouseup', () => {
       if (isResizingVertical) {
@@ -269,6 +277,6 @@ export function setupResizeHandlers(): void {
           todoCardFlex: rightWidth / totalWidth
         })
       }
-    })
+    }, { signal })
   }
 }

@@ -307,6 +307,10 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
 
   return (
     <div className="w-full space-y-3">
+      <div className="course-detail-list-meta">
+        <span>全部作业</span>
+        <span>{homeworks.length} 项</span>
+      </div>
       {homeworks.map((homework) => {
         const deadlineInfo = getDeadlineInfo(
           homework.deadline,

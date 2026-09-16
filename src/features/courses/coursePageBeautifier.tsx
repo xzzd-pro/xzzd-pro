@@ -1,5 +1,6 @@
 // lib/coursePageBeautifier
 
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 import * as React from "react"
 import { createRoot, type Root } from "react-dom/client"
 import {
@@ -8,9 +9,9 @@ import {
   setupThemeToggle,
   setupHelpModal,
   setupSidebarToggle,
-  setupAssistantNavigation,
   setupAvatarUpload,
-} from "@/shared/course-detail/layoutHelpers"
+} from "@/shared/layout"
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import { CoursePage } from "@/features/courses/components/CoursePage"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import type { ApiCourseData } from "@/types"
@@ -29,6 +30,8 @@ interface CourseFilters {
 
 // React root for course page
 let coursePageRoot: Root | null = null
+let coursePageContainer: HTMLElement | null = null
+let coursesRequestId = 0
 
 /* get courses api */
 async function fetchCoursesFromApi(
@@ -71,6 +74,11 @@ function renderCoursePageReact(
   loading: boolean = false,
   onSearch: (filters: { keyword: string; status: string[] }) => void
 ) {
+  if (coursePageContainer !== container) {
+    coursePageRoot?.unmount()
+    coursePageRoot = null
+    coursePageContainer = container
+  }
   if (!coursePageRoot) {
     coursePageRoot = createRoot(container)
   }
@@ -82,6 +90,7 @@ function renderCoursePageReact(
 async function loadAndRenderCourses(filters: CourseFilters = {}) {
   const container = $(".course-page-container")
   if (!container) return
+  const requestId = ++coursesRequestId
 
   const handleSearch = (searchFilters: { keyword: string; status: string[] }) => {
     const courseFilters: CourseFilters = {
@@ -101,6 +110,13 @@ async function loadAndRenderCourses(filters: CourseFilters = {}) {
     console.warn("XZZDPRO: 获取课程异常", e)
   }
 
+  if (
+    requestId !== coursesRequestId ||
+    !container.isConnected ||
+    container !== coursePageContainer ||
+    container !== $(".course-page-container")
+  ) return
+
   renderCoursePageReact(container, courses, false, handleSearch)
 }
 
@@ -115,19 +131,7 @@ export function coursePageBeautifier(): void {
   const usernameElement = $("#userCurrentName")
   const username = usernameElement?.textContent?.trim() ?? ""
 
-  // 移除 chatbot 并监视动态添加
-  const removeChatbot = () => {
-    document.querySelectorAll("air-chatbot-app").forEach((el) => el.remove())
-  }
-  removeChatbot()
-
-  const observer = new MutationObserver(() => {
-    removeChatbot()
-  })
-  observer.observe(document.documentElement, { childList: true, subtree: true })
-
-  // 5秒后停止监视
-  setTimeout(() => observer.disconnect(), 5000)
+  suppressAirChatbot()
 
   document.body.innerHTML = ""
   const root = document.createElement("div")

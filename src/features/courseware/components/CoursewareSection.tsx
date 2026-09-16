@@ -21,24 +21,22 @@ export function CoursewareSection({ section, defaultOpen = false, className }: C
     <AccordionItem
       value={section.id.toString()}
       className={cn(
-        "bg-muted rounded-lg overflow-hidden border-l-4 transition-shadow duration-200",
-        "hover:shadow-md",
-        section.isClosed ? "border-l-muted-foreground opacity-85" :
-          section.isStarted ? "border-l-primary" : "border-l-yellow-500",
+        "bg-card rounded-lg overflow-hidden border border-border/70",
+        "shadow-none",
         className
       )}
     >
       <AccordionTrigger className="flex items-center gap-3 p-5 hover:bg-border/50 transition-colors [&[data-state=open]>svg]:rotate-180">
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
+          <h3 className="text-base font-semibold text-foreground leading-snug mb-2">
             {section.title}
           </h3>
           <div className="flex gap-4 flex-wrap text-[13px]">
             <Badge
               variant={statusVariant}
               className={cn(
-                section.isClosed && "bg-muted-foreground text-white border-transparent",
-                !section.isStarted && !section.isClosed && "bg-yellow-500 text-gray-900 border-transparent"
+                section.isClosed && "bg-muted text-muted-foreground border-transparent",
+                !section.isStarted && !section.isClosed && "bg-muted text-muted-foreground border-border"
               )}
             >
               {statusText}
@@ -52,8 +50,8 @@ export function CoursewareSection({ section, defaultOpen = false, className }: C
           </div>
         </div>
       </AccordionTrigger>
-      <AccordionContent className="px-5 pb-5 pl-14">
-        <div className="flex flex-col gap-3">
+      <AccordionContent className="px-5 pb-3">
+        <div className="flex flex-col divide-y divide-border/50">
           {section.files.length > 0 ? (
             section.files.map((file) => (
               <CoursewareFileItem key={file.id} file={file} />

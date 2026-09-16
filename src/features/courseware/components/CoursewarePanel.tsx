@@ -410,12 +410,12 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border/70 bg-card/95 p-4 shadow-sm">
+    <div className="courseware-panel space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-5">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-foreground">批量下载</div>
-          <div className="text-xs text-muted-foreground">
-            共 {allDownloadableEntries.length} 个可下载文件，已选{" "}
+          <div className="text-base font-semibold text-foreground">课程资料</div>
+          <div className="mt-1 text-sm text-muted-foreground">
+            {sections.length} 个章节 · 共 {allDownloadableEntries.length} 个可下载文件，已选{" "}
             {selectedDownloadableEntries.length} 个
           </div>
         </div>
@@ -424,7 +424,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
             <span className="text-sm text-destructive">{downloadError}</span>
           )}
           {selectedDownloadableEntries.length > 0 && !isDownloading && (
-            <Button size="sm" variant="ghost" onClick={handleClearSelection}>
+            <Button size="sm" variant="ghost" className="bg-transparent" onClick={handleClearSelection}>
               清空选择
             </Button>
           )}
@@ -462,7 +462,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
         </div>
       </div>
 
-      <div className="w-full space-y-3">
+      <div className="w-full overflow-hidden rounded-lg border border-border/70 bg-card divide-y divide-border/70">
         {sections.map((section) => {
           const statusVariant = section.isClosed
             ? "secondary"
@@ -482,26 +482,26 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
           const isOpen = openSectionIds.has(section.id)
 
           return (
-            <Card key={section.id} className="overflow-hidden">
+            <div key={section.id} className="overflow-hidden">
               <Collapsible
                 open={isOpen}
                 onOpenChange={(open) =>
                   handleSectionOpenChange(section.id, open)
                 }>
-                <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 bg-card p-5 text-left transition-colors hover:bg-muted/50 data-[state=open]:bg-muted/30">
+                <CollapsibleTrigger className="flex w-full items-center justify-between gap-4 bg-transparent px-4 py-5 sm:px-5 text-left transition-colors hover:bg-muted/40 data-[state=open]:bg-muted/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-foreground leading-snug mb-2">
+                    <h3 className="text-base font-semibold text-foreground leading-snug mb-2">
                       {section.title}
                     </h3>
-                    <div className="flex gap-4 flex-wrap text-[13px]">
+                    <div className="flex items-center gap-x-3 gap-y-2 flex-wrap text-[13px]">
                       <Badge
                         variant={statusVariant}
                         className={cn(
                           section.isClosed &&
-                            "bg-muted-foreground text-white border-transparent",
+                            "bg-muted text-muted-foreground border-transparent",
                           !section.isStarted &&
                             !section.isClosed &&
-                            "bg-yellow-500 text-gray-900 border-transparent"
+                            "bg-muted text-muted-foreground border-border"
                         )}>
                         {statusText}
                       </Badge>
@@ -526,7 +526,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                   />
                 </CollapsibleTrigger>
                 <CollapsibleContent unmountOnExit>
-                  <div className="px-5 pb-5 pl-14">
+                  <div className="border-t border-border/50 px-4 pb-3 sm:px-5">
                     <CoursewareContent
                       section={section}
                       downloading={Boolean(sectionDownloadTarget)}
@@ -543,7 +543,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                   </div>
                 </CollapsibleContent>
               </Collapsible>
-            </Card>
+            </div>
           )
         })}
       </div>

@@ -1,6 +1,6 @@
 // lib/courseOverviewBeautifier.tsx
 
-import { getCourseIdFromUrl, renderCourseDetailPage, setupThemeToggle, setupHelpModal, setupSidebarToggle, setupAvatarUpload } from "@/shared/course-detail/courseDetailHelpers"
+import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 
 interface Instructor {
   id: number;
@@ -198,62 +198,25 @@ function renderOverviewContent(data: CourseData | null): string {
 export async function courseOverviewBeautifier(): Promise<void> {
   console.log('XZZDPRO: 准备接管课程概览页...');
 
-  // 移除 chatbot 并监视动态添加
-  const removeChatbot = () => {
-    document.querySelectorAll('air-chatbot-app').forEach(el => el.remove());
-  };
-  removeChatbot();
-
-  const observer = new MutationObserver(() => {
-    removeChatbot();
+  const page = await mountCourseDetailPage({
+    currentPage: 'overview',
+    pageTitle: '课程概览',
+    courseName: '课程概览',
+    contentHtml: getLoadingHtml()
   });
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-
-  // 5秒后停止监视
-  setTimeout(() => observer.disconnect(), 5000);
-
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root xzzdpro';
-
-  const courseId = getCourseIdFromUrl();
-  if (!courseId) {
-    console.error('XZZDPRO: 无法提取课程ID');
-    return;
-  }
-
-  // 先显示骨架加载状态
-  const loadingHtml = getLoadingHtml();
-
-  root.innerHTML = renderCourseDetailPage(
-    courseId,
-    '课程概览',
-    'overview',
-    '课程概览',
-    loadingHtml
-  );
-
-  document.body.appendChild(root);
-  document.body.classList.add('xzzdpro-body', 'xzzdpro');
-
-  setupThemeToggle();
-  setupHelpModal();
-  setupAvatarUpload();
-  setupSidebarToggle();
+  if (!page) return;
+  const { courseId, titleElement: titleCard, contentSection } = page;
 
   // 获取课程数据
   const courseData = await fetchCourseData(courseId);
 
   // 更新页面标题和内容
-  const titleCard = document.querySelector('.title-card h2');
   if (titleCard && courseData) {
     titleCard.textContent = courseData.display_name || courseData.name || '课程概览';
   }
 
-  const contentSection = document.querySelector('.content-section.active');
   if (contentSection) {
     contentSection.innerHTML = `
-      <h2>课程概览</h2>
       ${renderOverviewContent(courseData)}
     `;
   }

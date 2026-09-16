@@ -104,6 +104,8 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 
 ### 1. 安装依赖
 
+项目使用 `pnpm@10.34.5`。若本机 pnpm 未自动切换版本，可运行 `pnpm dlx pnpm@10.34.5 install --frozen-lockfile`。运行开发脚本不会自动重装依赖；依赖清单变更后请显式重新安装。
+
 ```bash
 pnpm install
 ```
@@ -137,13 +139,38 @@ src/
   background/     扩展后台脚本（上传等）
   components/     React 组件与 UI 组件
   contents/       各页面内容脚本入口
-  lib/            页面 beautifier 与通用逻辑
+  features/       各页面的挂载逻辑与业务组件
+  shared/
+    layout/       两类页面共用的页头、侧栏、主题与布局拖拽
+    course-detail/ 单门课程的页面骨架、活动识别与面板挂载
+    contentScripts/ 内容脚本初始化、重试与页面清理
+    api/          共用接口请求
+  lib/            存储、主题、文件格式等基础工具
   styles/         全局与页面样式
   types/          类型定义
 build/
   chrome-mv3-dev/  开发构建产物
   chrome-mv3-prod/ 生产构建产物
 ```
+
+全局页面包括主页、动态和课程列表；课程详情页包括概览、课件、作业、小测和成绩。学习助理的侧栏资料交互位于 `src/assistant/sidebar/`，公共布局不依赖其业务实现。术语见 [CONTEXT.md](./CONTEXT.md)。
+
+### 重构回归检查
+
+使用已经安装的依赖运行，不需要新增测试工具：
+
+```bash
+node node_modules/typescript/bin/tsc --noEmit
+node --test scripts/tests/*.cjs
+```
+
+布局控件重复初始化时复用当前绑定，页面移除时清理绑定；页面初始化失败最多尝试三次。回归测试覆盖初始化重试、请求乱序及布局监听的生命周期。
+
+### 课程详情本地预览
+
+运行 `node scripts/preview/build.cjs`，打开生成的 `build/course-detail-preview/index.html`。通过查询参数 `?page=materials`、`?page=homework` 或 `?page=grades` 切换页面，追加 `&theme=dark` 查看深色模式。
+
+预览使用真实组件和模拟数据，不连接学校 API；下载、提交和扩展消息功能不用于此预览。真实功能需在登录后的学在浙大页面验证。
 
 ## 反馈与共建
 

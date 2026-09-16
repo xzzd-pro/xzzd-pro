@@ -3,8 +3,13 @@ import {
   type UploadFileRequest,
   type UploadResponse
 } from "./upload"
+import { handleDevelopmentPort } from "./developmentPorts"
 
 export {}
+
+if (process.env.NODE_ENV === "development") {
+  chrome.runtime.onConnect.addListener(handleDevelopmentPort)
+}
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message || (message as UploadFileRequest).type !== "UPLOAD_FILE") {

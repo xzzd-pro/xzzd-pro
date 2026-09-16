@@ -1,0 +1,5 @@
+export const SIDEBAR_DEFAULT_WIDTH = 280
+export const SIDEBAR_MIN_WIDTH = 200
+export const SIDEBAR_MAX_WIDTH = 420
+export const SIDEBAR_COLLAPSE_THRESHOLD = 160
+export const SIDEBAR_COLLAPSED_WIDTH = 72

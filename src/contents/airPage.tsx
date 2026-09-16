@@ -1,8 +1,9 @@
 import type { PlasmoCSConfig } from "plasmo"
 import { useStorage } from "@plasmohq/storage/hook"
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { mountAirPage } from "@/features/air/airPageBeautifier"
 import { storage } from "@/lib/storage"
+import { useBeautifierInitialization } from "@/shared/contentScripts/useBeautifierInitialization"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://courses.zju.edu.cn/air*"],
@@ -17,36 +18,24 @@ const AirPageInjector = () => {
         key: "beautify-enabled",
         instance: storage
     }, true)
-    const isMounted = useRef(false)
+
+    useBeautifierInitialization({
+        pageName: "Air Page",
+        beautify: mountAirPage,
+        enabled: !isLoading && beautifyEnabled !== false,
+        waitForDom: true
+    })
 
     useEffect(() => {
         if (isLoading) return
 
-        if (isMounted.current) return
-        isMounted.current = true
-
         if (beautifyEnabled === false) {
             console.log('XZZDPRO: beautification is disabled')
-            document.body.classList.add('xzzdpro-disabled')
+            document.body?.classList.add('xzzdpro-disabled')
             return
         }
 
-        const init = async () => {
-            try {
-                console.log("XZZDPRO: Mounting Full Page Assistant...")
-                await mountAirPage()
-                console.log("XZZDPRO: Assistant Mounted Successfully")
-            } catch (error) {
-                console.error("XZZDPRO: Failed to mount assistant", error)
-            }
-        }
-
-        // Ensure DOM is ready (though run_at document_end usually suffices)
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init)
-        } else {
-            init()
-        }
+        document.body?.classList.remove('xzzdpro-disabled')
     }, [beautifyEnabled, isLoading])
 
     return null

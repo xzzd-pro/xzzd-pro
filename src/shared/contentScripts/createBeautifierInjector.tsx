@@ -4,9 +4,11 @@ import {
   bootstrapStoredTheme,
   normalizeTheme
 } from "@/lib/themeDom"
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 
 import { useStorage } from "@plasmohq/storage/hook"
+
+import { useBeautifierInitialization } from "./useBeautifierInitialization"
 
 bootstrapStoredTheme(storage)
 
@@ -19,7 +21,6 @@ interface CreateBeautifierInjectorOptions {
 }
 
 const rootClassName = "xzzdpro"
-const rootSelector = ".xzzdpro-root"
 
 function disableBeautification() {
   const rootElement = document.documentElement
@@ -53,7 +54,12 @@ export function createBeautifierInjector({
       },
       true
     )
-    const isBeautifying = useRef(false)
+    useBeautifierInitialization({
+      pageName,
+      beautify,
+      shouldSkip,
+      enabled: !isLoading && beautifyEnabled !== false
+    })
 
     useEffect(() => {
       if (shouldSkip?.()) return
@@ -74,25 +80,7 @@ export function createBeautifierInjector({
       }
 
       document.body?.classList.remove("xzzdpro-disabled")
-
-      if (document.querySelector(rootSelector)) {
-        console.log("XZZDPRO: beautification already applied, skipping...")
-        return
-      }
-
-      if (isBeautifying.current) {
-        console.log("XZZDPRO: beautification in progress, skipping...")
-        return
-      }
-
-      isBeautifying.current = true
-      console.log(`XZZDPRO: starting ${pageName} beautification...`)
-
-      Promise.resolve(beautify()).catch((error) => {
-        isBeautifying.current = false
-        console.error(`XZZDPRO: failed to beautify ${pageName}`, error)
-      })
-    }, [beautify, beautifyEnabled, isLoading, pageName, shouldSkip, theme])
+    }, [beautifyEnabled, isLoading, shouldSkip, theme])
 
     return null
   }

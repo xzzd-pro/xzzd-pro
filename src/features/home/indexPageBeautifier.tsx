@@ -1,5 +1,7 @@
 // lib/indexPageBeautifier
 
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
+import { bindLayoutControl } from "@/shared/layout/bindings"
 import * as React from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { sendToBackground } from "@plasmohq/messaging"
@@ -9,13 +11,13 @@ import {
   setupThemeToggle,
   setupHelpModal,
   setupSidebarToggle,
-  setupAssistantNavigation,
   setupAvatarUpload,
-} from "@/shared/course-detail/layoutHelpers"
+} from "@/shared/layout"
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import {
   setupResizeHandlers,
   applySavedLayout,
-} from "@/shared/course-detail/resizeHandlers"
+} from "@/shared/layout/resizeHandlers"
 
 import { TodayCoursesPanel, type TodayCourse } from "@/features/home/components/TodayCoursesPanel"
 import { TodoPanel, type TodoItem } from "@/features/home/components/TodoPanel"
@@ -188,7 +190,47 @@ function renderLoginPrompt(container: HTMLElement, studentId: string) {
   }
 }
 
-async function loadAndRenderCourses(studentId: string) {
+let pendingCourseLoad: Promise<void> | null = null
+let pageSuspended = false
+let pageGeneration = 0
+
+function stopLoginPolling() {
+  if (pollingInterval) clearInterval(pollingInterval)
+  pollingInterval = null
+}
+
+function loadAndRenderCourses(studentId: string): Promise<void> {
+  if (pageSuspended) return Promise.resolve()
+  if (pendingCourseLoad) return pendingCourseLoad
+  const container = $(".today-courses-card .courses-list-container")
+  if (!container) return Promise.resolve()
+  const binding = bindLayoutControl('homepage-courses', container)
+  if (binding) {
+    binding.onCleanup(() => { stopLoginPolling(); pageGeneration++ })
+    window.addEventListener('pagehide', () => {
+      pageSuspended = true
+      pageGeneration++
+      stopLoginPolling()
+    }, { signal: binding.signal })
+    window.addEventListener('pageshow', (event) => {
+      pageSuspended = false
+      if (event.persisted) {
+        // Wait for the pre-navigation request to settle, then fetch fresh data.
+        void (pendingCourseLoad || Promise.resolve()).then(() => loadAndRenderCourses(studentId))
+      }
+    }, { signal: binding.signal })
+  }
+  pendingCourseLoad = loadAndRenderCoursesOnce(studentId, pageGeneration)
+    .catch((error) => {
+      if (!pageSuspended && container.isConnected) {
+        console.error('XZZDPRO: Failed to render timetable', error)
+      }
+    })
+    .finally(() => { pendingCourseLoad = null })
+  return pendingCourseLoad
+}
+
+async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
   console.log("XZZDPRO: Starting course data fetch...")
 
   const container = $(".today-courses-card .courses-list-container")
@@ -205,12 +247,16 @@ async function loadAndRenderCourses(studentId: string) {
     sendToBackground({
       name: "get-courses",
       body: { studentId },
-    } as any),
+    } as any).catch(() => ({
+      status: "error",
+      message: "课表连接已中断，请刷新页面重试。",
+    })),
     fetchCoursesFromApi().catch((e) => {
       console.warn("XZZDPRO: Failed to fetch API courses", e)
       return [] as ApiCourseData[]
     }),
   ])
+  if (pageSuspended || generation !== pageGeneration || !container.isConnected) return
 
   console.log("XZZDPRO: Received response from background:", response)
   console.log("XZZDPRO: Background summary:", {
@@ -336,7 +382,7 @@ async function loadAndRenderCourses(studentId: string) {
       }
 
       if (exactMatches.length > 1) {
-        console.warn("XZZDPRO: Skip ambiguous homepage course match", {
+        console.debug("XZZDPRO: Course link omitted because multiple courses match", {
           zdbkNames,
           teacher: details.teacher,
           candidateCourses: exactMatches.map((apiCourse) => ({
@@ -484,15 +530,18 @@ async function loadAndRenderCourses(studentId: string) {
 
     renderLoginPrompt(container, studentId)
   } else {
-    console.error("XZZDPRO: Error fetching courses or no data:", response)
+    stopLoginPolling()
     if (coursesRoot) {
       coursesRoot.unmount()
       coursesRoot = null
     }
     container.innerHTML = `
       <p>无法获取课程数据。</p>
-      <pre style="font-size:10px;overflow:auto;max-height:100px">${JSON.stringify(response, null, 2)}</pre>
+      <pre style="font-size:10px;overflow:auto;max-height:100px"></pre>
     `
+    // Display the actionable reason as text, without embedding response HTML.
+    const detail = container.querySelector('pre')
+    if (detail) detail.textContent = response?.message || '请稍后重试。'
   }
 }
 
@@ -581,19 +630,7 @@ export async function indexPageBeautifier(): Promise<void> {
   const studentId = userNoElement?.textContent?.trim() ?? ""
   console.log("XZZDPRO: Found student ID:", studentId)
 
-  // 移除 chatbot 并监视动态添加
-  const removeChatbot = () => {
-    document.querySelectorAll("air-chatbot-app").forEach((el) => el.remove())
-  }
-  removeChatbot()
-
-  const observer = new MutationObserver(() => {
-    removeChatbot()
-  })
-  observer.observe(document.documentElement, { childList: true, subtree: true })
-
-  // 5秒后停止监视
-  setTimeout(() => observer.disconnect(), 5000)
+  suppressAirChatbot()
 
   const today = new Date()
   const todayDate = formatDate(today)

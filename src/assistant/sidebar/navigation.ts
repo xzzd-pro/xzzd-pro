@@ -1,32 +1,7 @@
-// lib/components/layoutHelpers.ts - Shared layout components for header and sidebar
-
-import { createThemeToggle } from "./ThemeToggle"
-import { navIcons } from "./icons"
-import { Storage } from "@plasmohq/storage"
-import { createRoot } from "react-dom/client"
-import React from "react"
-import { AvatarUpload } from "../../components/ui/avatar-upload"
-import { fetchAllCourses } from "../../assistant/services/courseDataService"
-import type { AssistantUploadHistoryItem } from "../../assistant/types";
-
-const storage = new Storage()
-const LAYOUT_STORAGE_KEY = "indexPageLayout"
-const SIDEBAR_DEFAULT_WIDTH = 280
-const SIDEBAR_MIN_WIDTH = 200
-const SIDEBAR_MAX_WIDTH = 420
-const SIDEBAR_COLLAPSE_THRESHOLD = 160
-const SIDEBAR_COLLAPSED_WIDTH = 72
-
-const LOGO_SRC = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
-
-interface HeaderOptions {
-  username?: string;
-  showUsername?: boolean;
-}
-
-interface SidebarOptions {
-  currentPage?: 'home' | 'notification' | 'courses' | 'assistant';
-}
+import { fetchAllCourses } from "../services/courseDataService"
+import type { AssistantUploadHistoryItem } from "../types"
+import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH } from "@/shared/layout/constants"
+import { bindLayoutControl } from "@/shared/layout/bindings"
 
 interface SidebarMaterialFile {
   id: number;
@@ -46,383 +21,8 @@ let sidebarMaterialCourseId: string | null = null;
 const selectedSidebarMaterialUrls = new Set<string>();
 let assistantHistoryManageMode = false;
 const selectedHistoryDeleteIds = new Set<string>();
-
-/**
- * Render the common header with logo, theme toggle, and user profile
- * @param options - Configuration options for the header
- * @returns HTML string for the header
- */
-export function renderHeader(options: HeaderOptions = {}): string {
-  const { username = '', showUsername = true } = options;
-  const themeToggle = createThemeToggle();
-
-  return `
-    <header class="xzzdpro-header">
-      <div class="logo-area">
-        ${LOGO_SRC ? `<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link"><img src="${LOGO_SRC}" alt="Logo"></a>` : '<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link">Logo 区域</a>'}
-        <button class="help-btn" id="help-btn" title="使用须知">
-          <span>使用须知</span>
-        </button>
-      </div>
-      <div class="right-section">
-        ${themeToggle.renderHTML()}
-        <div class="user-profile">
-          <div id="user-avatar-container" class="user-avatar-container"></div>
-          ${showUsername && username ? `<span class="username">${username}</span>` : ''}
-        </div>
-      </div>
-    </header>
-
-    <!-- 使用须知模态框 -->
-    <div class="modal-overlay" id="help-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>使用须知</h3>
-          <button class="modal-close" id="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p><strong>欢迎使用 XZZDPRO 学在浙大美化插件！</strong></p>
-          <ul>
-            <li>本插件仅用于美化学在浙大页面，不会修改任何数据</li>
-            <li>点击侧边栏底部的 &lt;&lt; 按钮可以收缩/展开侧边栏</li>
-            <li>点击顶部的主题切换按钮可以切换明暗主题</li>
-            <li>主页支持拖拽调整各区域大小</li>
-            <li>布局设置会自动保存</li>
-          </ul>
-          <p><strong>如有问题或建议，欢迎反馈！</strong></p>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Render the common sidebar navigation
- * @param options - Configuration options for the sidebar
- * @returns HTML string for the sidebar
- */
-export function renderSidebar(options: SidebarOptions = {}): string {
-  const { currentPage } = options;
-
-  return `
-    <nav class="xzzdpro-sidebar">
-      <div class="sidebar-section">
-        <ul class="sidebar-nav">
-          <li class="nav-item ${currentPage === 'home' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-              <span class="nav-icon">${navIcons.home}</span>
-              <span class="nav-text">主页</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'notification' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-              <span class="nav-icon">${navIcons.notification}</span>
-              <span class="nav-text">动态</span>
-            </a>
-          </li>
-          <li class="nav-item ${currentPage === 'courses' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-              <span class="nav-icon">${navIcons.courses}</span>
-              <span class="nav-text">课程</span>
-            </a>
-          </li>
-          <li class="nav-item nav-item-expandable ${currentPage === 'assistant' ? 'active' : ''}">
-            <div class="nav-link nav-link-expandable">
-              <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link-main" aria-label="学习助理">
-                <span class="nav-icon">${navIcons.assistant}</span>
-                <span class="nav-text">学习助理</span>
-              </a>
-              <button id="nav-assistant-expand" class="expand-toggle" type="button" aria-label="展开学习助理课程列表" title="展开课程列表">
-                <span class="expand-arrow">▼</span>
-              </button>
-            </div>
-            <div class="nav-submenu">
-              <div id="assistant-course-list" class="course-list-submenu">
-                <div class="submenu-loading">加载课程中...</div>
-              </div>
-            </div>
-          </li>
-          ${currentPage === 'assistant' ? `
-          <li class="nav-item nav-item-expandable nav-item-materials">
-            <div class="nav-link nav-link-expandable nav-link-secondary-expandable">
-              <button id="nav-assistant-material-expand" class="nav-link-main nav-link-main-button" type="button" aria-label="展开资料选择" title="展开资料选择">
-                <span class="nav-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 5V19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    <path d="M5 12H19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                  </svg>
-                </span>
-                <span class="nav-text">资料选择</span>
-              </button>
-              <button id="nav-assistant-material-arrow" class="expand-toggle" type="button" aria-label="展开资料列表" title="展开资料列表">
-                <span class="expand-arrow">▼</span>
-              </button>
-            </div>
-            <div class="nav-submenu nav-submenu-materials">
-              <div id="assistant-material-list" class="material-list-submenu">
-                <div class="submenu-empty">请选择课程后加载资料</div>
-              </div>
-            </div>
-          </li>
-          ` : ''}
-          ${currentPage === 'assistant' ? `
-          <li class="nav-item nav-item-action assistant-sidebar-action">
-            <button id="nav-assistant-flashcard-toggle" class="nav-link nav-action-btn" type="button" title="展开侧栏">
-              <span class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
-                  <path d="M12 6V18" stroke="currentColor" stroke-width="1.8"/>
-                </svg>
-              </span>
-              <span class="nav-text">展开侧栏</span>
-            </button>
-          </li>
-          <li class="nav-item nav-item-action assistant-sidebar-action">
-            <button id="nav-assistant-clear-history" class="nav-link nav-action-btn" type="button" title="清除历史">
-              <span class="nav-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 3H15M4 7H20M6 7L7 20C7.08 21.1 7.99 22 9.1 22H14.9C16.01 22 16.92 21.1 17 20L18 7M10 11V17M14 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-              </span>
-              <span class="nav-text">清除历史</span>
-            </button>
-          </li>
-          ` : ''}
-        </ul>
-      </div>
-      <div class="sidebar-footer">
-        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
-          <span class="toggle-icon">&lt;&lt;</span>
-        </button>
-      </div>
-      <div id="sidebar-resize-handle" class="sidebar-resize-handle" title="拖拽调整侧边栏宽度" aria-label="调整侧边栏宽度"></div>
-    </nav>
-  `;
-}
-
-/**
- * Setup theme toggle functionality after the header is rendered
- * Should be called after the header HTML is added to the DOM
- */
-export function setupThemeToggle(): void {
-  const themeToggle = createThemeToggle();
-  themeToggle.setup();
-}
-
-/**
- * Setup help modal functionality
- * Should be called after the header HTML is added to the DOM
- */
-export function setupHelpModal(): void {
-  const helpBtn = document.getElementById('help-btn');
-  const modal = document.getElementById('help-modal');
-  const closeBtn = document.getElementById('modal-close');
-
-  if (!helpBtn || !modal || !closeBtn) return;
-
-  helpBtn.addEventListener('click', () => {
-    modal.classList.add('active');
-  });
-
-  closeBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  });
-
-  // 点击遮罩层关闭
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('active');
-    }
-  });
-
-  // ESC 键关闭
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      modal.classList.remove('active');
-    }
-  });
-}
-
-/**
- * Setup sidebar toggle functionality
- * Should be called after the sidebar HTML is added to the DOM
- */
-export async function setupSidebarToggle(): Promise<void> {
-  const toggleBtn = document.getElementById('sidebar-toggle');
-  const resizeHandle = document.getElementById('sidebar-resize-handle');
-  const root = document.querySelector('.xzzdpro-root') as HTMLElement;
-
-  if (!toggleBtn || !root) return;
-
-  const clampSidebarWidth = (width: number): number => {
-    return Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, width));
-  };
-
-  const setSidebarWidth = (width: number): void => {
-    const resolvedWidth = clampSidebarWidth(width);
-    root.style.setProperty('--xzzd-sidebar-width', `${resolvedWidth}px`);
-    if (!root.classList.contains('sidebar-collapsed')) {
-      root.style.gridTemplateColumns = `${resolvedWidth}px 1fr`;
-    }
-  };
-
-  const readSidebarWidth = (): number => {
-    const cssValue = root.style.getPropertyValue('--xzzd-sidebar-width').trim();
-    const parsed = Number(cssValue.replace('px', ''));
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return clampSidebarWidth(parsed);
-    }
-    return SIDEBAR_DEFAULT_WIDTH;
-  };
-
-  const setCollapsedState = (collapsed: boolean): void => {
-    if (collapsed) {
-      root.classList.add('sidebar-collapsed');
-      root.style.gridTemplateColumns = `${SIDEBAR_COLLAPSED_WIDTH}px 1fr`;
-      toggleBtn.setAttribute('title', '展开侧边栏');
-      return;
-    }
-    root.classList.remove('sidebar-collapsed');
-    const expandedWidth = readSidebarWidth();
-    root.style.gridTemplateColumns = `${expandedWidth}px 1fr`;
-    toggleBtn.setAttribute('title', '收缩侧边栏');
-  };
-
-  const persistSidebarState = async (collapsed: boolean, width: number): Promise<void> => {
-    const currentState = await storage.get<Record<string, unknown>>(LAYOUT_STORAGE_KEY) || {};
-    await storage.set(LAYOUT_STORAGE_KEY, {
-      ...currentState,
-      sidebarCollapsed: collapsed,
-      sidebarWidth: clampSidebarWidth(width)
-    });
-  };
-
-  // Load and apply saved state
-  try {
-    const state = await storage.get<{ sidebarCollapsed?: boolean; sidebarWidth?: number }>(LAYOUT_STORAGE_KEY);
-    const savedWidth = typeof state?.sidebarWidth === 'number'
-      ? clampSidebarWidth(state.sidebarWidth)
-      : SIDEBAR_DEFAULT_WIDTH;
-    setSidebarWidth(savedWidth);
-    setCollapsedState(!!state?.sidebarCollapsed);
-  } catch (error) {
-    console.error('XZZDPRO: Failed to load sidebar state', error);
-    setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-  }
-
-  // Setup click handler
-  toggleBtn.addEventListener('click', async () => {
-    const isCollapsed = !root.classList.contains('sidebar-collapsed');
-    setCollapsedState(isCollapsed);
-
-    if (!isCollapsed && readSidebarWidth() < SIDEBAR_MIN_WIDTH) {
-      setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-    }
-
-    // Save state
-    try {
-      const width = readSidebarWidth();
-      await persistSidebarState(isCollapsed, width);
-      console.log('XZZDPRO: Sidebar toggled', { collapsed: isCollapsed, width });
-    } catch (error) {
-      console.error('XZZDPRO: Failed to save sidebar state', error);
-    }
-  });
-
-  if (!resizeHandle) return;
-
-  let isResizing = false;
-  let resizeStartX = 0;
-  let resizeStartWidth = SIDEBAR_DEFAULT_WIDTH;
-  let pendingWidth = SIDEBAR_DEFAULT_WIDTH;
-  let pendingCollapsed = false;
-
-  const endResizing = async () => {
-    if (!isResizing) return;
-
-    isResizing = false;
-    root.classList.remove('sidebar-resizing');
-
-    setCollapsedState(pendingCollapsed);
-    if (!pendingCollapsed) {
-      setSidebarWidth(pendingWidth);
-    }
-
-    try {
-      await persistSidebarState(pendingCollapsed, pendingWidth);
-      console.log('XZZDPRO: Sidebar resized', { collapsed: pendingCollapsed, width: pendingWidth });
-    } catch (error) {
-      console.error('XZZDPRO: Failed to save sidebar resize state', error);
-    }
-
-    document.removeEventListener('mousemove', onMouseMove);
-    document.removeEventListener('mouseup', onMouseUp);
-  };
-
-  const onMouseMove = (event: MouseEvent) => {
-    if (!isResizing) return;
-
-    const deltaX = event.clientX - resizeStartX;
-    const rawWidth = resizeStartWidth + deltaX;
-
-    if (rawWidth <= SIDEBAR_COLLAPSE_THRESHOLD) {
-      pendingCollapsed = true;
-      pendingWidth = SIDEBAR_MIN_WIDTH;
-      setCollapsedState(true);
-      return;
-    }
-
-    pendingCollapsed = false;
-    pendingWidth = clampSidebarWidth(rawWidth);
-    setCollapsedState(false);
-    setSidebarWidth(pendingWidth);
-  };
-
-  const onMouseUp = () => {
-    void endResizing();
-  };
-
-  resizeHandle.addEventListener('mousedown', (event: MouseEvent) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-
-    isResizing = true;
-    root.classList.add('sidebar-resizing');
-    resizeStartX = event.clientX;
-
-    const currentCollapsed = root.classList.contains('sidebar-collapsed');
-    if (currentCollapsed) {
-      setCollapsedState(false);
-      setSidebarWidth(SIDEBAR_DEFAULT_WIDTH);
-      resizeStartWidth = SIDEBAR_DEFAULT_WIDTH;
-    } else {
-      resizeStartWidth = readSidebarWidth();
-    }
-
-    pendingWidth = resizeStartWidth;
-    pendingCollapsed = false;
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  });
-}
-
-
-/**
- * Setup avatar upload functionality
- * Should be called after the header HTML is added to the DOM
- */
-export function setupAvatarUpload(): void {
-  const container = document.getElementById('user-avatar-container');
-  if (!container) return;
-
-  const root = createRoot(container);
-  root.render(React.createElement(AvatarUpload, {
-    size: 'lg',
-    fallback: 'U',
-    className: 'user-avatar'
-  }));
-}
+let coursesRequestId = 0;
+let materialsRequestId = 0;
 
 export function setupAssistantNavigation(): void {
   const link = document.getElementById('nav-assistant-link');
@@ -439,6 +39,9 @@ export function setupAssistantNavigation(): void {
   const materialSubmenu = materialNavItem?.querySelector('.nav-submenu') as HTMLElement;
   
   if (!link || !expandBtn || !navItem || !submenu) return;
+  const binding = bindLayoutControl('assistant-navigation', link);
+  if (!binding) return;
+  const { signal } = binding;
 
   const ensureSidebarExpanded = (): boolean => {
     if (!root || !root.classList.contains('sidebar-collapsed')) return false;
@@ -469,7 +72,7 @@ export function setupAssistantNavigation(): void {
     navItem.classList.add('expanded')
     submenu.style.display = 'block'
     void loadAssistantCourses()
-  })
+  }, { signal })
 
   // Toggle submenu on expand button click only
   expandBtn.addEventListener('click', (e) => {
@@ -485,7 +88,7 @@ export function setupAssistantNavigation(): void {
       submenu.style.display = 'block';
       loadAssistantCourses();
     }
-  });
+  }, { signal });
 
   if (navItem.classList.contains('active')) {
     navItem.classList.add('expanded');
@@ -518,15 +121,15 @@ export function setupAssistantNavigation(): void {
       }
     };
 
-    materialExpandArrowBtn.addEventListener('click', toggleMaterialSubmenu);
-    materialExpandMainBtn?.addEventListener('click', toggleMaterialSubmenu);
+    materialExpandArrowBtn.addEventListener('click', toggleMaterialSubmenu, { signal });
+    materialExpandMainBtn?.addEventListener('click', toggleMaterialSubmenu, { signal });
 
     window.addEventListener('xzzd:assistant-course-changed', (event: Event) => {
       const customEvent = event as CustomEvent<{ courseId?: string }>;
       const courseId = customEvent.detail?.courseId;
       if (!courseId) return;
       void loadAssistantMaterials(courseId);
-    });
+    }, { signal });
   }
 
   // Load courses on initial setup
@@ -537,16 +140,18 @@ export function setupAssistantNavigation(): void {
 
   flashcardToggleBtn?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('xzzd:assistant-toggle-flashcard'));
-  });
+  }, { signal });
 
   clearHistoryBtn?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('xzzd:assistant-clear-history'));
-  });
+  }, { signal });
 }
 
 async function loadAssistantCourses(): Promise<void> {
   const courseListEl = document.getElementById('assistant-course-list');
   if (!courseListEl) return;
+  const requestId = ++coursesRequestId;
+  const isCurrent = () => requestId === coursesRequestId && courseListEl.isConnected;
 
   const assistantNavItem = document.getElementById('nav-assistant-link')?.closest('.nav-item-expandable') as HTMLElement | null;
   const assistantSubmenu = assistantNavItem?.querySelector('.nav-submenu') as HTMLElement | null;
@@ -559,6 +164,7 @@ async function loadAssistantCourses(): Promise<void> {
   try {
     const activeCourseId = new URLSearchParams(window.location.search).get('courseId');
     const courses = await fetchAllCourses();
+    if (!isCurrent()) return;
 
     if (courses.length === 0) {
       courseListEl.innerHTML = '<div class="submenu-empty">暂无课程</div>';
@@ -603,6 +209,7 @@ async function loadAssistantCourses(): Promise<void> {
       });
     });
   } catch (error) {
+    if (!isCurrent()) return;
     console.error('XZZDPRO: Failed to load assistant courses', error);
     courseListEl.innerHTML = '<div class="submenu-error">加载课程失败</div>';
   }
@@ -620,6 +227,8 @@ function escapeHtml(value: string): string {
 async function loadAssistantMaterials(courseId?: string): Promise<void> {
   const materialListEl = document.getElementById('assistant-material-list');
   if (!materialListEl) return;
+  const requestId = ++materialsRequestId;
+  const isCurrent = () => requestId === materialsRequestId && materialListEl.isConnected;
 
   const activeCourseId = courseId || new URLSearchParams(window.location.search).get('courseId');
   if (!activeCourseId) {
@@ -645,13 +254,14 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       { fetchCourseMaterials },
       { getAssistantUploadHistory, deleteAssistantUploadHistoryItems },
     ] = await Promise.all([
-      import("../../assistant/services/courseDataService"),
-      import("../../assistant/storage"),
+      import("../services/courseDataService"),
+      import("../storage"),
     ]);
     const [materials, historyItems] = await Promise.all([
       fetchCourseMaterials(activeCourseId),
       getAssistantUploadHistory(activeCourseId),
     ]);
+    if (!isCurrent()) return;
 
     const coursewareFiles: SidebarMaterialFile[] = materials.flatMap(
       (material) =>
@@ -959,6 +569,8 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       if (selectedHistoryDeleteIds.size === 0) return;
       const idsToDelete = Array.from(selectedHistoryDeleteIds);
       await deleteAssistantUploadHistoryItems(activeCourseId, idsToDelete);
+      // A read refresh does not invalidate a completed mutation in this course.
+      if (!materialListEl.isConnected || sidebarMaterialCourseId !== activeCourseId) return;
 
       idsToDelete.forEach((historyId) => {
         const downloadUrl = `assistant-history://${encodeURIComponent(historyId)}`;
@@ -996,6 +608,7 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
     updateSelectAllState();
     updateDeleteSelectionState();
   } catch (error) {
+    if (!isCurrent()) return;
     console.error('XZZDPRO: Failed to load assistant materials', error);
     materialListEl.innerHTML = '<div class="submenu-error">加载资料失败</div>';
   }

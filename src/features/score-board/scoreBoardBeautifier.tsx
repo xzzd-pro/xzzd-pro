@@ -1,6 +1,6 @@
 // lib/scoreBoardBeautifier.tsx
 
-import { createRoot } from "react-dom/client"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { ScoreBoardPanel } from "@/features/score-board/components"
 
@@ -17,6 +17,6 @@ export async function scoreBoardBeautifier(): Promise<void> {
 
   const mountPoint = page.getMountPoint("scoreboard-mount-point")
   if (mountPoint) {
-    createRoot(mountPoint).render(<ScoreBoardPanel courseId={page.courseId} />)
+    mountCoursePanel(mountPoint, <ScoreBoardPanel courseId={page.courseId} />)
   }
 }

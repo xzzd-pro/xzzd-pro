@@ -6,10 +6,10 @@ import {
   setupThemeToggle,
   setupHelpModal,
   setupSidebarToggle,
-  setupAssistantNavigation,
   setupAvatarUpload
-} from "@/shared/course-detail/layoutHelpers";
-import { setupResizeHandlers, applySavedLayout } from "@/shared/course-detail/resizeHandlers";
+} from "@/shared/layout"
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
+import { setupResizeHandlers, applySavedLayout } from "@/shared/layout/resizeHandlers";
 import { createAssistantHost } from "@/assistant/assistantBeautifier";
 
 const storage = new Storage();

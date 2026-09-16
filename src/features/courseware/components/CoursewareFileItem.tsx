@@ -111,8 +111,8 @@ export function CoursewareFileItem({
   return (
     <>
       <div className={cn(
-        "flex items-center gap-4 p-4 rounded-lg border border-border bg-muted/50 text-foreground transition-all duration-200",
-        "hover:translate-x-1 hover:bg-muted hover:shadow-md",
+        "flex flex-wrap items-center gap-3 py-3 text-foreground transition-colors hover:bg-muted/30 sm:flex-nowrap",
+        isSelected && "bg-primary/5",
         className
       )}>
         {onSelectedChange && (
@@ -130,22 +130,22 @@ export function CoursewareFileItem({
             />
           </div>
         )}
-        <div className="w-9 h-9 flex-shrink-0 text-primary">
+        <div className="w-8 h-8 flex-shrink-0 rounded-md bg-primary/5 p-1.5 text-primary">
           {getFileIcon(file.name)}
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-[15px] font-medium text-foreground mb-1 break-words leading-snug">
+        <div className="flex-1 min-w-[120px]">
+          <div className="text-sm font-medium text-foreground mb-1 break-all leading-relaxed">
             {file.name}
           </div>
           <div className="text-[13px] text-muted-foreground">
             {file.sizeText}
           </div>
         </div>
-        <div className="flex-shrink-0 flex items-center gap-2">
+        <div className="ml-auto flex-shrink-0 flex items-center gap-1">
           <Button
             size="sm"
-            variant="outline"
-            className="gap-1.5"
+            variant="ghost"
+            className="gap-1.5 bg-transparent"
             onClick={() => setShowPreview(true)}
           >
             <Eye className="w-4 h-4" />
@@ -154,8 +154,9 @@ export function CoursewareFileItem({
           {file.canDownload ? (
             <Button
               asChild
+              variant="ghost"
               size="sm"
-              className="gap-1.5"
+              className="gap-1.5 bg-transparent no-underline"
             >
               <a
                 href={file.downloadUrl}
@@ -168,7 +169,7 @@ export function CoursewareFileItem({
               </a>
             </Button>
           ) : (
-            <span className="px-4 py-2 bg-border text-muted-foreground rounded-md text-[13px] font-medium">
+            <span className="px-3 py-2 text-muted-foreground text-xs">
               不可下载
             </span>
           )}

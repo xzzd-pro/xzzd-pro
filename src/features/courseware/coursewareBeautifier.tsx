@@ -1,6 +1,6 @@
 // lib/coursewareBeautifier.tsx
 
-import { createRoot } from "react-dom/client"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { CoursewarePanel } from "@/features/courseware/components"
 
@@ -16,6 +16,6 @@ export async function coursewareBeautifier(): Promise<void> {
 
   const mountPoint = page.getMountPoint("courseware-mount-point")
   if (mountPoint) {
-    createRoot(mountPoint).render(<CoursewarePanel courseId={page.courseId} />)
+    mountCoursePanel(mountPoint, <CoursewarePanel courseId={page.courseId} />)
   }
 }

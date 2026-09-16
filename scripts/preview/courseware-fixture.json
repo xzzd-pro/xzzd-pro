@@ -1,0 +1,154 @@
+{
+  "description": "Synthetic preview data; intercept GET by pathname and ignore courseware query parameters. Expand a section to see file rows. Download endpoints must be mocked separately; do not issue real authenticated requests.",
+  "courseId": "123",
+  "responses": [
+    {
+      "pathname": "/api/course/123/coursewares",
+      "body": {
+        "activities": [
+          {
+            "id": 101,
+            "title": "第一章 · 信号与系统基础",
+            "module_id": 11,
+            "sort": 1,
+            "is_started": true,
+            "is_closed": false,
+            "completion_criterion": "浏览所有课件",
+            "uploads": [
+              {
+                "id": 501,
+                "name": "01 信号与系统导论.pdf",
+                "size": 2516582,
+                "allow_download": true
+              },
+              {
+                "id": 502,
+                "name": "课堂示例与练习.pptx",
+                "size": 8388608,
+                "allow_download": true
+              },
+              {
+                "id": 503,
+                "name": "参考阅读：连续时间信号与离散时间信号的基本性质.pdf",
+                "size": 1048576,
+                "allow_download": false
+              }
+            ]
+          },
+          {
+            "id": 102,
+            "title": "第二章 · 线性时不变系统",
+            "module_id": 12,
+            "sort": 2,
+            "is_started": true,
+            "is_closed": false,
+            "completion_criterion": "无要求",
+            "uploads": [
+              {
+                "id": 504,
+                "name": "02 线性时不变系统.pdf",
+                "size": 3670016,
+                "allow_download": true
+              },
+              {
+                "id": 505,
+                "name": "实验数据与代码.zip",
+                "size": 524288,
+                "allow_download": true
+              }
+            ]
+          },
+          {
+            "id": 103,
+            "title": "第三章 · 傅里叶分析",
+            "module_id": 13,
+            "sort": 3,
+            "is_started": false,
+            "is_closed": false,
+            "completion_criterion": "无要求",
+            "uploads": []
+          },
+          {
+            "id": 104,
+            "title": "预备知识与复习资料",
+            "module_id": 11,
+            "sort": 0,
+            "is_started": true,
+            "is_closed": true,
+            "completion_criterion": "浏览所有课件",
+            "uploads": [
+              {
+                "id": 506,
+                "name": "高等数学复习.pdf",
+                "size": 734003,
+                "allow_download": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "pathname": "/api/courses/123/modules",
+      "body": {
+        "modules": [
+          {
+            "id": 11,
+            "name": "基础知识",
+            "sort": 0
+          },
+          {
+            "id": 12,
+            "name": "系统分析",
+            "sort": 1
+          },
+          {
+            "id": 13,
+            "name": "频域分析",
+            "sort": 2
+          }
+        ]
+      }
+    },
+    {
+      "pathname": "/api/courses/123",
+      "body": {
+        "id": 123,
+        "display_name": "信号与系统",
+        "name": "信号与系统"
+      }
+    }
+  ],
+  "fileEndpoints": [
+    {
+      "pathname": "/api/uploads/501/blob",
+      "name": "01 信号与系统导论.pdf",
+      "allowDownload": true
+    },
+    {
+      "pathname": "/api/uploads/502/blob",
+      "name": "课堂示例与练习.pptx",
+      "allowDownload": true
+    },
+    {
+      "pathname": "/api/uploads/503/blob",
+      "name": "参考阅读：连续时间信号与离散时间信号的基本性质.pdf",
+      "allowDownload": false
+    },
+    {
+      "pathname": "/api/uploads/504/blob",
+      "name": "02 线性时不变系统.pdf",
+      "allowDownload": true
+    },
+    {
+      "pathname": "/api/uploads/505/blob",
+      "name": "实验数据与代码.zip",
+      "allowDownload": true
+    },
+    {
+      "pathname": "/api/uploads/506/blob",
+      "name": "高等数学复习.pdf",
+      "allowDownload": true
+    }
+  ]
+}

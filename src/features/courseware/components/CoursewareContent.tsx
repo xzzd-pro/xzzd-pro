@@ -26,17 +26,18 @@ export function CoursewareContent({
   const downloadableCount = section.files.filter((file) => file.canDownload).length
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col divide-y divide-border/50">
       {section.files.length > 0 ? (
         <>
           {onDownloadSection && (
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-card/70 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 py-3">
               <span className="text-sm text-muted-foreground">
                 可下载 {downloadableCount} 个文件
               </span>
               <Button
                 size="sm"
-                variant="outline"
+                variant="ghost"
+                className="bg-transparent"
                 disabled={
                   downloadDisabled || downloading || downloadableCount === 0
                 }

@@ -1,0 +1,46 @@
+{
+  "announceSettings": {
+    "announce_score_settings": {
+      "announce_raw_score_time": null,
+      "announce_raw_score_type": "no_announce",
+      "announce_score_time": null,
+      "announce_score_type": "no_announce",
+      "is_announce_raw_score_time_passed": false,
+      "is_announce_score_time_passed": false
+    }
+  },
+  "performanceScore": {
+    "announce_score_setting": "announce",
+    "extra_score_updated_time": null,
+    "interaction_score": null,
+    "score": 92,
+    "score_announce_setting": { "announce_time": null, "setting_name": "announce" },
+    "score_announced": true,
+    "score_percentage": "10",
+    "standard_score": 100
+  },
+  "customScoreItems": [
+    { "announce_score_time": null, "announce_score_type": "announce", "can_announce_score": true, "created_at": "2026-09-01T08:00:00+08:00", "id": 1, "is_external_score_item": false, "name": "小组项目展示", "referrer_type": "", "score": "88", "score_percentage": "15" },
+    { "announce_score_time": null, "announce_score_type": "no_announce", "can_announce_score": false, "created_at": "2026-09-01T08:00:00+08:00", "id": 2, "is_external_score_item": false, "name": "课程报告", "referrer_type": "", "score": "", "score_percentage": "15" }
+  ],
+  "homeworkScores": {
+    "homework_activities": [
+      { "id": 101, "title": "第一章 · 线性系统与数学模型", "score_percentage": "5", "end_time": "2026-09-07T23:59:00+08:00", "data": { "score_percentage": "5" } },
+      { "id": 102, "title": "第二章 · 时域分析方法", "score_percentage": "5", "end_time": "2026-09-14T23:59:00+08:00", "data": { "score_percentage": "5" } },
+      { "id": 103, "title": "第三章 · 频域分析与系统稳定性", "score_percentage": "5", "end_time": "2026-09-21T23:59:00+08:00", "data": { "score_percentage": "5" } }
+    ],
+    "scores": [
+      { "activity_id": 101, "final_score": 95, "instructor_comment": "推导完整，分析清晰。", "inter_score": null, "intra_score": null, "score": "95", "student_id": 10001 },
+      { "activity_id": 102, "final_score": 86, "instructor_comment": "请补充系统参数变化对响应的影响。", "inter_score": null, "intra_score": null, "score": "86", "student_id": 10001 }
+    ]
+  },
+  "examScores": { "exam_scores": [{ "activity_id": 201, "score": 90, "submission_scores": [90] }] },
+  "exams": [{ "title": "第一单元测验", "type": "exam", "unique_key": "exam-201", "using_phase": "after_class" }],
+  "forumScores": [{ "activity_id": 301, "score": null, "score_percentage": "0", "title": "如何理解反馈的作用？" }],
+  "classroomScores": [{ "activity_id": 401, "score": 0, "score_percentage": "0", "title": "课堂随堂练习" }],
+  "questionnaireScores": [],
+  "rollcalls": [
+    { "is_expired": true, "is_number": true, "is_radar": false, "published_at": "2026-09-08T08:00:00+08:00", "rollcall_id": 501, "rollcall_status": "closed", "rollcall_time": "2026-09-08T08:00:00+08:00", "scored": true, "source": "", "status": "on_call_fine", "student_rollcall_id": 601, "student_status": "on_call_fine", "student_status_detail": "", "title": "课堂签到", "type": "number" },
+    { "is_expired": true, "is_number": true, "is_radar": false, "published_at": "2026-09-15T08:00:00+08:00", "rollcall_id": 502, "rollcall_status": "closed", "rollcall_time": "2026-09-15T08:00:00+08:00", "scored": true, "source": "", "status": "on_call_fine", "student_rollcall_id": 602, "student_status": "on_call_fine", "student_status_detail": "", "title": "课堂签到", "type": "number" }
+  ]
+}

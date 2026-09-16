@@ -1,6 +1,6 @@
 // lib/homeworkBeautifier.tsx
 
-import { createRoot } from "react-dom/client"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { HomeworkPanel } from "@/features/homework/components"
 
@@ -16,6 +16,6 @@ export async function homeworkBeautifier(): Promise<void> {
 
   const mountPoint = page.getMountPoint("homework-mount-point")
   if (mountPoint) {
-    createRoot(mountPoint).render(<HomeworkPanel courseId={page.courseId} />)
+    mountCoursePanel(mountPoint, <HomeworkPanel courseId={page.courseId} />)
   }
 }

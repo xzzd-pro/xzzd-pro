@@ -1,15 +1,9 @@
 // lib/courseDetailHelpers.ts - Shared helpers for all course detail pages
 
-import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "./layoutHelpers"
-import { courseDetailIcons } from "./icons"
-import { Storage } from "@plasmohq/storage"
+import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "../layout"
+import { courseDetailIcons } from "../layout/icons"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
-
-const storage = new Storage()
-const LAYOUT_STORAGE_KEY = "indexPageLayout"
-
-const $ = (selector: string): HTMLElement | null => document.querySelector(selector);
 
 // Extract course ID from URL
 export function getCourseIdFromUrl(): string | null {
@@ -149,12 +143,6 @@ export function renderCourseDetailSidebar(courseId: string, currentPage: string)
               <span class="nav-text">小测</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'discussion' ? 'active' : ''}">
-            <a href="https://courses.zju.edu.cn/course/${courseId}/forum#/" class="nav-link">
-              <span class="nav-icon">${courseDetailIcons.discussion}</span>
-              <span class="nav-text">讨论区</span>
-            </a>
-          </li>
           <li class="nav-item ${currentPage === 'grades' ? 'active' : ''}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/score#/" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.grades}</span>
@@ -196,25 +184,35 @@ export function renderCourseDetailPage(
 ): string {
   const header = renderHeader({ showUsername: false });
   const sidebar = renderCourseDetailSidebar(courseId, currentPage);
+  const escapeText = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const descriptions: Record<string, string> = {
+    materials: '按章节浏览课程资料，预览或下载所需文件。',
+    homework: '查看作业要求、提交记录与批改结果。',
+    grades: '查看课程公布的成绩与各项学习记录。',
+    overview: '了解课程信息、任课教师与课程介绍。'
+  };
 
   return `
     ${header}
     ${sidebar}
 
-    <main class="xzzdpro-main" id="main-grid">
-      <div class="resize-handle resize-handle-left"></div>
-      <div class="main-content-wrapper">
-        <div class="widget-card title-card">
-          <h2>${courseName}</h2>
-        </div>
-        <div class="widget-card content-card">
+    <main class="xzzdpro-main course-detail-main" id="main-grid">
+      <div class="main-content-wrapper course-detail-content">
+        <header class="course-detail-heading">
+          <nav class="course-detail-breadcrumb" aria-label="当前位置">
+            <a href="https://courses.zju.edu.cn/user/courses#/">我的课程</a>
+            <span aria-hidden="true">/</span>
+            <span class="course-detail-course-name">${escapeText(courseName)}</span>
+          </nav>
+          <h1>${escapeText(pageTitle)}</h1>
+          ${descriptions[currentPage] ? `<p>${descriptions[currentPage]}</p>` : ''}
+        </header>
+        <div class="widget-card content-card course-detail-panel">
           <div class="content-section active">
-            <h2>${pageTitle}</h2>
             ${contentHtml}
           </div>
         </div>
       </div>
-      <div class="resize-handle resize-handle-right"></div>
     </main>
   `;
 }
@@ -249,15 +247,15 @@ export async function mountCourseDetailPage({
 }: MountCourseDetailPageOptions): Promise<MountedCourseDetailPage | null> {
   suppressAirChatbot();
 
+  const courseId = getCourseIdFromUrl();
+  if (!courseId) {
+    console.error('XZZDPRO: 无法提取课程ID');
+    return null;
+  }
+
   document.body.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'xzzdpro-root xzzdpro';
-
-  const courseId = getCourseIdFromUrl();
-  if (!courseId) {
-    console.error('XZZDPRO: 鏃犳硶鎻愬彇璇剧▼ID');
-    return null;
-  }
 
   const resolvedCourseName = courseName ?? (await getCourseName());
 
@@ -277,11 +275,11 @@ export async function mountCourseDetailPage({
   return {
     courseId,
     root,
-    titleElement: document.querySelector('.title-card h2'),
+    titleElement: root.querySelector('.course-detail-course-name'),
     contentSection: document.querySelector('.content-section.active'),
     getMountPoint: (id: string) => document.getElementById(id)
   };
 }
 
 // Re-export setup functions from layoutHelpers for convenience
-export { setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "./layoutHelpers";
+export { setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "../layout";
