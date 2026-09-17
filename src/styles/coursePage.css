@@ -97,6 +97,72 @@
   height: 100% !important;
 }
 
+/* Native school styles also target form controls. Reset their margins and
+   dimensions locally so select, labels and buttons share the same centerline. */
+.xzzdpro .course-catalog .course-filter-row {
+  align-items: center !important;
+  column-gap: 20px;
+  row-gap: 10px;
+}
+
+.xzzdpro .course-catalog .course-filter-group {
+  display: flex;
+  align-items: center !important;
+  gap: 8px;
+  margin: 0 !important;
+}
+
+.xzzdpro .course-catalog .course-filter-row label,
+.xzzdpro .course-catalog .course-filter-group > span {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 20px !important;
+  white-space: nowrap;
+}
+
+.xzzdpro .course-catalog .course-filter-row select,
+.xzzdpro .course-catalog .course-filter-row button {
+  box-sizing: border-box !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  min-width: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 0 10px !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
+  vertical-align: middle;
+}
+
+.xzzdpro .course-catalog .course-filter-row select {
+  width: 164px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.xzzdpro .course-catalog .course-filter-row button {
+  width: auto !important;
+}
+
+.xzzdpro .course-catalog .course-search-form input,
+.xzzdpro .course-catalog .course-search-form button {
+  box-sizing: border-box !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  margin: 0 !important;
+  line-height: 20px !important;
+}
+
+.xzzdpro .course-catalog .course-search-form button {
+  min-width: 0 !important;
+  width: auto !important;
+  padding: 0 12px !important;
+  gap: 6px;
+}
+
 /* responsive design */
 @media (max-width: 1200px) {
   .xzzdpro-main {

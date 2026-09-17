@@ -40,14 +40,16 @@ export function renderHeader(options: HeaderOptions = {}): string {
           <button class="modal-close" id="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-          <p><strong>欢迎使用 XZZDPRO 学在浙大美化插件！</strong></p>
+          <p><strong>欢迎使用 XZZDPRO ！</strong></p>
           <ul>
-            <li>本项目为学在浙大页面美化插件，在本地运行，不会向开发者上传个人数据。</li>
-            <li>所有课程信息、通知及相关内容，均以学在浙大原生页面为准。</li>
-            <li>目前课程详情页仅支持课件下载、作业提交和成绩查看。</li>
-            <li>Chrome / Edge 用户请将插件固定到浏览器顶部工具栏，可随时通过插件图标关闭美化功能。</li>
+            本项目为学在浙大页面美化插件，仅在本地运行，不会向开发者上传个人数据。
+            所有课程信息、通知及相关内容，均以学在浙大原生页面为准。
+            目前课程详情页仅支持课件下载、作业提交和成绩查看。
+            Chrome / Edge 用户建议将插件固定到浏览器顶部工具栏，可随时通过插件图标关闭美化功能。
           </ul>
           <p><strong>如有问题或建议，欢迎反馈！</strong></p>
+          <p>GitHub 仓库：<a href="https://github.com/xzzd-pro/xzzd-pro" target="_blank" rel="noopener noreferrer">xzzd-pro/xzzd-pro</a></p>
+          <p>主要开发者：<a href="https://github.com/RanderDouble" target="_blank" rel="noopener noreferrer">RanderDouble</a>、<a href="https://github.com/Ch3ngJY" target="_blank" rel="noopener noreferrer">Ch3ngJY</a>、<a href="https://github.com/NoughtQ" target="_blank" rel="noopener noreferrer">NoughtQ</a></p>
         </div>
       </div>
     </div>

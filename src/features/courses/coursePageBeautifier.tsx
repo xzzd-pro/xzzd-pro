@@ -15,18 +15,13 @@ import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import { CoursePage } from "@/features/courses/components/CoursePage"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import type { ApiCourseData } from "@/types"
+import type { CourseFilters } from "./courseFilters"
 
 const $ = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
 const $$ = (selector: string): NodeListOf<HTMLElement> =>
   document.querySelectorAll(selector)
 
-interface CourseFilters {
-  semester_id?: string[]
-  status?: string[]
-  keyword?: string
-  classify_type?: string
-}
 
 // React root for course page
 let coursePageRoot: Root | null = null
@@ -35,14 +30,14 @@ let coursesRequestId = 0
 
 /* get courses api */
 async function fetchCoursesFromApi(
-  filters: CourseFilters = {}
+  filters: Partial<CourseFilters> = {}
 ): Promise<ApiCourseData[]> {
   try {
     const payload = createMyCoursesPayload({
       semester_id: filters.semester_id || [],
       status: filters.status || ["ongoing", "notStarted", "closed"],
       keyword: filters.keyword || "",
-      classify_type: filters.classify_type || "recently_started",
+      classify_type: "recently_started",
       display_studio_list: false
     })
 
@@ -71,8 +66,7 @@ async function fetchCoursesFromApi(
 function renderCoursePageReact(
   container: HTMLElement,
   courses: ApiCourseData[],
-  loading: boolean = false,
-  onSearch: (filters: { keyword: string; status: string[] }) => void
+  loading: boolean = false
 ) {
   if (coursePageContainer !== container) {
     coursePageRoot?.unmount()
@@ -83,25 +77,17 @@ function renderCoursePageReact(
     coursePageRoot = createRoot(container)
   }
   coursePageRoot.render(
-    <CoursePage courses={courses} loading={loading} onSearch={onSearch} />
+    <CoursePage courses={courses} loading={loading} />
   )
 }
 
-async function loadAndRenderCourses(filters: CourseFilters = {}) {
+async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
   const container = $(".course-page-container")
   if (!container) return
   const requestId = ++coursesRequestId
 
-  const handleSearch = (searchFilters: { keyword: string; status: string[] }) => {
-    const courseFilters: CourseFilters = {
-      keyword: searchFilters.keyword,
-      status: searchFilters.status.length > 0 ? searchFilters.status : ["ongoing", "notStarted", "closed"],
-    }
-    loadAndRenderCourses(courseFilters)
-  }
-
   // Show loading state
-  renderCoursePageReact(container, [], true, handleSearch)
+  renderCoursePageReact(container, [], true)
 
   let courses: ApiCourseData[] = []
   try {
@@ -117,7 +103,7 @@ async function loadAndRenderCourses(filters: CourseFilters = {}) {
     container !== $(".course-page-container")
   ) return
 
-  renderCoursePageReact(container, courses, false, handleSearch)
+  renderCoursePageReact(container, courses, false)
 }
 
 function setupSearchHandler() {

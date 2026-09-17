@@ -38,6 +38,7 @@ async function main() {
   const result = await postcss([tailwind(path.join(repo, 'tailwind.config.js'))]).process(source, { from: path.join(repo, 'src/styles/global.css') })
   fs.writeFileSync(path.join(out, 'preview.css'), result.css + '\n' + fs.readFileSync(path.join(repo, 'src/styles/courseDetail.css'), 'utf8'))
   fs.copyFileSync(path.join(repo, 'src/assets/LXGWWenKaiScreen.ttf'), path.join(out, 'font.ttf'))
+  fs.copyFileSync(path.join(repo, 'src/styles/coursePage.css'), path.join(out, 'course-page.css'))
   fs.writeFileSync(path.join(out, 'index.html'), '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>课程详情 · 模拟数据预览</title><link rel="stylesheet" href="preview.css"></head><body><script src="preview.js"></script></body></html>')
   console.log(path.join(out, 'index.html'))
 }

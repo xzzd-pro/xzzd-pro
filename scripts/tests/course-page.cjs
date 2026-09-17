@@ -20,6 +20,7 @@ function createHarness() {
       jsx: ts.JsxEmit.React
     }
   }).outputText
+  const payloads = []
   const pending = []
   const renders = []
   const roots = []
@@ -48,7 +49,7 @@ function createHarness() {
       }
       if (name === "@/shared/api/myCoursesApi") {
         return {
-          createMyCoursesPayload: (payload) => payload,
+          createMyCoursesPayload: (payload) => { payloads.push(payload); return payload },
           fetchMyCoursesResponse: () => new Promise((resolve) => {
             pending.push((courses) => resolve({
               ok: true,
@@ -65,6 +66,7 @@ function createHarness() {
   return {
     load: context.exports.loadAndRenderCourses,
     pending,
+    payloads,
     renders,
     roots,
     get container() { return container },
@@ -113,4 +115,15 @@ test("a replacement container receives a fresh root and releases the old root", 
   await replacement
   assert.equal(h.renders.at(-1).container, h.container)
   assert.equal(h.renders.at(-1).props.courses[0], "replacement")
+})
+
+test("initial course load is unrestricted and exposes no network search callback", async () => {
+  const h = createHarness()
+  const initial = h.load()
+  h.pending[0]([])
+  await initial
+  assert.equal(h.payloads[0].keyword, "")
+  assert.equal(h.payloads[0].semester_id.length, 0)
+  assert.equal(h.payloads[0].status.length, 3)
+  assert.equal(h.renders.at(-1).props.onSearch, undefined)
 })

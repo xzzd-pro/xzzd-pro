@@ -431,6 +431,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
           <Button
             size="sm"
             variant="outline"
+            className="text-foreground"
             disabled={isDownloading || selectedDownloadableEntries.length === 0}
             onClick={handleDownloadSelected}>
             {downloadTarget?.type === "selected" ? (
