@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
 const source=ts.transpileModule(fs.readFileSync('src/features/courses/courseFilters.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
-function load(fetch){const exports={};vm.runInNewContext(source,{exports,fetch,console});return exports}
+function load(fetch, sessionStorage){const exports={};vm.runInNewContext(source,{exports,fetch,console,sessionStorage});return exports}
 test('academic semesters are chronological across school years and calendar years',()=>{const {semesterOrder:r}=load();assert.ok(r('2025-2026春夏学期')>r('2025-2026秋冬学期'));assert.ok(r('2026年秋学期')>r('2025-2026春夏学期'));assert.ok(r('2025-2026第一学期')<r('2025-2026第二学期'));assert.equal(r('2025-2026学年'),null);assert.equal(r('其他课程'),null)});
-test('catalog deduplicates semesters and chooses latest with bounded concurrency',async()=>{let active=0,max=0;const api=load(async url=>{active++;max=Math.max(max,active);await new Promise(r=>setTimeout(r,3));active--;return {ok:true,json:async()=>({semester:url.endsWith('/9')?{id:2,name:'2025-2026春夏学期'}:{id:1,name:'2025-2026秋冬学期'}})}});const result=await api.collectCourseSemesters(Array.from({length:10},(_,id)=>({id})),new AbortController().signal);assert.equal(result.options.length,2);assert.equal(result.latestId,'2025:spring');assert.equal(result.warning,'');assert.ok(max<=4)});
+test('catalog deduplicates semesters and chooses latest with bounded concurrency',async()=>{let active=0,max=0;const api=load(async url=>{active++;max=Math.max(max,active);await new Promise(r=>setTimeout(r,3));active--;return {ok:true,json:async()=>({semester:url.endsWith('/9')?{id:2,name:'2025-2026春夏学期'}:{id:1,name:'2025-2026秋冬学期'}})}});const result=await api.collectCourseSemesters(Array.from({length:10},(_,id)=>({id})),new AbortController().signal);assert.equal(result.options.length,2);assert.equal(result.latestId,'2025:spring');assert.equal(result.warning,'');assert.ok(max<=8)});
 test('partial failure and ambiguous names never silently choose a default',async()=>{const api=load(async url=>({ok:!url.endsWith('/2'),json:async()=>({semester:{id:1,name:'2025-2026秋冬学期'}})}));const result=await api.collectCourseSemesters([{id:1},{id:2}],new AbortController().signal);assert.equal(result.latestId,'');assert.match(result.warning,/失败/);const ambiguous=load(async()=>({ok:true,json:async()=>({semester:{id:3,name:'长期课程'}})}));assert.equal((await ambiguous.collectCourseSemesters([{id:3}],new AbortController().signal)).latestId,'')});
 
 test('semester halves group split terms and keep different academic years separate', async()=>{
@@ -19,4 +19,16 @@ test('semester halves group split terms and keep different academic years separa
   selected=api.filterCourses(courses,{keyword:'教师',status:['ongoing'],semester_id:latest.semesterIds},catalog.courseSemesters,statuses);
   assert.equal(selected.length,1);assert.equal(selected[0].id,0);
   assert.equal(api.filterCourses(courses,{keyword:'',status:api.COURSE_STATUSES,semester_id:[]},catalog.courseSemesters,statuses).length,7);
+});
+
+test('semester cache avoids repeated requests, expires, and supports forced refresh', async()=>{
+  const values=new Map();const storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
+  let count=0;const api=load(async()=>{count++;return {ok:true,json:async()=>({semester:{id:1,name:'2026-2027秋冬'}})}},storage);
+  const signal=new AbortController().signal;
+  await api.collectCourseSemesters([{id:1}],signal);
+  await api.collectCourseSemesters([{id:1}],signal);
+  assert.equal(count,1);
+  await api.collectCourseSemesters([{id:1}],signal,true);assert.equal(count,2);
+  const key=[...values.keys()][0],cached=JSON.parse(values.get(key));cached['1'].expires=0;values.set(key,JSON.stringify(cached));
+  await api.collectCourseSemesters([{id:1}],signal);assert.equal(count,3);
 });

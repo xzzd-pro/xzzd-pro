@@ -34,12 +34,18 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
   React.useEffect(() => {
     if (catalogCourses === null) return
     const controller = new AbortController()
-    void Promise.all([collectCourseSemesters(catalogCourses, controller.signal), collectCourseStatuses().catch(() => null)]).then(([result, statuses]) => {
+    setWarning("")
+    setCourseStatuses(null)
+    void collectCourseStatuses().then(statuses => {
+      if (!controller.signal.aborted) setCourseStatuses(statuses)
+    }).catch(() => {
+      if (!controller.signal.aborted) setWarning(previous => previous + " 课程状态加载失败，可重试预加载。")
+    })
+    void collectCourseSemesters(catalogCourses, controller.signal, attempt > 0).then(result => {
       if (controller.signal.aborted) return
       setOptions(result.options)
-      setWarning([result.warning, statuses ? "" : "课程状态加载失败，可重试预加载。"].filter(Boolean).join(" "))
+      setWarning(previous => [result.warning, previous].filter(Boolean).join(" "))
       setCourseSemesters(result.courseSemesters)
-      setCourseStatuses(statuses)
       setSelectedGroup(result.latestId)
       latestId.current = result.latestId
       const next = { ...currentFilters.current, semester_id: result.options.find(option => option.id === result.latestId)?.semesterIds || [] }

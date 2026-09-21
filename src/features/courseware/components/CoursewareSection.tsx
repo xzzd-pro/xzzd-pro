@@ -15,7 +15,6 @@ export function CoursewareSection({ section, defaultOpen = false, className }: C
   const statusClass = section.isClosed ? 'closed' : (section.isStarted ? 'started' : 'not-started')
   const statusText = section.isClosed ? '已关闭' : (section.isStarted ? '进行中' : '未开始')
 
-  const statusVariant = section.isClosed ? 'secondary' : (section.isStarted ? 'default' : 'outline')
 
   return (
     <AccordionItem
@@ -33,9 +32,12 @@ export function CoursewareSection({ section, defaultOpen = false, className }: C
           </h3>
           <div className="flex gap-4 flex-wrap text-[13px]">
             <Badge
-              variant={statusVariant}
+              variant="outline"
               className={cn(
-                section.isClosed && "bg-muted text-muted-foreground border-transparent",
+                section.isClosed &&
+                            "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300",
+                          !section.isClosed && section.isStarted &&
+                            "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300",
                 !section.isStarted && !section.isClosed && "bg-muted text-muted-foreground border-border"
               )}
             >

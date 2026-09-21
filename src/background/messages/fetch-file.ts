@@ -14,7 +14,7 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
-  const { url } = req.body;
+  const { url } = req.body || {};
 
   if (!url) {
     res.send({ error: "No URL provided" });
@@ -44,10 +44,8 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
       contentType,
     });
   } catch (error) {
-    console.error("Background fetch error:", error);
     res.send({
-      error:
-        "Background fetch failed. VPN/proxy may trigger extension CORS restrictions."
+      error: `Background fetch failed: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 };

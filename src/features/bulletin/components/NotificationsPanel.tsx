@@ -1,3 +1,4 @@
+import { findNotificationUser } from "../findNotificationUser"
 import * as React from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Storage } from "@plasmohq/storage"
@@ -61,7 +62,7 @@ async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
   }
 }
 
-async function getUserId(): Promise<string | null> {
+async function getUserId(signal?: AbortSignal): Promise<string | null> {
   try {
     const coursesResponse = await fetchMyCoursesResponse(
       createMyCoursesPayload()
@@ -78,42 +79,17 @@ async function getUserId(): Promise<string | null> {
       return null
     }
 
-    for (const course of coursesData.courses) {
-      const courseId = course.id
-      try {
-        const activityResponse = await fetch(
-          `https://courses.zju.edu.cn/api/course/${courseId}/activity-reads-for-user`
-        )
-
-        if (!activityResponse.ok) continue
-
-        const activityData = await activityResponse.json()
-        if (!activityData.activity_reads || activityData.activity_reads.length === 0) continue
-
-        const firstActivity = activityData.activity_reads[0]
-        const userId = firstActivity.created_by_id || firstActivity.created_for_id
-
-        if (userId) {
-          console.log('XZZDPRO: 成功提取到用户ID', userId)
-          return String(userId)
-        }
-      } catch (error) {
-        console.warn(`XZZDPRO: 处理课程 ${courseId} 时发生异常`, error)
-      }
-    }
-
-    console.error('XZZDPRO: 遍历所有课程均无法提取有效用户ID')
-    return null
+    return findNotificationUser(coursesData.courses, signal)
   } catch (error) {
     console.error('XZZDPRO: 获取用户ID时出错', error)
     return null
   }
 }
 
-async function fetchNotifications(userId: string, offset = 0, limit = 100): Promise<ApiNotificationData[]> {
+async function fetchNotifications(userId: string, offset = 0, limit = 100, signal?: AbortSignal): Promise<ApiNotificationData[]> {
   try {
     const url = `https://courses.zju.edu.cn/ntf/users/${userId}/notifications?offset=${offset}&limit=${limit}&removed=only_mobile&additionalFields=total_count`
-    const response = await fetch(url)
+    const response = await fetch(url, { signal })
 
     if (!response.ok) {
       console.error('XZZDPRO: 公告API请求失败', response.status)
@@ -236,35 +212,25 @@ export function NotificationsPanel() {
   const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    const controller = new AbortController()
     async function loadData() {
       setIsLoading(true)
-
-      const timestamps = await loadReadTimestamps()
-      setReadTimestamps(timestamps)
-      console.log('XZZDPRO: 已加载已读时间戳', timestamps)
-
-      const userId = await getUserId()
-      if (!userId) {
-        console.error('XZZDPRO: 无法获取用户ID')
-        setIsLoading(false)
-        return
-      }
-
       try {
-        const rawNotifications = await fetchNotifications(userId)
-        const processed = rawNotifications
-          .map(n => processNotification(n, timestamps))
-          .filter((n): n is ProcessedNotification => n !== null)
-
-        setAllNotifications(processed)
-      } catch (e) {
-        console.warn('XZZDPRO: 获取公告异常', e)
+        const [timestamps, rawNotifications] = await Promise.all([
+          loadReadTimestamps(),
+          getUserId(controller.signal).then(id => id && !controller.signal.aborted ? fetchNotifications(id, 0, 100, controller.signal) : [])
+        ])
+        if (controller.signal.aborted) return
+        setReadTimestamps(timestamps)
+        setAllNotifications(rawNotifications.map(n => processNotification(n, timestamps)).filter((n): n is ProcessedNotification => n !== null))
+      } catch (error) {
+        if (!controller.signal.aborted) console.warn('XZZDPRO: 获取公告异常', error)
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false)
       }
-
-      setIsLoading(false)
     }
-
-    loadData()
+    void loadData()
+    return () => controller.abort()
   }, [])
 
   const handleMarkAsRead = useCallback(async (type: string) => {

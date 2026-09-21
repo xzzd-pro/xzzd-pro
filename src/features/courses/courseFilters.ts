@@ -30,22 +30,35 @@ export function semesterOrder(name: string): number | null {
 }
 
 export async function collectCourseSemesters(
-  courses: { id: number }[], signal: AbortSignal
+  courses: { id: number }[], signal: AbortSignal, refresh = false
 ): Promise<{ options: SemesterOption[]; latestId: string; warning: string; courseSemesters: Map<number, string> }> {
+  const cacheKey = 'xzzdpro:course-semesters:v1'
+  const now = Date.now()
+  const cache: Record<string, { expires: number; semester: { id: string | number; name: string } }> = {}
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(cacheKey) || '{}')
+    for (const [id, entry] of Object.entries(stored) as [string, any][]) {
+      if (entry?.expires > now && entry.semester && ['string', 'number'].includes(typeof entry.semester.id) && typeof entry.semester.name === 'string') cache[id] = entry
+    }
+  } catch { /* Storage is optional. */ }
   const options = new Map<string, SemesterOption>()
   const courseSemesters = new Map<number, string>()
   let cursor = 0
   let failed = false
   // The course-detail endpoint is already used by course overview. Limit concurrency
   // and only read each course once per page visit, never on filter/search changes.
-  await Promise.all(Array.from({ length: Math.min(4, courses.length) }, async () => {
+  await Promise.all(Array.from({ length: Math.min(8, courses.length) }, async () => {
     while (cursor < courses.length && !signal.aborted) {
       const course = courses[cursor++]
       try {
-        const response = await fetch(`/api/courses/${course.id}`, { credentials: "include", signal })
-        if (!response.ok) throw new Error("Course details unavailable")
-        const { semester } = await response.json()
+        let semester = !refresh ? cache[course.id]?.semester : undefined
+        if (!semester) {
+          const response = await fetch(`/api/courses/${course.id}`, { credentials: "include", signal })
+          if (!response.ok) throw new Error("Course details unavailable")
+          semester = (await response.json()).semester
+        }
         if (semester && (typeof semester.id === "number" || typeof semester.id === "string") && typeof semester.name === "string" && semester.name.trim()) {
+          cache[course.id] = { expires: cache[course.id] && !refresh ? cache[course.id].expires : now + 10 * 60 * 1000, semester }
           const id = String(semester.id)
           courseSemesters.set(course.id, id)
           const group = semesterGroup(semester.name.trim(), id)
@@ -60,6 +73,7 @@ export async function collectCourseSemesters(
       }
     }
   }))
+  if (!signal.aborted) { try { sessionStorage.setItem(cacheKey, JSON.stringify(cache)) } catch { /* Storage is optional. */ } }
   const sorted = [...options.values()].sort((a, b) =>
     (semesterOrder(b.name) ?? -1) - (semesterOrder(a.name) ?? -1) || b.name.localeCompare(a.name, "zh-CN", { numeric: true }))
   const canChooseLatest = !failed && sorted.length > 0 && semesterOrder(sorted[0].name) !== null

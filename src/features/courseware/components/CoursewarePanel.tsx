@@ -465,11 +465,6 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
 
       <div className="w-full overflow-hidden rounded-lg border border-border/70 bg-card divide-y divide-border/70">
         {sections.map((section) => {
-          const statusVariant = section.isClosed
-            ? "secondary"
-            : section.isStarted
-              ? "default"
-              : "outline"
           const statusText = section.isClosed
             ? "已关闭"
             : section.isStarted
@@ -496,10 +491,12 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                     </h3>
                     <div className="flex items-center gap-x-3 gap-y-2 flex-wrap text-[13px]">
                       <Badge
-                        variant={statusVariant}
+                        variant="outline"
                         className={cn(
                           section.isClosed &&
-                            "bg-muted text-muted-foreground border-transparent",
+                            "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300",
+                          !section.isClosed && section.isStarted &&
+                            "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300",
                           !section.isStarted &&
                             !section.isClosed &&
                             "bg-muted text-muted-foreground border-border"

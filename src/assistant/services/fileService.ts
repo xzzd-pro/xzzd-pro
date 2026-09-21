@@ -3,64 +3,12 @@ import * as pdfjsLib from "pdfjs-dist"
 // @ts-ignore
 import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
 
-import { sendToBackground } from "@plasmohq/messaging"
+import { fetchBlob } from "./fileFetch"
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 
-interface FetchFileResponse {
-  dataUri?: string
-  error?: string
-}
-
 const DEFAULT_PDF_IMAGE_MAX_PAGES = 6
 const DEFAULT_PDF_IMAGE_SCALE = 1.25
-
-async function fetchBlobDirect(url: string): Promise<Blob> {
-  const response = await fetch(url, {
-    credentials: "include"
-  })
-
-  if (!response.ok) {
-    throw new Error(
-      `Direct fetch failed: ${response.status} ${response.statusText}`
-    )
-  }
-
-  return await response.blob()
-}
-
-async function fetchBlobViaBackground(url: string): Promise<Blob> {
-  const res = (await sendToBackground({
-    name: "fetch-file",
-    body: { url }
-  } as any)) as FetchFileResponse
-
-  if (res.error) {
-    throw new Error(res.error)
-  }
-
-  if (!res.dataUri) {
-    throw new Error("No data received")
-  }
-
-  const response = await fetch(res.dataUri)
-  return await response.blob()
-}
-
-async function fetchBlob(url: string): Promise<Blob> {
-  try {
-    return await fetchBlobDirect(url)
-  } catch (error) {
-    console.warn(
-      "XZZDPRO: direct file fetch failed, falling back to background",
-      {
-        url,
-        error: error instanceof Error ? error.message : String(error)
-      }
-    )
-    return await fetchBlobViaBackground(url)
-  }
-}
 
 export async function fetchFileContent(
   url: string,
@@ -123,7 +71,8 @@ export async function fetchFileContent(
 export async function fetchPdfBlob(url: string): Promise<Blob | null> {
   try {
     return await fetchBlob(url)
-  } catch {
+  } catch (error) {
+    console.error("XZZDPRO: " + (error instanceof Error ? error.message : String(error)))
     return null
   }
 }
