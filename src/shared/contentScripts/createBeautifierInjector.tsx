@@ -9,8 +9,15 @@ import { useEffect } from "react"
 import { useStorage } from "@plasmohq/storage/hook"
 
 import { useBeautifierInitialization } from "./useBeautifierInitialization"
+import { isNativePreviewPage } from "@/lib/nativePreview"
 
-bootstrapStoredTheme(storage)
+const nativePreview = isNativePreviewPage(window.location.href)
+if (nativePreview) {
+  document.documentElement.classList.remove("xzzdpro", "dark")
+  document.body?.classList.add("xzzdpro-disabled")
+}
+
+if (!nativePreview) bootstrapStoredTheme(storage)
 
 type Beautifier = () => void | Promise<void>
 
@@ -58,10 +65,11 @@ export function createBeautifierInjector({
       pageName,
       beautify,
       shouldSkip,
-      enabled: !isLoading && beautifyEnabled !== false
+      enabled: !nativePreview && !isLoading && beautifyEnabled !== false
     })
 
     useEffect(() => {
+      if (nativePreview) { disableBeautification(); return }
       if (shouldSkip?.()) return
 
       if (isLoading) {

@@ -28,6 +28,7 @@ async function main() {
         }` : name === 'messaging' ? `export async function sendToBackground() { throw new Error('Extension messages are disabled in the preview') }` :
         `export async function convertPdfToImages() { return [] }
          export async function fetchFileContent() { return '模拟文件预览' }
+         export async function fetchTextContent() { return '中文文本预览' }
          export async function fetchPdfBlob() { return new Blob([], {type:'application/pdf'}) }`,
         loader: 'js'
       }))

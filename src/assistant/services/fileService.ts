@@ -4,6 +4,15 @@ import * as pdfjsLib from "pdfjs-dist"
 import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
 
 import { fetchBlob } from "./fileFetch"
+import { decodeText } from "./textDecode"
+
+export async function fetchTextContent(url: string): Promise<string> {
+  const blob = await fetchBlob(url)
+  if (blob.type.toLowerCase().includes("text/html")) {
+    throw new Error("服务器返回了网页而非文本文件，请确认登录状态或使用原生页面查看。")
+  }
+  return parseText(blob)
+}
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 
@@ -143,7 +152,7 @@ export async function extractPdfText(blob: Blob): Promise<string> {
 }
 
 async function parseText(blob: Blob): Promise<string> {
-  return await blob.text()
+  return decodeText(new Uint8Array(await blob.arrayBuffer()))
 }
 
 async function parsePdf(blob: Blob): Promise<string> {

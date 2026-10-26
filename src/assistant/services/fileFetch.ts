@@ -13,9 +13,13 @@ export async function fetchBlob(url: string): Promise<Blob> {
   let directError: unknown
   try {
     const response = await fetch(url, { credentials: "include" })
+    if (response.status === 401 || response.status === 403) {
+      throw Object.assign(new Error(`文件访问被拒绝（HTTP ${response.status}），请在学在浙大原生页面查看。`), { denied: true })
+    }
     if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`)
     return await response.blob()
   } catch (error) {
+    if (error && typeof error === "object" && "denied" in error) throw error
     directError = error
   }
 

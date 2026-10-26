@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils"
 import { Download, Eye } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
+import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import type { ProcessedCoursewareFile } from "@/types"
 
 // Get file extension icon as JSX
@@ -107,6 +108,7 @@ export function CoursewareFileItem({
   const [showPreview, setShowPreview] = React.useState(false)
   const selectionId = React.useId()
   const isSelectable = file.canDownload && Boolean(onSelectedChange)
+  const useNativePreview = !file.canDownload || /\.doc$/i.test(file.name.trim())
 
   return (
     <>
@@ -142,7 +144,9 @@ export function CoursewareFileItem({
           </div>
         </div>
         <div className="ml-auto flex-shrink-0 flex items-center gap-1">
-          <Button
+          {useNativePreview && file.nativePreviewUrl ? (
+            <NativePreviewButton fileUrl={file.downloadUrl} activityUrl={file.nativePreviewUrl} />
+          ) : <Button
             size="sm"
             variant="ghost"
             className="gap-1.5 bg-transparent"
@@ -150,7 +154,7 @@ export function CoursewareFileItem({
           >
             <Eye className="w-4 h-4" />
             <span>预览</span>
-          </Button>
+          </Button>}
           {file.canDownload ? (
             <Button
               asChild
@@ -183,6 +187,7 @@ export function CoursewareFileItem({
         fileUrl={file.downloadUrl}
         fileSize={file.sizeText}
         canDownload={file.canDownload}
+        nativePreviewUrl={file.nativePreviewUrl}
       />
     </>
   )

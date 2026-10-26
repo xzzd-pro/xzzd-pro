@@ -16,10 +16,13 @@ import {
 import {
   convertPdfToImages,
   fetchFileContent,
+  fetchTextContent,
   fetchPdfBlob
 } from "@/assistant/services/fileService"
 import { Button } from "@/components/ui/button"
+import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import { cn } from "@/lib/utils"
+import { nativeCurrentPageUrl } from "@/lib/nativePreview"
 
 interface FilePreviewModalProps {
   isOpen: boolean
@@ -28,6 +31,7 @@ interface FilePreviewModalProps {
   fileUrl: string
   fileSize?: string
   canDownload?: boolean
+  nativePreviewUrl?: string
 }
 
 const WORD_EXTENSIONS = ["doc", "docx"]
@@ -240,7 +244,8 @@ export function FilePreviewModal({
   fileName,
   fileUrl,
   fileSize,
-  canDownload = true
+  canDownload = true,
+  nativePreviewUrl
 }: FilePreviewModalProps) {
   const [content, setContent] = React.useState("")
   const [pdfImages, setPdfImages] = React.useState<string[]>([])
@@ -257,6 +262,8 @@ export function FilePreviewModal({
   const isVideo = VIDEO_EXTENSIONS.includes(ext)
   const isAudio = AUDIO_EXTENSIONS.includes(ext)
   const isText = TEXT_EXTENSIONS.includes(ext)
+  const useNativePreview = !canDownload || ext === "doc"
+  const nativeUrl = nativePreviewUrl || nativeCurrentPageUrl(window.location.href)
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -265,7 +272,7 @@ export function FilePreviewModal({
   }, [isOpen])
 
   React.useEffect(() => {
-    if (!isOpen || !isPreviewable) return
+    if (!isOpen || !isPreviewable || useNativePreview) return
 
     let active = true
 
@@ -303,7 +310,9 @@ export function FilePreviewModal({
         }
 
         if (isText) {
-          const textContent = await fetchFileContent(fileUrl, fileName)
+          const textContent = ["docx", "ppt", "pptx"].includes(ext)
+            ? await fetchFileContent(fileUrl, fileName)
+            : await fetchTextContent(fileUrl)
           if (active) {
             setContent(textContent)
           }
@@ -325,6 +334,8 @@ export function FilePreviewModal({
       active = false
     }
   }, [
+    useNativePreview,
+    ext,
     fileName,
     fileUrl,
     isAudio,
@@ -449,7 +460,17 @@ export function FilePreviewModal({
         </div>
 
         <div className="flex-1 overflow-auto bg-muted/20 p-4 md:p-6">
-          {!isPreviewable ? (
+          {useNativePreview ? (
+            <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
+              <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
+              <h4 className="mb-2 text-lg font-medium">请使用学在浙大原生预览</h4>
+              <p className="mb-4 text-muted-foreground">
+                {canDownload ? "旧版 DOC 文档使用学校在线阅读器查看。" : "此文件禁止下载，插件不会请求原文件。"}
+                点击后将打开学校阅读器，是否可预览以学校权限为准。
+              </p>
+              <NativePreviewButton fileUrl={fileUrl} activityUrl={nativeUrl} />
+            </div>
+          ) : !isPreviewable ? (
             <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
               <File className="mb-4 h-16 w-16 text-muted-foreground" />
               <h4 className="mb-2 text-lg font-medium">无法预览此文件类型</h4>
@@ -557,7 +578,7 @@ export function FilePreviewModal({
                 </div>
               )}
 
-              {isText && content && (
+              {isText && !loading && (
                 <div className="mx-auto w-full max-w-[1180px] rounded-lg border border-border bg-background shadow-sm">
                   <div className="border-b border-border px-4 py-3 text-sm font-medium">
                     文件内容
@@ -570,7 +591,7 @@ export function FilePreviewModal({
                         : "max-h-[70vh]"
                     )}
                   >
-                    {content}
+                    {content || "（空文件）"}
                   </pre>
                 </div>
               )}

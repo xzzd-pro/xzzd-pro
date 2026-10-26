@@ -5,7 +5,7 @@ const path = require("node:path")
 const vm = require("node:vm")
 const ts = require("typescript")
 
-function harness() {
+function harness(url = "https://courses.zju.edu.cn/course/1/learning-activity") {
   let cursor = 0
   let root = false
   const slots = []
@@ -52,11 +52,12 @@ function harness() {
     const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText
     const exports = {}
     vm.runInNewContext(code, {
-      exports, document, console: { log() {}, error() {} },
+      exports, document, URL, window: { location: { href: url } }, console: { log() {}, error() {} },
       setTimeout: (callback) => { const id = {}; timers.set(id, callback); return id },
       clearTimeout: (id) => timers.delete(id),
       require(name) {
         if (name === "react") return react
+        if (name === "@/lib/nativePreview") return load("src/lib/nativePreview.ts")
         if (name === "@/lib/storage") return { storage: {} }
         if (name === "@/lib/themeDom") return { bootstrapStoredTheme() {}, applyThemeToDocument() {}, normalizeTheme: (x) => x }
         if (name === "@plasmohq/storage/hook") return { useStorage: ({ key }) => [values[key], null, { isLoading: false }] }
@@ -97,6 +98,23 @@ test("synchronous throw and no-op are retried; successful mount stops retries", 
   await h.tick()
   assert.equal(calls, 3)
   assert.equal(h.timers.size, 0)
+})
+
+test("native preview remains native when theme and enable settings change", async () => {
+  const h = harness("https://courses.zju.edu.cn/course/1/learning-activity?xzzdpro-native=1#/2")
+  let calls = 0
+  const component = h.shared.createBeautifierInjector({ pageName: "test", beautify() { calls++ } })
+  h.render(component)
+  h.values.theme = "dark"
+  h.values["beautify-enabled"] = false
+  h.render(component)
+  h.values["beautify-enabled"] = true
+  h.render(component)
+  await h.flush()
+  assert.equal(calls, 0)
+  assert.equal(h.timers.size, 0)
+  assert(h.classes.has("xzzdpro-disabled"))
+  assert(!h.classes.has("xzzdpro"))
 })
 
 test("partial root on rejected mount does not prevent retry; retries are bounded", async () => {

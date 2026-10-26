@@ -1,4 +1,5 @@
 import * as React from "react"
+import { nativeActivityUrl } from "@/lib/nativePreview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader } from "@/components/ui/card"
@@ -81,7 +82,8 @@ function sortCoursewaresByModule(
 
 function processCourseware(
   activities: CoursewareActivity[],
-  modules: CourseModule[]
+  modules: CourseModule[],
+  courseId: string
 ): ProcessedCoursewareSection[] {
   const moduleNameMap = new Map(
     modules.map((courseModule) => [courseModule.id, courseModule.name])
@@ -103,7 +105,8 @@ function processCourseware(
         size: upload.size,
         sizeText: formatFileSize(upload.size),
         canDownload: upload.allow_download,
-        downloadUrl: `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`
+        downloadUrl: `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`,
+        nativePreviewUrl: nativeActivityUrl(courseId, activity.id)
       }))
     }
   })
@@ -221,7 +224,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
           fetchCoursewares(courseId),
           fetchCourseModules(courseId)
         ])
-        const nextSections = processCourseware(activities, modules)
+        const nextSections = processCourseware(activities, modules, courseId)
         const downloadableIds = new Set(
           nextSections.flatMap((section) =>
             section.files
