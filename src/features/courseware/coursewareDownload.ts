@@ -1,4 +1,4 @@
-import { zipSync } from "fflate"
+import { zipSync, type Zippable } from "fflate"
 import { sendToBackground } from "@plasmohq/messaging"
 import type { ProcessedCoursewareFile } from "@/types"
 
@@ -59,6 +59,18 @@ function buildZipPath(
   return folder
     ? `${folder}/${withDuplicateSuffix(fileName, duplicateCount)}`
     : withDuplicateSuffix(fileName, duplicateCount)
+}
+
+// Office documents, PDFs, archives and media are already compressed;
+// deflating them again costs main-thread time and saves almost nothing.
+const STORE_ONLY_EXTENSIONS = new Set([
+  "pdf", "docx", "pptx", "xlsx", "zip", "rar", "7z", "gz",
+  "jpg", "jpeg", "png", "gif", "webp", "mp3", "mp4", "mov", "avi", "mkv"
+])
+
+function compressionLevelFor(path: string): 0 | 6 {
+  const ext = path.split(".").pop()?.toLowerCase() || ""
+  return STORE_ONLY_EXTENSIONS.has(ext) ? 0 : 6
 }
 
 function triggerBlobDownload(blob: Blob, fileName: string): void {
@@ -128,19 +140,21 @@ export async function downloadCoursewareZip({
     throw new Error("No downloadable courseware files")
   }
 
-  const zipEntries: Record<string, Uint8Array> = {}
+  const zipEntries: Zippable = {}
   const usedPaths = new Map<string, number>()
   let completed = 0
 
   for (const entry of downloadableEntries) {
-    zipEntries[buildZipPath(entry, usedPaths)] = await fetchFileBytes(
-      entry.file.downloadUrl
-    )
+    const zipPath = buildZipPath(entry, usedPaths)
+    zipEntries[zipPath] = [
+      await fetchFileBytes(entry.file.downloadUrl),
+      { level: compressionLevelFor(zipPath) }
+    ]
     completed += 1
     onProgress?.(completed, downloadableEntries.length)
   }
 
-  const zipped = zipSync(zipEntries, { level: 6 })
+  const zipped = zipSync(zipEntries)
   triggerBlobDownload(
     new Blob([zipped], { type: "application/zip" }),
     ensureZipName(archiveName)

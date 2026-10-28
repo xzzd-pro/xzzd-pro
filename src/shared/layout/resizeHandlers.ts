@@ -1,10 +1,9 @@
 // lib/components/resizeHandlers.ts
 
-import { Storage } from "@plasmohq/storage"
+import { storage } from "@/lib/storage"
 import type { LayoutState } from "../../types"
 import { bindLayoutControl } from "./bindings"
 
-const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
 
 // Check if extension context is still valid

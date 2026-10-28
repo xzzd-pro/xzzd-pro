@@ -1,3 +1,4 @@
+import { escapeHtml } from "@/lib/html"
 import { createThemeToggle } from "./ThemeToggle"
 import { createRoot } from "react-dom/client"
 import React from "react"
@@ -27,7 +28,7 @@ export function renderHeader(options: HeaderOptions = {}): string {
         ${themeToggle.renderHTML()}
         <div class="user-profile">
           <div id="user-avatar-container" class="user-avatar-container"></div>
-          ${showUsername && username ? `<span class="username">${username}</span>` : ''}
+          ${showUsername && username ? `<span class="username">${escapeHtml(username)}</span>` : ''}
         </div>
       </div>
     </header>

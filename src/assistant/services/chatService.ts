@@ -57,6 +57,21 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
 
         let fullResponse = ''
         let hasFirstChunk = false
+        const consumeStream = async (stream: AsyncIterable<any>) => {
+            for await (const chunk of stream) {
+                if (signal?.aborted) {
+                    throw createStreamAbortError()
+                }
+                const content = extractChunkText(chunk.content)
+                if (!content) continue
+                if (!hasFirstChunk) {
+                    hasFirstChunk = true
+                    onFirstChunk?.()
+                }
+                fullResponse += content
+                onChunk(content)
+            }
+        }
         let abortListener: (() => void) | null = null
         try {
             const stream = await model.stream(langchainMessages) as AsyncIterable<any>
@@ -69,20 +84,7 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 signal.addEventListener('abort', abortListener, { once: true })
             }
 
-            for await (const chunk of stream) {
-                if (signal?.aborted) {
-                    throw createStreamAbortError()
-                }
-                const content = extractChunkText(chunk.content)
-                if (content) {
-                    if (!hasFirstChunk) {
-                        hasFirstChunk = true
-                        onFirstChunk?.()
-                    }
-                    fullResponse += content
-                    onChunk(content)
-                }
-            }
+            await consumeStream(stream)
         } catch (streamError: any) {
             if (signal?.aborted || isStreamAbortError(streamError)) {
                 throw createStreamAbortError()
@@ -96,38 +98,12 @@ export async function streamChat(options: StreamChatOptions): Promise<string> {
                 onProgress?.('检测到模型网关错误(50507)，正在自动重试（不附带图片上下文）')
                 const { messages: fallbackMessages } = await buildLangChainMessages(systemPrompt, messages, [], { mode: 'full' })
                 const fallbackStream = await model.stream(fallbackMessages)
-                for await (const chunk of fallbackStream) {
-                    if (signal?.aborted) {
-                        throw createStreamAbortError()
-                    }
-                    const content = extractChunkText(chunk.content)
-                    if (content) {
-                        if (!hasFirstChunk) {
-                            hasFirstChunk = true
-                            onFirstChunk?.()
-                        }
-                        fullResponse += content
-                        onChunk(content)
-                    }
-                }
+                await consumeStream(fallbackStream)
             } else if (shouldRetryTextOnly(apiCode, streamErrMsg) && hasImageInputs && fullResponse.length === 0) {
                 onProgress?.('检测到图片输入不兼容，正在自动重试（文本优先模式）')
                 const { messages: fallbackMessages } = await buildLangChainMessages(systemPrompt, messages, [], { mode: 'text_only' })
                 const fallbackStream = await model.stream(fallbackMessages)
-                for await (const chunk of fallbackStream) {
-                    if (signal?.aborted) {
-                        throw createStreamAbortError()
-                    }
-                    const content = extractChunkText(chunk.content)
-                    if (content) {
-                        if (!hasFirstChunk) {
-                            hasFirstChunk = true
-                            onFirstChunk?.()
-                        }
-                        fullResponse += content
-                        onChunk(content)
-                    }
-                }
+                await consumeStream(fallbackStream)
             } else {
                 throw streamError
             }

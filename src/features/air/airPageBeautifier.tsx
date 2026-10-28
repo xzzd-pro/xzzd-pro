@@ -1,5 +1,4 @@
 
-import { Storage } from "@plasmohq/storage"
 import {
   renderHeader,
   renderSidebar,
@@ -11,8 +10,6 @@ import {
 import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import { setupResizeHandlers, applySavedLayout } from "@/shared/layout/resizeHandlers";
 import { createAssistantHost } from "@/assistant/assistantBeautifier";
-
-const storage = new Storage();
 
 export async function mountAirPage() {
   // 1. Clear existing body content and reset styles
@@ -53,7 +50,10 @@ export async function mountAirPage() {
       console.log('XZZDPRO: Assistant Host embedded into Air Page');
     } catch (error) {
       console.error('XZZDPRO: Failed to embed assistant', error);
-      contentArea.innerHTML = `<div style="padding: 20px; color: red;">Failed to load assistant: ${String(error)}</div>`;
+      const message = document.createElement('div');
+      message.style.cssText = 'padding: 20px; color: red;';
+      message.textContent = `Failed to load assistant: ${String(error)}`;
+      contentArea.replaceChildren(message);
     }
   }
 

@@ -174,8 +174,8 @@ async function loadAssistantCourses(): Promise<void> {
     // Render course list
     const courseHTML = courses
       .map((course) => `
-        <a href="https://courses.zju.edu.cn/air?courseId=${course.id}" class="course-submenu-item ${String(course.id) === activeCourseId ? 'active' : ''}" data-course-id="${course.id}">
-          <span class="course-name">${course.displayName || course.name}</span>
+        <a href="https://courses.zju.edu.cn/air?courseId=${encodeURIComponent(course.id)}" class="course-submenu-item ${String(course.id) === activeCourseId ? 'active' : ''}" data-course-id="${escapeHtml(String(course.id))}">
+          <span class="course-name">${escapeHtml(course.displayName || course.name || "")}</span>
         </a>
       `)
       .join('');

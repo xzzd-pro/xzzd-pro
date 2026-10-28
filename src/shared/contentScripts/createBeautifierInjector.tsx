@@ -10,6 +10,7 @@ import { useStorage } from "@plasmohq/storage/hook"
 
 import { useBeautifierInitialization } from "./useBeautifierInitialization"
 import { isNativePreviewPage } from "@/lib/nativePreview"
+import { loadBrandFont } from "@/lib/fontLoader"
 
 const nativePreview = isNativePreviewPage(window.location.href)
 if (nativePreview) {
@@ -17,7 +18,10 @@ if (nativePreview) {
   document.body?.classList.add("xzzdpro-disabled")
 }
 
-if (!nativePreview) bootstrapStoredTheme(storage)
+if (!nativePreview) {
+  bootstrapStoredTheme(storage)
+  void loadBrandFont()
+}
 
 type Beautifier = () => void | Promise<void>
 

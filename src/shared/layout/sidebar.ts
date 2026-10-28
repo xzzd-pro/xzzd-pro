@@ -1,8 +1,7 @@
-import { Storage } from "@plasmohq/storage"
+import { storage } from "@/lib/storage"
 import { navIcons } from "./icons"
 import { bindLayoutControl } from "./bindings"
 import { SIDEBAR_DEFAULT_WIDTH, SIDEBAR_MIN_WIDTH, SIDEBAR_MAX_WIDTH, SIDEBAR_COLLAPSE_THRESHOLD, SIDEBAR_COLLAPSED_WIDTH } from "./constants"
-const storage = new Storage()
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
 
 interface SidebarOptions {

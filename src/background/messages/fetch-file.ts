@@ -13,11 +13,28 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+// Only school-hosted files may be fetched with the user's cookies.
+function isAllowedFileUrl(raw: unknown): raw is string {
+  if (typeof raw !== "string") return false;
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" &&
+      (url.hostname === "zju.edu.cn" || url.hostname.endsWith(".zju.edu.cn"));
+  } catch {
+    return false;
+  }
+}
+
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const { url } = req.body || {};
 
   if (!url) {
     res.send({ error: "No URL provided" });
+    return;
+  }
+
+  if (!isAllowedFileUrl(url)) {
+    res.send({ error: "URL is not a school-hosted file" });
     return;
   }
 

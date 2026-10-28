@@ -1,4 +1,5 @@
-import { Storage } from "@plasmohq/storage";
+import type { Storage } from "@plasmohq/storage";
+import { storage as sharedStorage } from "@/lib/storage";
 import { themeIcons } from "./icons";
 import { applyThemeToDocument, getFallbackTheme, normalizeTheme } from "@/lib/themeDom";
 import { bindLayoutControl } from "./bindings";
@@ -9,7 +10,7 @@ export class ThemeToggle {
   private iconClass: string;
 
   constructor(buttonId: string = 'theme-toggle-btn', iconClass: string = 'theme-icon') {
-    this.storage = new Storage();
+    this.storage = sharedStorage;
     this.buttonId = buttonId;
     this.iconClass = iconClass;
   }

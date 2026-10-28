@@ -198,7 +198,7 @@ export function showStatus(
   }
 
   toast.className = `status-toast ${type}`
-  toast.innerHTML = `${icon}<span>${message}</span>`
+  toast.innerHTML = `${icon}<span>${escapeHtml(message)}</span>`
   toast.classList.add('show')
 
   if (statusTimeout) {

@@ -6,6 +6,16 @@ const DEFAULT_GNMKDM = "N253508";
 const DEFAULT_STUDENT_ID = ""; // Removed for privacy
 const DEFAULT_SHOW_COUNT = "15"
 
+/** Primary ZDBK term code for each term label used by the timetable selector. */
+const TERM_CODE_MAP: Record<string, string> = {
+  秋: "1",
+  冬: "2",
+  春: "2",
+  夏: "4",
+  秋冬: "1",
+  春夏: "3",
+}
+
 type QueryContext = {
   xnm: string
   xqm: string
@@ -282,16 +292,8 @@ function normalizeXnmVariants(xnm: string): string[] {
 function getXqmVariants(xqm: string, xqmmc: string): QueryContext[] {
   const termText = (xqmmc || xqm.split("|")[1] || "").trim()
 
-  const termCodeMap: Record<string, string> = {
-    秋: "1",
-    冬: "2",
-    春: "2",
-    夏: "4",
-    秋冬: "1",
-    春夏: "3",
-  }
 
-  const code = termCodeMap[termText] || ""
+  const code = TERM_CODE_MAP[termText] || ""
   const set = new Set<string>()
   const result: QueryContext[] = []
 
@@ -353,15 +355,7 @@ function getTermContext() {
     termName = "秋"
   }
 
-  const termCodeMap: Record<string, string> = {
-    秋: "1",
-    冬: "2",
-    春: "2",
-    夏: "4",
-    秋冬: "1",
-    春夏: "3",
-  }
-  const termCode = termCodeMap[termName] || "1"
+  const termCode = TERM_CODE_MAP[termName] || "1"
   const xqm = `${termCode}|${termName}`
   const xqmmc = termName
   return { xnm, xqm, xqmmc };
@@ -534,59 +528,55 @@ async function fetchTimetable(studentId: string) {
   console.log("XZZDPRO: Starting fetchTimetable...");
   const su = sanitizeStudentId(studentId) || DEFAULT_STUDENT_ID;
 
-  try {
-    // Step 1: Initialize index page context, then set term context.
-    const indexContext = await initTimetablePageContext(su)
-    const strictContext = indexContext || getTermContext()
-    console.log("XZZDPRO: Final timetable query context:", strictContext)
-    console.log(`XZZDPRO: Setting context to Year ${strictContext.xnm}, Term ${strictContext.xqm}`);
-    await applyTermContext(su, strictContext)
+  // Step 1: Initialize index page context, then set term context.
+  const indexContext = await initTimetablePageContext(su)
+  const strictContext = indexContext || getTermContext()
+  console.log("XZZDPRO: Final timetable query context:", strictContext)
+  console.log(`XZZDPRO: Setting context to Year ${strictContext.xnm}, Term ${strictContext.xqm}`);
+  await applyTermContext(su, strictContext)
 
-    // Step 2: Get Data (cxXsKb)
-    const queryUrl = `${API_URL}?gnmkdm=${encodeURIComponent(DEFAULT_GNMKDM)}&layout=default&su=${encodeURIComponent(su)}`
-    const primaryForm = buildForm(su, strictContext)
-    const primaryRawData = await requestTimetable(primaryForm, queryUrl)
-    const primaryData = filterKbListByContext(primaryRawData, strictContext)
+  // Step 2: Get Data (cxXsKb)
+  const queryUrl = `${API_URL}?gnmkdm=${encodeURIComponent(DEFAULT_GNMKDM)}&layout=default&su=${encodeURIComponent(su)}`
+  const primaryForm = buildForm(su, strictContext)
+  const primaryRawData = await requestTimetable(primaryForm, queryUrl)
+  const primaryData = filterKbListByContext(primaryRawData, strictContext)
 
-    // If empty timetable, retry with alternate xnm/xqm formats.
-    if (primaryData && getKbListLength(primaryData) === 0) {
-      const xnmVariants = normalizeXnmVariants(String(primaryData?.xnm || strictContext.xnm))
-      const xqmVariants = getXqmVariants(
-        String(primaryData?.xqm || strictContext.xqm),
-        String(primaryData?.xqmmc || strictContext.xqmmc)
-      )
-      console.log("XZZDPRO: Retry variants:", { xnmVariants, xqmVariants })
+  // If empty timetable, retry with alternate xnm/xqm formats.
+  if (primaryData && getKbListLength(primaryData) === 0) {
+    const xnmVariants = normalizeXnmVariants(String(primaryData?.xnm || strictContext.xnm))
+    const xqmVariants = getXqmVariants(
+      String(primaryData?.xqm || strictContext.xqm),
+      String(primaryData?.xqmmc || strictContext.xqmmc)
+    )
+    console.log("XZZDPRO: Retry variants:", { xnmVariants, xqmVariants })
 
-      for (const xnm of xnmVariants) {
-        for (const xqmCtx of xqmVariants) {
-          const retryCtx: QueryContext = {
-            xnm,
-            xqm: xqmCtx.xqm,
-            xqmmc: xqmCtx.xqmmc,
-          }
-          await applyTermContext(su, retryCtx)
-          const retryForm = buildForm(su, retryCtx)
-          console.log("XZZDPRO: Retry timetable with context:", retryCtx)
-          const retryRawData = await requestTimetable(retryForm, queryUrl)
-          const retryData = filterKbListByContext(retryRawData, strictContext)
-          console.log("XZZDPRO: Retry result summary:", {
-            retryCtx,
-            rawKbListLength: getKbListLength(retryRawData),
-            filteredKbListLength: getKbListLength(retryData),
-            rawXnm: retryRawData?.xnm,
-            rawXqm: retryRawData?.xqm,
-          })
-          if (retryData && getKbListLength(retryData) > 0) {
-            return retryData
-          }
+    for (const xnm of xnmVariants) {
+      for (const xqmCtx of xqmVariants) {
+        const retryCtx: QueryContext = {
+          xnm,
+          xqm: xqmCtx.xqm,
+          xqmmc: xqmCtx.xqmmc,
+        }
+        await applyTermContext(su, retryCtx)
+        const retryForm = buildForm(su, retryCtx)
+        console.log("XZZDPRO: Retry timetable with context:", retryCtx)
+        const retryRawData = await requestTimetable(retryForm, queryUrl)
+        const retryData = filterKbListByContext(retryRawData, strictContext)
+        console.log("XZZDPRO: Retry result summary:", {
+          retryCtx,
+          rawKbListLength: getKbListLength(retryRawData),
+          filteredKbListLength: getKbListLength(retryData),
+          rawXnm: retryRawData?.xnm,
+          rawXqm: retryRawData?.xqm,
+        })
+        if (retryData && getKbListLength(retryData) > 0) {
+          return retryData
         }
       }
     }
-
-    return primaryData
-  } catch (error) {
-    throw error;
   }
+
+  return primaryData
 }
 
 async function getTimetableResponse(studentId: string) {

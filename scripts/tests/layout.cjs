@@ -47,6 +47,7 @@ function harness() {
     const code = ts.transpileModule(source(file), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, esModuleInterop: true } }).outputText
     function requireModule(name) {
       if (name === '@plasmohq/storage') return { Storage }
+      if (name === 'dompurify') return { __esModule: true, default: { sanitize: x => x, addHook() {} } }
       if (name === 'react') return { createElement: (_type, props) => props }
       if (name === 'react-dom/client') return { createRoot() { const root = { unmounted: false, render() {}, unmount() { this.unmounted = true } }; roots.push(root); return root } }
       if (name.includes('avatar-upload') || name.includes('courseDataService') || name.includes('myCoursesApi')) return {}

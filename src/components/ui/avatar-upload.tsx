@@ -1,9 +1,8 @@
 import * as React from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
 import { cn } from "@/lib/utils"
-import { Storage } from "@plasmohq/storage"
+import { storage } from "@/lib/storage"
 
-const storage = new Storage()
 const AVATAR_STORAGE_KEY = "userAvatar"
 
 interface AvatarUploadProps {
@@ -234,4 +233,4 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
       />
     </div>
   )
-}
+}

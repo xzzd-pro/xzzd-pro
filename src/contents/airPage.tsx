@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { mountAirPage } from "@/features/air/airPageBeautifier"
 import { storage } from "@/lib/storage"
 import { useBeautifierInitialization } from "@/shared/contentScripts/useBeautifierInitialization"
+import { loadBrandFont } from "@/lib/fontLoader"
 
 export const config: PlasmoCSConfig = {
     matches: ["https://courses.zju.edu.cn/air*"],
@@ -11,7 +12,7 @@ export const config: PlasmoCSConfig = {
     run_at: "document_end"
 }
 
-console.log("XZZDPRO: Air Page Content Script Loaded (Verified)")
+void loadBrandFont()
 
 const AirPageInjector = () => {
     const [beautifyEnabled, , { isLoading }] = useStorage({

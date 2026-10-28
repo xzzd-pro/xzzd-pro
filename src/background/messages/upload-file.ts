@@ -9,7 +9,8 @@ import {
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const body = (req.body || {}) as Partial<UploadFileRequest>
 
-  if (!body.fileName || typeof body.fileSize !== "number" || !body.fileData) {
+  // An empty file encodes to "", which is still a valid payload.
+  if (!body.fileName || typeof body.fileSize !== "number" || (typeof body.fileData !== "string" && !body.fileData)) {
     res.send({
       success: false,
       error: "Invalid upload payload"
@@ -21,7 +22,8 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
     type: "UPLOAD_FILE",
     fileName: body.fileName,
     fileSize: body.fileSize,
-    fileData: body.fileData
+    fileData: body.fileData,
+    encoding: body.encoding
   })
 
   res.send(response)

@@ -59,6 +59,7 @@ function harness(url = "https://courses.zju.edu.cn/course/1/learning-activity") 
         if (name === "react") return react
         if (name === "@/lib/nativePreview") return load("src/lib/nativePreview.ts")
         if (name === "@/lib/storage") return { storage: {} }
+        if (name === "@/lib/fontLoader") return { loadBrandFont: () => Promise.resolve() }
         if (name === "@/lib/themeDom") return { bootstrapStoredTheme() {}, applyThemeToDocument() {}, normalizeTheme: (x) => x }
         if (name === "@plasmohq/storage/hook") return { useStorage: ({ key }) => [values[key], null, { isLoading: false }] }
         if (name === "@/shared/contentScripts/createBeautifierInjector") return shared

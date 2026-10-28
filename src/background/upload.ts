@@ -2,7 +2,9 @@ export interface UploadFileRequest {
   type: "UPLOAD_FILE"
   fileName: string
   fileSize: number
-  fileData: number[] | ArrayBuffer | Uint8Array
+  /** base64 string (preferred) or raw bytes */
+  fileData: string | number[] | ArrayBuffer | Uint8Array
+  encoding?: "base64"
 }
 
 export interface UploadResponse {
@@ -52,6 +54,13 @@ async function preRegisterUpload(
 }
 
 function normalizeFileData(fileData: UploadFileRequest["fileData"]): Uint8Array {
+  if (typeof fileData === "string") {
+    const binary = atob(fileData)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return bytes
+  }
+
   if (fileData instanceof Uint8Array) {
     return fileData
   }

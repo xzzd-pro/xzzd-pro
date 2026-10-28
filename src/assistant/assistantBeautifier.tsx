@@ -9,7 +9,7 @@
  */
 
 import { renderAssistantPage } from '../assistant/components/assistantPageHelpers'
-import { Storage } from "@plasmohq/storage"
+import { storage } from "@/lib/storage"
 import type { AssistantSettings, ChatMessage, CourseInfo, MaterialFile } from '../assistant/types'
 
 // Import handlers
@@ -249,7 +249,6 @@ export async function createAssistantHost(): Promise<HTMLElement> {
 
   // Initialize Logic
   // Apply initial theme
-  const storage = new Storage()
   const theme = await storage.get('theme') || 'light'
   host.setAttribute('data-theme', theme)
 
@@ -332,7 +331,6 @@ export async function openAssistant(): Promise<void> {
   document.addEventListener('keydown', handleEscClose)
 
   // Apply theme
-  const storage = new Storage()
   const theme = await storage.get('theme') || 'light'
   overlayHost.setAttribute('data-theme', theme)
 

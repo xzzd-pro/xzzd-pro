@@ -1,9 +1,5 @@
-import {
-  uploadHomeworkFile,
-  type UploadFileRequest,
-  type UploadResponse
-} from "./upload"
 import { handleDevelopmentPort } from "./developmentPorts"
+import { migrateLegacySyncStorage } from "./migrateStorage"
 
 export {}
 
@@ -11,26 +7,8 @@ if (process.env.NODE_ENV === "development") {
   chrome.runtime.onConnect.addListener(handleDevelopmentPort)
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (!message || (message as UploadFileRequest).type !== "UPLOAD_FILE") {
-    return
-  }
+// Uploads go through the Plasmo message handler in messages/upload-file.ts.
 
-  void uploadHomeworkFile(message as UploadFileRequest)
-    .then((response) => {
-      sendResponse(response satisfies UploadResponse)
-    })
-    .catch((error) => {
-      const fallback: UploadResponse = {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Unexpected upload error"
-      }
-      console.error("XZZDPRO Background: upload request failed", error)
-      sendResponse(fallback)
-    })
-
-  return true
+chrome.runtime.onInstalled.addListener(() => {
+  void migrateLegacySyncStorage()
 })
-
-console.log("XZZDPRO: background service worker initialized")

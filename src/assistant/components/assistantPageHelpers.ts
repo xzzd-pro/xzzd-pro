@@ -1,3 +1,4 @@
+import { escapeHtml, sanitizeHtml } from "@/lib/html";
 import { themeIcons, navIcons } from "@/shared/layout/icons";
 import { PROVIDER_LABELS, PROVIDER_MODELS, PROVIDER_DEFAULTS } from "../config";
 import type {
@@ -138,10 +139,10 @@ export function renderCourseList(
   return courses
     .map(
       (course) => `
-    <div class="course-item ${String(course.id) === activeId ? "active" : ""}" data-id="${course.id}">
-      <div class="course-item-title">${course.displayName}</div>
+    <div class="course-item ${String(course.id) === activeId ? "active" : ""}" data-id="${escapeHtml(course.id)}">
+      <div class="course-item-title">${escapeHtml(course.displayName)}</div>
       <div class="course-item-info">
-        <span>${course.instructors[0] || "未知教师"}</span>
+        <span>${escapeHtml(course.instructors[0] || "未知教师")}</span>
       </div>
     </div>
   `,
@@ -263,8 +264,8 @@ export function renderAttachmentCard(
 
   if (isImage && content) {
     // Image thumbnail with tooltip
-    return `<div class="attachment-thumbnail" data-filename="${name}">
-              <img src="${content}" class="chat-thumbnail" />
+    return `<div class="attachment-thumbnail" data-filename="${escapeHtml(name)}">
+              <img src="${escapeHtml(content)}" class="chat-thumbnail" />
             </div>`;
   }
 
@@ -274,7 +275,7 @@ export function renderAttachmentCard(
   return `<div class="attachment-card">
             <div class="file-badge ${colorClass}">${badge}</div>
             <div class="file-info">
-              <div class="file-name">${name}</div>
+              <div class="file-name">${escapeHtml(name)}</div>
               <div class="file-type">${description}</div>
             </div>
           </div>`;
@@ -396,7 +397,7 @@ export function parseMarkdown(text: string): string {
     return `<img src="https://latex.codecogs.com/svg.latex?${encoded}" alt="math" style="vertical-align: middle; filter: var(--math-filter); margin: 0 2px;">`;
   });
 
-  return html;
+  return sanitizeHtml(html);
 }
 
 export function renderSettingsPanel(): string {

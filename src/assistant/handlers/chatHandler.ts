@@ -1,6 +1,7 @@
 /**
  * Chat Handler - Manages chat interactions, message sending, and flashcard generation
  */
+import { escapeHtml } from '@/lib/html'
 import { renderChatMessage, renderAttachmentCard } from '../components/assistantPageHelpers'
 import { createChatMessage, saveChatHistory, appendAssistantUploadHistory, getAssistantUploadHistory, buildUploadHistoryKey, UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT, UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT } from '../storage'
 import { buildCourseContext } from '../services/courseDataService'
@@ -1217,7 +1218,7 @@ export function setupChatHandlers(): void {
         innerContent = renderAttachmentCard(file.name, file.type)
       }
 
-      const dataAttr = isImage ? `data-filename="${file.name}"` : ''
+      const dataAttr = isImage ? `data-filename="${escapeHtml(file.name)}"` : ''
 
       return `
         <div class="preview-wrapper" ${dataAttr}>

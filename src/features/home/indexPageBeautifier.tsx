@@ -106,6 +106,7 @@ async function fetchCoursesFromApi(): Promise<ApiCourseData[]> {
 }
 
 // State for login flow
+const LOGIN_POLL_INTERVAL_MS = 5000
 let loginWindow: Window | null = null
 let pollingInterval: NodeJS.Timeout | null = null
 
@@ -522,10 +523,12 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
 
     // Start polling if not already polling
     if (!pollingInterval) {
+      // Each poll can fan out into several ZDBK requests; keep it slow and
+      // skip it while the tab is in the background to avoid 901 rejections.
       pollingInterval = setInterval(() => {
-        console.log("XZZDPRO: Polling for login status...")
+        if (document.hidden) return
         loadAndRenderCourses(studentId)
-      }, 2000)
+      }, LOGIN_POLL_INTERVAL_MS)
     }
 
     renderLoginPrompt(container, studentId)

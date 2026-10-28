@@ -3,23 +3,10 @@ import { storage } from "@/lib/storage"
 import { Switch } from "@/components/ui/switch"
 import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react"
 import "../styles/popup.css"
+import { applyThemeToDocument, normalizeTheme } from "@/lib/themeDom"
+import { loadBrandFont } from "@/lib/fontLoader"
 
-function normalizeTheme(theme: unknown): "light" | "dark" {
-  return theme === "dark" ? "dark" : "light"
-}
-
-function applyThemeToPopupDom(theme: "light" | "dark") {
-  const html = document.documentElement
-  html.setAttribute("data-theme", theme)
-  html.classList.toggle("dark", theme === "dark")
-  html.style.colorScheme = theme
-
-  // Some styles are scoped to `.xzzdpro[data-theme=...]`
-  document.body?.setAttribute("data-theme", theme)
-  document
-    .querySelectorAll<HTMLElement>(".xzzdpro")
-    .forEach((el) => el.setAttribute("data-theme", theme))
-}
+void loadBrandFont()
 
 class PopupErrorBoundary extends Component<
   { children: ReactNode },
@@ -60,11 +47,10 @@ function PopupContent() {
   const [needsRefresh, setNeedsRefresh] = useState(false)
 
   useEffect(() => {
-    applyThemeToPopupDom(normalizeTheme(theme))
+    applyThemeToDocument(normalizeTheme(theme))
   }, [theme])
 
   const handleToggle = (checked: boolean) => {
-    console.log('XZZDPRO Popup: 切换美化功能为:', checked)
     setBeautifyEnabled(checked)
     setNeedsRefresh(true)
   }

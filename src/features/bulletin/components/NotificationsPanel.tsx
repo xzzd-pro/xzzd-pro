@@ -1,12 +1,11 @@
 import { findNotificationUser } from "../findNotificationUser"
 import * as React from "react"
 import { useState, useEffect, useCallback } from "react"
-import { Storage } from "@plasmohq/storage"
+import { storage } from "@/lib/storage"
 import { NotificationCard } from "./NotificationCard"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import type { ApiNotificationData, ProcessedNotification, ReadTimestamps, NotificationType } from "@/types"
 
-const storage = new Storage()
 const READ_TIMESTAMPS_KEY = 'xzzdpro_read_timestamps'
 
 const VALID_TYPES = [

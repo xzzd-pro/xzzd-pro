@@ -1,5 +1,6 @@
 // lib/courseOverviewBeautifier.tsx
 
+import { escapeHtml, sanitizeHtml } from "@/lib/html";
 import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 
 interface Instructor {
@@ -108,11 +109,11 @@ function renderCourseInfo(data: CourseData): string {
     <div class="instructor-item">
       <img
         class="instructor-avatar"
-        src="${instructor.avatar_big_url || instructor.avatar_small_url || ''}"
-        alt="${instructor.name}"
+        src="${escapeHtml(instructor.avatar_big_url || instructor.avatar_small_url || '')}"
+        alt="${escapeHtml(instructor.name)}"
         onerror="this.style.display='none'"
       />
-      <span class="instructor-name">${instructor.name}</span>
+      <span class="instructor-name">${escapeHtml(instructor.name)}</span>
     </div>
   `).join('') || '<span class="no-data">暂无信息</span>';
 
@@ -122,27 +123,27 @@ function renderCourseInfo(data: CourseData): string {
       <div class="course-info-grid">
         <div class="info-item">
           <span class="info-label">课程名称</span>
-          <span class="info-value">${data.display_name || data.name || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.display_name || data.name || '暂无信息')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">课程代码</span>
-          <span class="info-value">${data.course_code || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.course_code || '暂无信息')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">开课院系</span>
-          <span class="info-value">${data.department?.name || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.department?.name || '暂无信息')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">上课学期</span>
-          <span class="info-value">${data.semester?.name || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.semester?.name || '暂无信息')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">开始日期</span>
-          <span class="info-value">${data.start_date || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.start_date || '暂无信息')}</span>
         </div>
         <div class="info-item">
           <span class="info-label">授课班级</span>
-          <span class="info-value">${data.course_attributes?.teaching_class_name || '暂无信息'}</span>
+          <span class="info-value">${escapeHtml(data.course_attributes?.teaching_class_name || '暂无信息')}</span>
         </div>
       </div>
       <div class="instructors-section">
@@ -169,13 +170,13 @@ function renderCourseDescription(data: CourseData): string {
       <div class="description-block">
         <h3 class="section-title">课程简介（中文）</h3>
         <div class="description-content">
-          <p>${chineseContent}</p>
+          <p>${sanitizeHtml(chineseContent)}</p>
         </div>
       </div>
       <div class="description-block">
         <h3 class="section-title">课程简介（英文）</h3>
         <div class="description-content">
-          <p>${englishContent}</p>
+          <p>${sanitizeHtml(englishContent)}</p>
         </div>
       </div>
     </div>
