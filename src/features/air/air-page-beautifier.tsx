@@ -8,10 +8,6 @@ import {
   setupSidebarToggle,
   setupThemeToggle
 } from "@/shared/layout"
-import {
-  applySavedLayout,
-  setupResizeHandlers
-} from "@/shared/layout/resize-handlers"
 
 /**
  * Replaces the course site's AI page with the extension layout and the embedded learning assistant.
@@ -68,12 +64,5 @@ export async function mountAirPage() {
   setupBackgroundPicker()
   setupSidebarToggle()
   setupAssistantNavigation()
-
-  // 5. Initialize resize handlers
-  // Use requestAnimationFrame to ensure DOM is ready
-  requestAnimationFrame(() => {
-    void applySavedLayout()
-    setupResizeHandlers()
-    console.log("XZZDPRO: Air Page Logic Initialized")
-  })
+  console.log("XZZDPRO: Air Page Logic Initialized")
 }
