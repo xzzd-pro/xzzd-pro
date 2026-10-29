@@ -27,6 +27,14 @@ export interface ApiCourseData {
   name: string
   display_name: string
   academic_year_id: number
+  /** The list API puts the semester label in `code`; `name` is usually null. */
+  semester?: {
+    id: number
+    code: string | null
+    name: string | null
+    real_name?: string | null
+    sort?: number
+  } | null
   course_attributes: {
     teaching_class_name: string
   }

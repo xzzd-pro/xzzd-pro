@@ -8,8 +8,7 @@ import {
   collectCourseSemesters,
   COURSE_STATUSES,
   filterCourses,
-  type CourseFilters,
-  type SemesterOption
+  type CourseFilters
 } from "../course-filters"
 import { collectCourseStatuses } from "../course-status-catalog"
 import { CourseGrid } from "./course-grid"
@@ -34,43 +33,57 @@ export function CoursePage({
   error = null,
   onRetry
 }: CoursePageProps) {
-  const [options, setOptions] = React.useState<SemesterOption[]>([])
-  const [ready, setReady] = React.useState(false)
-  const [warning, setWarning] = React.useState("")
-  const [attempt, setAttempt] = React.useState(0)
   const [filters, setFilters] = React.useState<CourseFilters>({
     keyword: "",
     status: [...COURSE_STATUSES],
     semester_id: []
   })
-  const latestId = React.useRef("")
   const [catalogCourses, setCatalogCourses] = React.useState<
     AllCourse[] | null
   >(null)
   const [selectedGroup, setSelectedGroup] = React.useState("")
-  const [courseSemesters, setCourseSemesters] = React.useState(
-    new Map<number, string>()
-  )
-  const [courseSemesterNames, setCourseSemesterNames] = React.useState(
-    new Map<number, string>()
-  )
   const [courseStatuses, setCourseStatuses] = React.useState<Map<
     number,
     Set<string>
   > | null>(null)
-  const currentFilters = React.useRef(filters)
-  currentFilters.current = filters
+  const [statusWarning, setStatusWarning] = React.useState("")
+  const [statusAttempt, setStatusAttempt] = React.useState(0)
+
+  // Semesters come with the course list, so the filter is ready as soon as
+  // the courses are.
+  const ready = catalogCourses !== null
+  const {
+    options,
+    latestId,
+    warning: semesterWarning,
+    courseSemesters,
+    courseSemesterNames
+  } = React.useMemo(
+    () => collectCourseSemesters(catalogCourses || []),
+    [catalogCourses]
+  )
+  const semesterIdsOf = (groupId: string) =>
+    options.find((option) => option.id === groupId)?.semesterIds || []
+  const warning = [semesterWarning, statusWarning].filter(Boolean).join(" ")
 
   React.useEffect(() => {
     // A failed load must not become the catalog, or retrying could not replace it.
-    if (!loading && !error && catalogCourses === null)
-      setCatalogCourses(courses)
+    if (loading || error || catalogCourses !== null) return
+    // Start on the latest semester; set together with the catalog so the
+    // list does not first show every semester and then shrink.
+    const latest = collectCourseSemesters(courses)
+    const latestIds =
+      latest.options.find((option) => option.id === latest.latestId)
+        ?.semesterIds || []
+    setSelectedGroup(latest.latestId)
+    setFilters((previous) => ({ ...previous, semester_id: latestIds }))
+    setCatalogCourses(courses)
   }, [loading, error, courses, catalogCourses])
 
   React.useEffect(() => {
     if (catalogCourses === null) return
     const controller = new AbortController()
-    setWarning("")
+    setStatusWarning("")
     setCourseStatuses(null)
     void collectCourseStatuses()
       .then((statuses) => {
@@ -78,38 +91,10 @@ export function CoursePage({
       })
       .catch(() => {
         if (!controller.signal.aborted)
-          setWarning(
-            (previous) => previous + " 课程状态加载失败，可重试预加载。"
-          )
-      })
-    void collectCourseSemesters(catalogCourses, controller.signal, attempt > 0)
-      .then((result) => {
-        if (controller.signal.aborted) return
-        setOptions(result.options)
-        setWarning((previous) =>
-          [result.warning, previous].filter(Boolean).join(" ")
-        )
-        setCourseSemesters(result.courseSemesters)
-        setCourseSemesterNames(result.courseSemesterNames)
-        setSelectedGroup(result.latestId)
-        latestId.current = result.latestId
-        const next = {
-          ...currentFilters.current,
-          semester_id:
-            result.options.find((option) => option.id === result.latestId)
-              ?.semesterIds || []
-        }
-        setFilters(next)
-        setReady(true)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setWarning("学期信息加载失败，请重试。")
-          setReady(true)
-        }
+          setStatusWarning("课程状态加载失败，状态筛选暂不可用。")
       })
     return () => controller.abort()
-  }, [catalogCourses, attempt])
+  }, [catalogCourses, statusAttempt])
 
   const apply = (next: CourseFilters) => setFilters(next)
   const visibleCourses = filterCourses(
@@ -125,10 +110,9 @@ export function CoursePage({
   const countLabel =
     error || catalogCourses === null
       ? ""
-      : (visibleCourses.length === totalCount
-          ? `共 ${totalCount} 门`
-          : `找到 ${visibleCourses.length} 门，共 ${totalCount} 门`) +
-        (ready ? "" : " · 正在加载学期…")
+      : visibleCourses.length === totalCount
+        ? `共 ${totalCount} 门`
+        : `找到 ${visibleCourses.length} 门，共 ${totalCount} 门`
 
   const statusOptions = [
     { value: "ongoing", label: "进行中" },
@@ -165,9 +149,7 @@ export function CoursePage({
                   setSelectedGroup(event.target.value)
                   apply({
                     ...filters,
-                    semester_id:
-                      options.find((option) => option.id === event.target.value)
-                        ?.semesterIds || []
+                    semester_id: semesterIdsOf(event.target.value)
                   })
                 }}>
                 <option value="">{ready ? "全部学期" : "正在加载学期…"}</option>
@@ -220,13 +202,11 @@ export function CoursePage({
               disabled={!ready}
               className="ml-auto h-10 shrink-0 bg-transparent text-muted-foreground"
               onClick={() => {
-                setSelectedGroup(latestId.current)
+                setSelectedGroup(latestId)
                 apply({
                   ...filters,
                   status: [...COURSE_STATUSES],
-                  semester_id:
-                    options.find((option) => option.id === latestId.current)
-                      ?.semesterIds || []
+                  semester_id: semesterIdsOf(latestId)
                 })
               }}>
               重置筛选
@@ -235,17 +215,15 @@ export function CoursePage({
           {warning && (
             <p role="status" className="text-sm text-muted-foreground">
               {warning}{" "}
-              <Button
-                size="sm"
-                variant="ghost"
-                className="bg-transparent text-foreground"
-                disabled={!ready}
-                onClick={() => {
-                  setReady(false)
-                  setAttempt((value) => value + 1)
-                }}>
-                重试预加载
-              </Button>
+              {statusWarning && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="bg-transparent text-foreground"
+                  onClick={() => setStatusAttempt((value) => value + 1)}>
+                  重试
+                </Button>
+              )}
             </p>
           )}
         </CardContent>
@@ -276,8 +254,6 @@ export function CoursePage({
               )}
             </div>
           ) : (
-            // Courses show as soon as the list arrives; the semester filter
-            // (and the latest-semester default) applies once semesters load.
             <CourseGrid
               courses={visibleCourses}
               loading={loading || catalogCourses === null}

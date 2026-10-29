@@ -25,59 +25,51 @@ test("academic semesters are chronological across school years and calendar year
   assert.equal(r("2025-2026学年"), null)
   assert.equal(r("其他课程"), null)
 })
-test("catalog deduplicates semesters and chooses latest with bounded concurrency", async () => {
-  let active = 0,
-    max = 0
-  const api = load(async (url) => {
-    active++
-    max = Math.max(max, active)
-    await new Promise((r) => setTimeout(r, 3))
-    active--
-    return {
-      ok: true,
-      json: async () => ({
-        semester: url.endsWith("/9")
-          ? { id: 2, name: "2025-2026春夏学期" }
-          : { id: 1, name: "2025-2026秋冬学期" }
-      })
-    }
-  })
-  const result = await api.collectCourseSemesters(
-    Array.from({ length: 10 }, (_, id) => ({ id })),
-    new AbortController().signal
-  )
+// Semesters as the course list API reports them: label in `code`, name null.
+const listed = (id, code) => ({ id, code, name: null, real_name: null })
+const noFetch = async () => {
+  throw new Error("semester options must not fetch")
+}
+
+test("catalog reads semesters from the course list without any requests", () => {
+  const api = load(noFetch)
+  const result = api.collectCourseSemesters([
+    { id: 1, semester: listed(78, "2025-2026秋冬") },
+    { id: 2, semester: listed(78, "2025-2026秋冬") },
+    { id: 3, semester: listed(80, "2025-2026春") },
+    { id: 4, semester: { id: 76, code: "x", name: "2025-2026秋" } }
+  ])
   assert.equal(result.options.length, 2)
   assert.equal(result.latestId, "2025:spring")
   assert.equal(result.warning, "")
-  assert.ok(max <= 8)
+  assert.equal(result.courseSemesters.get(2), "78")
+  assert.equal(result.courseSemesterNames.get(3), "2025-2026春")
+  // A filled-in name wins over the code.
+  assert.equal(result.courseSemesterNames.get(4), "2025-2026秋")
 })
-test("partial failure and ambiguous names never silently choose a default", async () => {
-  const api = load(async (url) => ({
-    ok: !url.endsWith("/2"),
-    json: async () => ({ semester: { id: 1, name: "2025-2026秋冬学期" } })
-  }))
-  const result = await api.collectCourseSemesters(
-    [{ id: 1 }, { id: 2 }],
-    new AbortController().signal
-  )
-  assert.equal(result.latestId, "")
-  assert.match(result.warning, /失败/)
-  const ambiguous = load(async () => ({
-    ok: true,
-    json: async () => ({ semester: { id: 3, name: "长期课程" } })
-  }))
-  assert.equal(
-    (
-      await ambiguous.collectCourseSemesters(
-        [{ id: 3 }],
-        new AbortController().signal
-      )
-    ).latestId,
-    ""
+
+test("courses without a semester are left out; unclear names choose no default", () => {
+  const api = load(noFetch)
+  const result = api.collectCourseSemesters([
+    { id: 1, semester: null },
+    { id: 2 },
+    { id: 3, semester: listed(9, "") },
+    { id: 4, semester: listed(84, "2026-2027冬") }
+  ])
+  assert.deepEqual([...result.courseSemesters.keys()], [4])
+  assert.equal(result.latestId, "2026:autumn")
+  const ambiguous = api.collectCourseSemesters([
+    { id: 5, semester: listed(3, "长期课程") }
+  ])
+  assert.equal(ambiguous.latestId, "")
+  assert.match(ambiguous.warning, /无法确定最近学期/)
+  assert.match(
+    api.collectCourseSemesters([{ id: 6, semester: null }]).warning,
+    /未提供学期信息/
   )
 })
 
-test("semester halves group split terms and keep different academic years separate", async () => {
+test("semester halves group split terms and keep different academic years separate", () => {
   const names = [
     "2026-2027秋冬",
     "2026-2027秋",
@@ -87,23 +79,15 @@ test("semester halves group split terms and keep different academic years separa
     "2025-2026夏",
     "2025-2026秋冬"
   ]
-  const api = load(async (url) => {
-    const id = Number(url.split("/").pop())
-    return {
-      ok: true,
-      json: async () => ({ semester: { id, name: names[id] } })
-    }
-  })
-  const courses = names.map((_, id) => ({
+  const api = load(noFetch)
+  const courses = names.map((name, id) => ({
     id,
     name: "信号 " + id,
     display_name: "信号 " + id,
-    instructors: [{ name: "教师" }]
+    instructors: [{ name: "教师" }],
+    semester: listed(id, name)
   }))
-  const catalog = await api.collectCourseSemesters(
-    courses,
-    new AbortController().signal
-  )
+  const catalog = api.collectCourseSemesters(courses)
   assert.equal(catalog.options.length, 3)
   assert.equal(catalog.latestId, "2026:autumn")
   const latest = catalog.options.find((o) => o.id === catalog.latestId)
@@ -139,32 +123,4 @@ test("semester halves group split terms and keep different academic years separa
     ).length,
     7
   )
-})
-
-test("semester cache avoids repeated requests, expires, and supports forced refresh", async () => {
-  const values = new Map()
-  const storage = {
-    getItem: (k) => values.get(k),
-    setItem: (k, v) => values.set(k, v)
-  }
-  let count = 0
-  const api = load(async () => {
-    count++
-    return {
-      ok: true,
-      json: async () => ({ semester: { id: 1, name: "2026-2027秋冬" } })
-    }
-  }, storage)
-  const signal = new AbortController().signal
-  await api.collectCourseSemesters([{ id: 1 }], signal)
-  await api.collectCourseSemesters([{ id: 1 }], signal)
-  assert.equal(count, 1)
-  await api.collectCourseSemesters([{ id: 1 }], signal, true)
-  assert.equal(count, 2)
-  const key = [...values.keys()][0],
-    cached = JSON.parse(values.get(key))
-  cached["1"].expires = 0
-  values.set(key, JSON.stringify(cached))
-  await api.collectCourseSemesters([{ id: 1 }], signal)
-  assert.equal(count, 3)
 })

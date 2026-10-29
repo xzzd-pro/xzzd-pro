@@ -22,7 +22,13 @@ export interface AllCourse {
   course_attributes: {
     teaching_class_name: string
   }
-  /** Name of the semester the course is taught in, once known. */
+  /** Semester as reported by the course list API (label in `code`). */
+  semester?: {
+    id: string | number
+    code?: string | null
+    name?: string | null
+  } | null
+  /** Display name of the course's semester, if it has one. */
   semesterName?: string
 }
 

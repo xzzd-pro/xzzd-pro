@@ -34,102 +34,52 @@ export function semesterOrder(name: string): number | null {
   return year * 4 + season
 }
 
+/** The semester as the course list API reports it; `name` is usually null there. */
+export interface ListedSemester {
+  id: string | number
+  code?: string | null
+  name?: string | null
+}
+
 /**
- * Looks up the semester of each course (eight requests at a time, cached for ten minutes) and builds the semester filter options.
- * @param courses Courses to look up.
- * @param signal Cancels the lookups.
- * @param refresh True to ignore the cache.
- * @returns Filter options newest first, the id of the latest option, a warning if some lookups failed, and each course's semester id and name.
+ * Builds the semester filter options from the semesters the course list
+ * already includes, so no per-course requests are needed.
+ *
+ * The list API leaves `semester.name` null and puts the label in `code`
+ * ("2026-2027冬"), which equals the name the course detail API returns.
+ * Courses without a semester are left out of every semester option.
+ * @param courses Courses from the course list API.
+ * @returns Filter options newest first, the id of the latest option, a warning when no default can be chosen, and each course's semester id and name.
  */
-export async function collectCourseSemesters(
-  courses: { id: number }[],
-  signal: AbortSignal,
-  refresh = false
-): Promise<{
+export function collectCourseSemesters(
+  courses: { id: number; semester?: ListedSemester | null }[]
+): {
   options: SemesterOption[]
   latestId: string
   warning: string
   courseSemesters: Map<number, string>
   courseSemesterNames: Map<number, string>
-}> {
-  const cacheKey = "xzzdpro:course-semesters:v1"
-  const now = Date.now()
-  const cache: Record<
-    string,
-    { expires: number; semester: { id: string | number; name: string } }
-  > = {}
-  try {
-    const stored = JSON.parse(sessionStorage.getItem(cacheKey) || "{}")
-    for (const [id, entry] of Object.entries(stored) as [string, any][]) {
-      if (
-        entry?.expires > now &&
-        entry.semester &&
-        ["string", "number"].includes(typeof entry.semester.id) &&
-        typeof entry.semester.name === "string"
-      )
-        cache[id] = entry
-    }
-  } catch {
-    /* Storage is optional. */
-  }
+} {
   const options = new Map<string, SemesterOption>()
   const courseSemesters = new Map<number, string>()
   const courseSemesterNames = new Map<number, string>()
-  let cursor = 0
-  let failed = false
-  // The course-detail endpoint is already used by course overview. Limit concurrency
-  // and only read each course once per page visit, never on filter/search changes.
-  await Promise.all(
-    Array.from({ length: Math.min(8, courses.length) }, async () => {
-      while (cursor < courses.length && !signal.aborted) {
-        const course = courses[cursor++]
-        try {
-          let semester = !refresh ? cache[course.id]?.semester : undefined
-          if (!semester) {
-            const response = await fetch(`/api/courses/${course.id}`, {
-              credentials: "include",
-              signal
-            })
-            if (!response.ok) throw new Error("Course details unavailable")
-            semester = (await response.json()).semester
-          }
-          if (
-            semester &&
-            (typeof semester.id === "number" ||
-              typeof semester.id === "string") &&
-            typeof semester.name === "string" &&
-            semester.name.trim()
-          ) {
-            cache[course.id] = {
-              expires:
-                cache[course.id] && !refresh
-                  ? cache[course.id].expires
-                  : now + 10 * 60 * 1000,
-              semester
-            }
-            const id = String(semester.id)
-            courseSemesters.set(course.id, id)
-            courseSemesterNames.set(course.id, semester.name.trim())
-            const group = semesterGroup(semester.name.trim(), id)
-            const existing = options.get(group.id)
-            if (existing) {
-              if (!existing.semesterIds.includes(id))
-                existing.semesterIds.push(id)
-            } else options.set(group.id, { ...group, semesterIds: [id] })
-          }
-        } catch (error) {
-          if (signal.aborted) throw error
-          failed = true
-        }
-      }
-    })
-  )
-  if (!signal.aborted) {
-    try {
-      sessionStorage.setItem(cacheKey, JSON.stringify(cache))
-    } catch {
-      /* Storage is optional. */
-    }
+  for (const course of courses) {
+    const semester = course.semester
+    const name = (semester?.name || semester?.code || "").trim()
+    if (
+      !semester ||
+      (typeof semester.id !== "number" && typeof semester.id !== "string") ||
+      !name
+    )
+      continue
+    const id = String(semester.id)
+    courseSemesters.set(course.id, id)
+    courseSemesterNames.set(course.id, name)
+    const group = semesterGroup(name, id)
+    const existing = options.get(group.id)
+    if (existing) {
+      if (!existing.semesterIds.includes(id)) existing.semesterIds.push(id)
+    } else options.set(group.id, { ...group, semesterIds: [id] })
   }
   const sorted = [...options.values()].sort(
     (a, b) =>
@@ -137,15 +87,14 @@ export async function collectCourseSemesters(
       b.name.localeCompare(a.name, "zh-CN", { numeric: true })
   )
   const canChooseLatest =
-    !failed && sorted.length > 0 && semesterOrder(sorted[0].name) !== null
+    sorted.length > 0 && semesterOrder(sorted[0].name) !== null
   return {
     options: sorted,
     courseSemesters,
     courseSemesterNames,
     latestId: canChooseLatest ? sorted[0].id : "",
-    warning: failed
-      ? "部分学期信息加载失败，暂显示全部学期；可重试加载。"
-      : sorted.length && !canChooseLatest
+    warning:
+      sorted.length && !canChooseLatest
         ? "无法确定最近学期，请手动选择。"
         : courses.length && !sorted.length
           ? "课程未提供学期信息，暂显示全部学期。"
