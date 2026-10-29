@@ -1,9 +1,6 @@
 // lib/course-detail-helpers.ts - Shared helpers for all course detail pages
 
-import {
-  createMyCoursesPayload,
-  fetchMyCoursesResponse
-} from "@/shared/api/my-courses-api"
+import { getCurrentUserId } from "@/shared/api/current-user"
 import { suppressAirChatbot } from "@/shared/content-scripts/page-lifecycle"
 
 import {
@@ -57,62 +54,15 @@ export async function getCourseName(): Promise<string> {
   }
 }
 
-// Get user ID by fetching from API - iterates through all courses until a valid userId is found
 /**
- * Finds the current user's id from the activity reads of their courses.
- * @returns The user id, or null if no course has one.
+ * Returns the signed-in user's id (cached; see getCurrentUserId).
+ * @returns The user id, or null if it cannot be determined.
  */
 export async function getUserId(): Promise<string | null> {
   try {
-    const coursesResponse = await fetchMyCoursesResponse(
-      createMyCoursesPayload()
-    )
-
-    if (!coursesResponse.ok) {
-      console.error("XZZDPRO: 获取课程列表失败")
-      return null
-    }
-
-    const coursesData = await coursesResponse.json()
-    if (!coursesData.courses || coursesData.courses.length === 0) {
-      console.error("XZZDPRO: 没有找到任何课程")
-      return null
-    }
-
-    // Iterate through all courses until we find a valid userId
-    for (const course of coursesData.courses) {
-      const courseId = course.id
-      try {
-        const activityResponse = await fetch(
-          `https://courses.zju.edu.cn/api/course/${courseId}/activity-reads-for-user`
-        )
-
-        if (!activityResponse.ok) continue
-
-        const activityData = await activityResponse.json()
-        if (
-          !activityData.activity_reads ||
-          activityData.activity_reads.length === 0
-        )
-          continue
-
-        const firstActivity = activityData.activity_reads[0]
-        const userId =
-          firstActivity.created_by_id || firstActivity.created_for_id
-
-        if (userId) {
-          console.log("XZZDPRO: 成功提取到用户ID", userId)
-          return String(userId)
-        }
-      } catch (error) {
-        console.warn(`XZZDPRO: 处理课程 ${courseId} 时发生异常`, error)
-      }
-    }
-
-    console.error("XZZDPRO: 遍历所有课程均无法提取有效用户ID")
-    return null
+    return await getCurrentUserId()
   } catch (error) {
-    console.error("XZZDPRO: 获取用户ID时出错", error)
+    console.error("XZZDPRO: 获取用户ID失败", error)
     return null
   }
 }

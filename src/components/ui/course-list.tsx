@@ -22,6 +22,8 @@ export interface AllCourse {
   course_attributes: {
     teaching_class_name: string
   }
+  /** Name of the semester the course is taught in, once known. */
+  semesterName?: string
 }
 
 interface CourseListProps {
@@ -122,9 +124,16 @@ function AllCourseCard({ course }: { course: AllCourse }) {
       className="block no-underline">
       <Card className="h-[100px] transition-all duration-200 hover:shadow-md hover:border-primary/50 group">
         <CardHeader className="p-3 pb-1">
-          <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
-            {courseName}
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
+              {courseName}
+            </CardTitle>
+            {course.semesterName && (
+              <Badge variant="secondary" className="shrink-0 text-xs">
+                {course.semesterName}
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-3 pt-0">
           <div className="space-y-0">

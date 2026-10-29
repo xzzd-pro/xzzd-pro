@@ -39,7 +39,7 @@ export function semesterOrder(name: string): number | null {
  * @param courses Courses to look up.
  * @param signal Cancels the lookups.
  * @param refresh True to ignore the cache.
- * @returns Filter options newest first, the id of the latest option, a warning if some lookups failed, and each course's semester id.
+ * @returns Filter options newest first, the id of the latest option, a warning if some lookups failed, and each course's semester id and name.
  */
 export async function collectCourseSemesters(
   courses: { id: number }[],
@@ -50,6 +50,7 @@ export async function collectCourseSemesters(
   latestId: string
   warning: string
   courseSemesters: Map<number, string>
+  courseSemesterNames: Map<number, string>
 }> {
   const cacheKey = "xzzdpro:course-semesters:v1"
   const now = Date.now()
@@ -73,6 +74,7 @@ export async function collectCourseSemesters(
   }
   const options = new Map<string, SemesterOption>()
   const courseSemesters = new Map<number, string>()
+  const courseSemesterNames = new Map<number, string>()
   let cursor = 0
   let failed = false
   // The course-detail endpoint is already used by course overview. Limit concurrency
@@ -107,6 +109,7 @@ export async function collectCourseSemesters(
             }
             const id = String(semester.id)
             courseSemesters.set(course.id, id)
+            courseSemesterNames.set(course.id, semester.name.trim())
             const group = semesterGroup(semester.name.trim(), id)
             const existing = options.get(group.id)
             if (existing) {
@@ -138,6 +141,7 @@ export async function collectCourseSemesters(
   return {
     options: sorted,
     courseSemesters,
+    courseSemesterNames,
     latestId: canChooseLatest ? sorted[0].id : "",
     warning: failed
       ? "部分学期信息加载失败，暂显示全部学期；可重试加载。"

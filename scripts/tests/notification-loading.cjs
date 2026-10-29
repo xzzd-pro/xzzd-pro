@@ -4,7 +4,7 @@ const { test } = require("node:test"),
   vm = require("node:vm"),
   ts = require("typescript")
 const source = ts.transpileModule(
-  fs.readFileSync("src/features/bulletin/find-notification-user.ts", "utf8"),
+  fs.readFileSync("src/shared/api/find-current-user.ts", "utf8"),
   {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
@@ -15,7 +15,7 @@ const source = ts.transpileModule(
 function load(fetch) {
   const exports = {}
   vm.runInNewContext(source, { exports, fetch, AbortController })
-  return exports.findNotificationUser
+  return exports.findCurrentUserId
 }
 test("a fast later course resolves without waiting for the first slow course", async () => {
   let started = 0,

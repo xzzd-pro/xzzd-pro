@@ -2,11 +2,8 @@ import * as React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { storage } from "@/lib/storage"
+import { getCurrentUserId } from "@/shared/api/current-user"
 import { describeLoadError, LoadError } from "@/shared/api/load-error"
-import {
-  createMyCoursesPayload,
-  fetchMyCoursesResponse
-} from "@/shared/api/my-courses-api"
 import type {
   ApiNotificationData,
   NotificationType,
@@ -14,7 +11,6 @@ import type {
   ReadTimestamps
 } from "@/types"
 
-import { findNotificationUser } from "../find-notification-user"
 import {
   advanceReadTimestamps,
   isReadAt,
@@ -92,25 +88,30 @@ async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
 }
 
 /**
- * Finds the current user's id, which the notification API needs.
- * @param signal Cancels the lookup.
- * @returns The user id, or null if the lookup was cancelled.
- * @throws LoadError if the course list cannot be loaded or no course reveals the id.
+ * Loads the user's latest notifications. If the site rejects the cached user
+ * id (for example after switching accounts), looks the id up again once.
+ * @param signal Cancels the requests.
+ * @returns The notifications.
+ * @throws LoadError if the user or the notifications cannot be loaded.
  */
-async function getUserId(signal?: AbortSignal): Promise<string | null> {
-  const coursesResponse = await fetchMyCoursesResponse(createMyCoursesPayload())
-  if (!coursesResponse.ok) {
-    throw new LoadError("课程列表请求失败", coursesResponse.status)
+async function loadNotifications(
+  signal: AbortSignal
+): Promise<ApiNotificationData[]> {
+  for (const refresh of [false, true]) {
+    const userId = await getCurrentUserId({ refresh })
+    if (!userId) {
+      throw new LoadError("无法确定当前用户，请确认已登录学在浙大。")
+    }
+    try {
+      return await fetchNotifications(userId, 0, 100, signal)
+    } catch (error) {
+      const rejectedId =
+        error instanceof LoadError &&
+        (error.status === 403 || error.status === 404)
+      if (refresh || !rejectedId || signal.aborted) throw error
+    }
   }
-  const coursesData = await coursesResponse.json()
-  if (!coursesData.courses || coursesData.courses.length === 0) {
-    throw new LoadError("没有找到任何课程，无法确定当前用户。")
-  }
-  const userId = await findNotificationUser(coursesData.courses, signal)
-  if (!userId && !signal?.aborted) {
-    throw new LoadError("无法确定当前用户，请确认已登录学在浙大。")
-  }
-  return userId
+  return []
 }
 
 /**
@@ -374,11 +375,7 @@ export function NotificationsPanel() {
       try {
         const [timestamps, rawNotifications] = await Promise.all([
           loadReadTimestamps(),
-          getUserId(controller.signal).then((id) =>
-            id && !controller.signal.aborted
-              ? fetchNotifications(id, 0, 100, controller.signal)
-              : []
-          )
+          loadNotifications(controller.signal)
         ])
         if (controller.signal.aborted) return
         setReadTimestamps(timestamps)

@@ -51,6 +51,9 @@ export function CoursePage({
   const [courseSemesters, setCourseSemesters] = React.useState(
     new Map<number, string>()
   )
+  const [courseSemesterNames, setCourseSemesterNames] = React.useState(
+    new Map<number, string>()
+  )
   const [courseStatuses, setCourseStatuses] = React.useState<Map<
     number,
     Set<string>
@@ -87,6 +90,7 @@ export function CoursePage({
           [result.warning, previous].filter(Boolean).join(" ")
         )
         setCourseSemesters(result.courseSemesters)
+        setCourseSemesterNames(result.courseSemesterNames)
         setSelectedGroup(result.latestId)
         latestId.current = result.latestId
         const next = {
@@ -113,14 +117,18 @@ export function CoursePage({
     filters,
     courseSemesters,
     courseStatuses || new Map()
-  )
+  ).map((course) => ({
+    ...course,
+    semesterName: courseSemesterNames.get(course.id)
+  }))
   const totalCount = catalogCourses?.length ?? 0
   const countLabel =
-    !ready || error || catalogCourses === null
+    error || catalogCourses === null
       ? ""
-      : visibleCourses.length === totalCount
-        ? `共 ${totalCount} 门`
-        : `找到 ${visibleCourses.length} 门，共 ${totalCount} 门`
+      : (visibleCourses.length === totalCount
+          ? `共 ${totalCount} 门`
+          : `找到 ${visibleCourses.length} 门，共 ${totalCount} 门`) +
+        (ready ? "" : " · 正在加载学期…")
 
   const statusOptions = [
     { value: "ongoing", label: "进行中" },
@@ -268,7 +276,12 @@ export function CoursePage({
               )}
             </div>
           ) : (
-            <CourseGrid courses={visibleCourses} loading={loading || !ready} />
+            // Courses show as soon as the list arrives; the semester filter
+            // (and the latest-semester default) applies once semesters load.
+            <CourseGrid
+              courses={visibleCourses}
+              loading={loading || catalogCourses === null}
+            />
           )}
         </CardContent>
       </Card>
