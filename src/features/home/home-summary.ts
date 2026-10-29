@@ -57,6 +57,11 @@ export const DUE_SOON_DAYS = 7
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"]
 
+/**
+ * Picks a greeting for the time of day.
+ * @param now Current time.
+ * @returns The greeting.
+ */
 export function getGreeting(now = new Date()): string {
   const hour = now.getHours()
   if (hour < 5) return "夜深了"
@@ -178,6 +183,10 @@ export function renderQuote(quote: Quote = pickRandomQuote()): string {
 
 const QUOTE_FADE_MS = 150
 
+/**
+ * Lets the user click or press Enter/Space on the quote to fade to another random quote.
+ * @param root Element that contains the quote figure.
+ */
 export function setupQuoteRotation(root: ParentNode): void {
   const figure = root.querySelector<HTMLElement>(".home-summary-quote")
   const text = figure?.querySelector<HTMLElement>("blockquote")

@@ -135,10 +135,20 @@ function readLegacyPayloads(): Promise<AttachmentPayloadRecord[]> {
   })
 }
 
+/**
+ * Creates a unique id for a stored attachment payload.
+ * @param prefix Readable prefix for the id.
+ * @returns An id like `payload_<timestamp>_<random>`.
+ */
 export function createPayloadRef(prefix: string = "payload"): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
+/**
+ * Estimates how many bytes a payload occupies.
+ * @param data Text, list of strings (e.g. image data URIs) or a Blob.
+ * @returns Size in bytes; strings are measured as UTF-8.
+ */
 export function estimatePayloadBytes(
   data: AttachmentPayloadRecord["data"]
 ): number {
@@ -152,6 +162,10 @@ export function estimatePayloadBytes(
   return 0
 }
 
+/**
+ * Saves a payload and marks it as just accessed.
+ * @param record Payload to store; createdAt defaults to now.
+ */
 export async function putPayload(
   record: AttachmentPayloadRecord
 ): Promise<void> {
@@ -163,6 +177,11 @@ export async function putPayload(
   })
 }
 
+/**
+ * Reads a payload without updating its last-access time.
+ * @param id Payload id.
+ * @returns The payload, or null if it is missing or cannot be read.
+ */
 export async function peekPayload(
   id: string
 ): Promise<AttachmentPayloadRecord | null> {
@@ -193,6 +212,11 @@ export async function peekPayload(
   }
 }
 
+/**
+ * Reads a payload and refreshes its last-access time, so garbage collection keeps it longer.
+ * @param id Payload id.
+ * @returns The payload, or null if it is missing.
+ */
 export async function getPayload(
   id: string
 ): Promise<AttachmentPayloadRecord | null> {
@@ -209,6 +233,10 @@ export async function getPayload(
   return record
 }
 
+/**
+ * Removes a payload and its index entry.
+ * @param id Payload id; empty ids are ignored.
+ */
 export async function deletePayload(id: string): Promise<void> {
   if (!id) return
   await chrome.storage.local.remove(recordKey(id))
@@ -217,6 +245,11 @@ export async function deletePayload(id: string): Promise<void> {
   })
 }
 
+/**
+ * Deletes least recently used payloads until the total size fits the limit.
+ * @param limitBytes Maximum total size to keep.
+ * @returns Ids that were removed and the remaining total size in bytes.
+ */
 export async function gcPayloads(
   limitBytes: number
 ): Promise<{ removed: string[]; totalBytes: number }> {

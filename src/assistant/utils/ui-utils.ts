@@ -158,10 +158,18 @@ function bindToolTabEvents(overlayElement: HTMLElement | null = null): void {
   panel.dataset.toolTabsReady = "true"
 }
 
+/**
+ * @returns The tool tab (flashcard or mindmap) currently shown.
+ */
 export function getActiveToolTab(): ToolTab {
   return activeToolTab
 }
 
+/**
+ * Shows a tool tab and remembers the choice.
+ * @param tab Tab to show.
+ * @param overlayElement Assistant container; defaults to the registered one.
+ */
 export function setActiveToolTab(
   tab: ToolTab,
   overlayElement: HTMLElement | null = null
@@ -171,6 +179,10 @@ export function setActiveToolTab(
   applyToolTabState(overlayElement)
 }
 
+/**
+ * Registers the assistant container and restores the saved tool tab in it.
+ * @param el The container, or null when the assistant is unmounted.
+ */
 export function setOverlayElement(el: HTMLElement | null): void {
   overlayElementRef = el
   activeToolTab = loadStoredToolTab()
@@ -178,23 +190,44 @@ export function setOverlayElement(el: HTMLElement | null): void {
   applyToolTabState(el)
 }
 
+/**
+ * Sets the messages renderMessages uses by default.
+ * @param msgs Messages of the current session.
+ */
 export function setMessagesRef(msgs: ChatMessage[]): void {
   messagesRef = msgs
 }
 
+/**
+ * @returns Id of the message whose mindmap is shown, or null.
+ */
 export function getActiveMindmapMessageId(): string | null {
   return activeMindmapMessageId
 }
 
+/**
+ * Chooses which message's mindmap is shown.
+ * @param messageId Message id, or null to show the latest.
+ */
 export function setActiveMindmapMessageId(messageId: string | null): void {
   activeMindmapMessageId = messageId
 }
 
+/**
+ * Grows or shrinks a textarea to fit its content.
+ * @param el The textarea to resize.
+ */
 export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
   el.style.height = "auto"
   el.style.height = el.scrollHeight + "px"
 }
 
+/**
+ * Shows a short toast message in the assistant.
+ * @param message Text to show.
+ * @param type Toast style.
+ * @param overlayElement Assistant container; defaults to the registered one.
+ */
 export function showStatus(
   message: string,
   type: "success" | "error" | "info" = "info",
@@ -240,6 +273,10 @@ export function showStatus(
   }, 3000)
 }
 
+/**
+ * Scrolls the chat to the latest message.
+ * @param overlayElement Assistant container; defaults to the registered one.
+ */
 export function scrollToBottom(
   overlayElement: HTMLElement | null = null
 ): void {
@@ -266,6 +303,12 @@ function closeModal(overlay: HTMLElement): void {
   overlay.remove()
 }
 
+/**
+ * Shows a modal asking for text input.
+ * @param options Title, button labels, initial value and placeholder.
+ * @param overlayElement Assistant container to show the modal in.
+ * @returns The entered text, or null if cancelled.
+ */
 export function openAssistantPrompt(
   options: AssistantPromptOptions,
   overlayElement: HTMLElement | null = null
@@ -333,6 +376,12 @@ export function openAssistantPrompt(
   })
 }
 
+/**
+ * Shows a modal asking the user to confirm an action.
+ * @param options Title, message, button labels and whether the action is destructive.
+ * @param overlayElement Assistant container to show the modal in.
+ * @returns True if confirmed.
+ */
 export function openAssistantConfirm(
   options: AssistantConfirmOptions,
   overlayElement: HTMLElement | null = null
@@ -397,6 +446,11 @@ export function openAssistantConfirm(
   })
 }
 
+/**
+ * Renders chat messages into the chat and tool panels and makes flashcards and mindmaps interactive.
+ * @param messages Messages to render; defaults to the registered ones.
+ * @param overlayElement Assistant container; defaults to the registered one.
+ */
 export function renderMessages(
   messages: ChatMessage[] = messagesRef,
   overlayElement: HTMLElement | null = null

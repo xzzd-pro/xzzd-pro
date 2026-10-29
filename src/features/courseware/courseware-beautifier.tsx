@@ -4,6 +4,9 @@ import { CoursewarePanel } from "@/features/courseware/components"
 import { mountCourseDetailPage } from "@/shared/course-detail/course-detail-helpers"
 import { mountCoursePanel } from "@/shared/course-detail/mount-panel"
 
+/**
+ * Replaces the courseware page with the extension layout and the courseware panel.
+ */
 export async function coursewareBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing courseware page...")
 

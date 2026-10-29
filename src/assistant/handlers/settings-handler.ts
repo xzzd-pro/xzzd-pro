@@ -14,10 +14,19 @@ function maskApiKey(apiKey: string): string {
   return `已保存（${apiKey.slice(0, 3)}…${apiKey.slice(-4)}），留空则保持不变`
 }
 
+/**
+ * Sets the assistant container that holds the settings panel.
+ * @param element The container, or null when the assistant is unmounted.
+ */
 export function setOverlayElement(element: HTMLElement | null): void {
   overlayElement = element
 }
 
+/**
+ * Binds the settings panel: opening, provider switching and saving. The saved API key is never written back into the input.
+ * @param getCurrentSettings Reads the current settings.
+ * @param setCurrentSettings Stores settings after a successful save.
+ */
 export function setupSettingsHandlers(
   getCurrentSettings: () => AssistantSettings | null,
   setCurrentSettings: (settings: AssistantSettings) => void
@@ -85,7 +94,6 @@ export function setupSettingsHandlers(
       const baseUrl = baseUrlInput.value.trim()
       const model = modelInput.value.trim()
 
-      // 验证必填字段
       if (!apiKey) {
         alert("❌ API Key 不能为空")
         return

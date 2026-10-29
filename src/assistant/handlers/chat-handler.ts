@@ -143,55 +143,99 @@ let externalMindmapDeleteHandler: ((event: Event) => void) | null = null
 let externalCourseChangedHandler: ((event: Event) => void) | null = null
 
 // Setter functions
+/**
+ * Sets the assistant container that chat handlers query and render into.
+ * @param element The container, or null when the assistant is unmounted.
+ */
 export function setOverlayElement(element: HTMLElement | null): void {
   overlayElement = element
 }
 
+/**
+ * @returns The assistant container used by the chat handlers.
+ */
 export function getOverlayElement(): HTMLElement | null {
   return overlayElement
 }
 
+/**
+ * @returns Messages of the current chat session.
+ */
 export function getMessages(): ChatMessage[] {
   return messages
 }
 
+/**
+ * Replaces the chat messages and re-renders them.
+ * @param newMessages Messages to show.
+ */
 export function setMessages(newMessages: ChatMessage[]): void {
   messages = newMessages
   renderMessages(messages, overlayElement)
 }
 
+/**
+ * @returns True while a model response is being generated.
+ */
 export function getIsGenerating(): boolean {
   return isGenerating
 }
 
+/**
+ * @returns True when the composer sends to the flashcard tool.
+ */
 export function getIsFlashcardMode(): boolean {
   return currentMode === "flashcard"
 }
 
+/**
+ * @returns True when the flashcard panel is shown beside the chat.
+ */
 export function getIsFlashcardSplitView(): boolean {
   return isFlashcardSplitView
 }
 
+/**
+ * Shows or hides the flashcard panel beside the chat.
+ * @param value True to show the split view.
+ */
 export function setIsFlashcardSplitView(value: boolean): void {
   isFlashcardSplitView = value
 }
 
+/**
+ * @returns True while the split-view animation is running.
+ */
 export function getIsSplitTransitioning(): boolean {
   return isSplitTransitioning
 }
 
+/**
+ * Records whether the split-view animation is running.
+ * @param value True while the animation runs.
+ */
 export function setIsSplitTransitioning(value: boolean): void {
   isSplitTransitioning = value
 }
 
+/**
+ * @returns Files attached in the composer that have not been sent yet.
+ */
 export function getPendingAttachments(): File[] {
   return pendingAttachments
 }
 
+/**
+ * Replaces the files waiting to be sent.
+ * @param files Files attached in the composer.
+ */
 export function setPendingAttachments(files: File[]): void {
   pendingAttachments = files
 }
 
+/**
+ * Removes the window listeners registered by setupChatHandlers.
+ */
 export function cleanupChatHandlers(): void {
   if (externalSplitToggleHandler) {
     window.removeEventListener(
@@ -249,6 +293,10 @@ export function cleanupChatHandlers(): void {
   selectedHistoryUploads.clear()
 }
 
+/**
+ * Grows or shrinks a textarea to fit its content.
+ * @param el The textarea to resize.
+ */
 export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
   el.style.height = "auto"
   el.style.height = el.scrollHeight + "px"
@@ -972,6 +1020,9 @@ async function waitForSelectedMaterialsReady(): Promise<void> {
   }
 }
 
+/**
+ * Binds the composer, send buttons, attachments, tool modes and history controls inside the assistant container.
+ */
 export function setupChatHandlers(): void {
   console.log("XZZDPRO: setupChatHandlers called")
   const input = overlayElement?.querySelector(
@@ -1319,7 +1370,6 @@ export function setupChatHandlers(): void {
     updateModeUI()
   })
 
-  // Attach Button (Toggle Menu)
   if (attachBtn) {
     attachBtn.addEventListener("click", (e) => {
       console.log("XZZDPRO: attachBtn clicked")
@@ -2018,7 +2068,7 @@ export function setupChatHandlers(): void {
 
     if (!content && pendingAttachments.length === 0) return
 
-    // 实时获取状态
+    // Read the state at send time; the course may have changed since setup.
     const activeCourseId = getCurrentCourseId()
     const activeSettings = getCurrentSettings()
     const activeCourseName = getCurrentCourseName()
@@ -2140,7 +2190,7 @@ export function setupChatHandlers(): void {
     const content = input?.value.trim() || ""
     const selectedMaterialCount = getSelectedMaterialCount()
 
-    // 实时获取状态
+    // Read the state at send time; the course may have changed since setup.
     const activeCourseId = getCurrentCourseId()
     const activeSettings = getCurrentSettings()
     const activeCourseName = getCurrentCourseName()

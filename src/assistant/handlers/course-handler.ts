@@ -47,51 +47,94 @@ function extractUploadId(value: string): string | null {
   return match?.[1] || null
 }
 
+/**
+ * Builds the key used to track a selected material, so the same file matches across URL variants.
+ * @param downloadUrl Download URL of the file.
+ * @returns Normalized URL used as the key.
+ */
 export function getMaterialSelectionKey(downloadUrl: string): string {
   return normalizeMaterialUrl(downloadUrl)
 }
 
 // Setter functions for state management
+/**
+ * Sets the assistant container that course handlers query.
+ * @param element The container, or null when the assistant is unmounted.
+ */
 export function setOverlayElement(element: HTMLElement | null): void {
   overlayElement = element
 }
 
+/**
+ * Stores the assistant settings used when switching courses.
+ * @param settings Loaded settings, or null.
+ */
 export function setCurrentSettings(settings: AssistantSettings | null): void {
   currentSettings = settings
 }
 
+/**
+ * @returns The assistant settings, or null before they are loaded.
+ */
 export function getCurrentSettings(): AssistantSettings | null {
   return currentSettings
 }
 
+/**
+ * Sets the active course id without loading anything.
+ * @param courseId Course id, or null.
+ */
 export function setCurrentCourseId(courseId: string | null): void {
   currentCourseId = courseId
 }
 
+/**
+ * @returns The active course id, or null.
+ */
 export function getCurrentCourseId(): string | null {
   return currentCourseId
 }
 
+/**
+ * Sets the active course name.
+ * @param name Display name of the course.
+ */
 export function setCurrentCourseName(name: string): void {
   currentCourseName = name
 }
 
+/**
+ * @returns The active course name.
+ */
 export function getCurrentCourseName(): string {
   return currentCourseName
 }
 
+/**
+ * Replaces the list of courses available to the assistant.
+ * @param newCourses Courses to offer.
+ */
 export function setCourses(newCourses: CourseInfo[]): void {
   courses = newCourses
 }
 
+/**
+ * @returns Courses available to the assistant.
+ */
 export function getCourses(): CourseInfo[] {
   return courses
 }
 
+/**
+ * @returns Materials the user selected as context, keyed by selection key.
+ */
 export function getSelectedCourseMaterials(): Map<string, SelectedMaterial> {
   return selectedCourseMaterials
 }
 
+/**
+ * Clears the selected materials.
+ */
 export function clearSelectedCourseMaterials(): void {
   selectedCourseMaterials.clear()
 }
@@ -106,6 +149,10 @@ function getInitialCourseIdFromUrl(): string | null {
   }
 }
 
+/**
+ * Highlights the course in the sidebar submenu.
+ * @param courseId Id of the course to highlight.
+ */
 export function syncSidebarCourseActive(courseId: string): void {
   document.querySelectorAll(".course-submenu-item").forEach((el) => {
     if (!(el instanceof HTMLElement)) return
@@ -117,6 +164,9 @@ export function syncSidebarCourseActive(courseId: string): void {
   })
 }
 
+/**
+ * Listens for course picks from the sidebar and switches the assistant to that course.
+ */
 export function bindSidebarCourseSelection(): void {
   const handleCourseSelect = (event: Event) => {
     const customEvent = event as CustomEvent<{ courseId?: string }>
@@ -135,6 +185,11 @@ export function bindSidebarCourseSelection(): void {
   )
 }
 
+/**
+ * Keeps only the materials the user selected, matched by URL or upload id.
+ * @param context Full course context.
+ * @returns The context unchanged when nothing is selected, otherwise a filtered copy.
+ */
 export function filterContextBySelectedMaterials(
   context: CourseContext
 ): CourseContext {
@@ -192,6 +247,11 @@ export function filterContextBySelectedMaterials(
   }
 }
 
+/**
+ * Downloads and caches a newly selected material so the next question does not wait for it.
+ * @param file The selected file.
+ * @param materialTitle Title of the material it belongs to.
+ */
 export async function preloadSelectedMaterial(
   file: MaterialFile,
   materialTitle: string
@@ -216,6 +276,9 @@ export async function preloadSelectedMaterial(
   )
 }
 
+/**
+ * Loads settings and courses, binds the settings, chat and sidebar handlers, and opens the course from the URL if given.
+ */
 export async function initAssistant(): Promise<void> {
   try {
     currentSettings = await loadSettings()
@@ -240,6 +303,10 @@ export async function initAssistant(): Promise<void> {
   }
 }
 
+/**
+ * Makes a course active: updates the URL and sidebar, clears selected materials, and loads that course's chat history.
+ * @param courseId Id of the course to open; does nothing if it is already active or unknown.
+ */
 export async function switchCourse(courseId: string): Promise<void> {
   if (currentCourseId === courseId) return
 
@@ -264,7 +331,6 @@ export async function switchCourse(courseId: string): Promise<void> {
     })
   )
 
-  // Enable inputs
   const chatInput = overlayElement?.querySelector(
     "#chat-input"
   ) as HTMLTextAreaElement
@@ -286,7 +352,6 @@ export async function switchCourse(courseId: string): Promise<void> {
   if (flashcardSendBtn) flashcardSendBtn.disabled = false
   if (mindmapSendBtn) mindmapSendBtn.disabled = false
 
-  // Load history
   const session = await loadChatHistory(courseId)
   const chatMessages = session?.messages || []
   // Note: messages are managed in chatHandler
@@ -299,7 +364,6 @@ export async function switchCourse(courseId: string): Promise<void> {
 
   renderMessages(chatMessages, overlayElement)
 
-  // Update course subtitle
   const subtitleEl = overlayElement?.querySelector(
     "#chat-course-subtitle"
   ) as HTMLElement

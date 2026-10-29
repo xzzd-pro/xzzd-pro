@@ -119,6 +119,11 @@ function normalizeLine(line: string): string {
   return wrapInlineLatexCommands(line)
 }
 
+/**
+ * Normalizes math in model output: converts escaped delimiters to $ and $$ and wraps bare LaTeX lines or commands, leaving code, links, URLs and existing math untouched.
+ * @param text Model output.
+ * @returns Text with normalized math delimiters.
+ */
 export function normalizeMathDelimiters(text: string): string {
   if (!text) return ""
 

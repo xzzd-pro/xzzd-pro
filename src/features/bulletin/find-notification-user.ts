@@ -1,5 +1,11 @@
 // Probe a small pool concurrently: empty or slow courses must not hold up
 // courses that already have a user activity record. No user ID is persisted.
+/**
+ * Finds the current user's id by checking activity reads of the given courses, a few courses at a time.
+ * @param courses Courses to check.
+ * @param signal Cancels the search.
+ * @returns The user id from the first course that has one, or null if none does or the search was cancelled.
+ */
 export function findNotificationUser(
   courses: { id: number }[],
   signal?: AbortSignal

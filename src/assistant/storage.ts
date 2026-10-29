@@ -36,10 +36,23 @@ export const UPLOAD_HISTORY_INDEX_BYTE_LIMIT = 400 * 1024
 export const UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT = 80 * 1024 * 1024
 export const UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT = 15 * 1024 * 1024
 
+/**
+ * Normalizes a file name for comparison in upload history.
+ * @param name File name.
+ * @returns Trimmed, lowercase name.
+ */
 export function normalizeHistoryFileName(name: string): string {
   return (name || "").trim().toLowerCase()
 }
 
+/**
+ * Builds the key that identifies the same upload in one course.
+ * @param courseId Course id.
+ * @param name File name.
+ * @param size File size in bytes.
+ * @param fingerprint Content hash of the file.
+ * @returns The dedupe key.
+ */
 export function buildUploadHistoryKey(
   courseId: string,
   name: string,
@@ -108,11 +121,19 @@ async function initSecureStorage(): Promise<void> {
   await secureStorage.setPassword(SECURE_STORAGE_PASSWORD)
 }
 
+/**
+ * Saves the assistant settings to extension storage.
+ * @param settings Settings to save.
+ */
 export async function saveSettings(settings: AssistantSettings): Promise<void> {
   await initSecureStorage()
   await secureStorage.set(STORAGE_KEYS.settings, JSON.stringify(settings))
 }
 
+/**
+ * Loads the assistant settings.
+ * @returns Saved settings, or defaults when none exist.
+ */
 export async function loadSettings(): Promise<AssistantSettings> {
   await initSecureStorage()
   const data = await secureStorage.get(STORAGE_KEYS.settings)
@@ -130,6 +151,11 @@ export async function loadSettings(): Promise<AssistantSettings> {
   }
 }
 
+/**
+ * Saves a course's chat session, keeping only the most recent messages.
+ * @param courseId Course id.
+ * @param session Session to save.
+ */
 export async function saveChatHistory(
   courseId: string,
   session: ChatSession
@@ -143,6 +169,11 @@ export async function saveChatHistory(
   await storage.set(key, JSON.stringify(trimmedSession))
 }
 
+/**
+ * Loads a course's chat session.
+ * @param courseId Course id.
+ * @returns The session, or null if none was saved.
+ */
 export async function loadChatHistory(
   courseId: string
 ): Promise<ChatSession | null> {
@@ -154,6 +185,10 @@ export async function loadChatHistory(
   return null
 }
 
+/**
+ * Deletes chat history.
+ * @param courseId Course to clear; omit to clear every course.
+ */
 export async function clearChatHistory(courseId?: string): Promise<void> {
   if (courseId) {
     const key = `${STORAGE_KEYS.chatHistory}${courseId}`
@@ -169,6 +204,9 @@ export async function clearChatHistory(courseId?: string): Promise<void> {
   }
 }
 
+/**
+ * @returns All saved chat sessions, most recently updated first.
+ */
 export async function getAllChatSessions(): Promise<ChatSession[]> {
   const allData = await storage.getAll()
   const sessions: ChatSession[] = []
@@ -403,6 +441,11 @@ async function safeSetHistory(
   }
 }
 
+/**
+ * Loads the files previously uploaded to the assistant for a course.
+ * @param courseId Course id.
+ * @returns Valid history items; an empty list if none or unreadable.
+ */
 export async function getAssistantUploadHistory(
   courseId: string
 ): Promise<AssistantUploadHistoryItem[]> {
@@ -466,6 +509,11 @@ export async function getAssistantUploadHistory(
   }
 }
 
+/**
+ * Replaces a course's upload history, removing duplicates and trimming it to the size limit.
+ * @param courseId Course id.
+ * @param items History items to keep.
+ */
 export async function saveAssistantUploadHistory(
   courseId: string,
   items: AssistantUploadHistoryItem[]
@@ -475,6 +523,11 @@ export async function saveAssistantUploadHistory(
   await safeSetHistory(courseId, pruned)
 }
 
+/**
+ * Adds uploads to a course's history; newer entries replace duplicates.
+ * @param courseId Course id.
+ * @param items Uploads to add.
+ */
 export async function appendAssistantUploadHistory(
   courseId: string,
   items: AssistantUploadHistoryItem[]
@@ -496,6 +549,11 @@ export async function appendAssistantUploadHistory(
   }
 }
 
+/**
+ * Removes uploads from a course's history and deletes their stored payloads.
+ * @param courseId Course id.
+ * @param ids Ids of the history items to remove.
+ */
 export async function deleteAssistantUploadHistoryItems(
   courseId: string,
   ids: string[]
@@ -519,10 +577,19 @@ export async function deleteAssistantUploadHistoryItems(
   }
 }
 
+/**
+ * @returns A unique chat message id.
+ */
 export function generateMessageId(): string {
   return `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
+/**
+ * Creates a chat message with a new id and the current time.
+ * @param role Who sent it.
+ * @param content Message text.
+ * @returns The message.
+ */
 export function createChatMessage(
   role: "user" | "assistant",
   content: string

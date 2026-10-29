@@ -1,3 +1,8 @@
+/**
+ * Formats a byte count for display.
+ * @param bytes Size in bytes.
+ * @returns Size such as "1.5 MB".
+ */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 B"
 

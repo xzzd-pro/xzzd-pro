@@ -7,7 +7,6 @@ import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import { cn } from "@/lib/utils"
 import type { ProcessedCoursewareFile } from "@/types"
 
-// Get file extension icon as JSX
 function getFileIcon(filename: string): React.ReactNode {
   const ext = filename.split(".").pop()?.toLowerCase() || ""
 
@@ -102,6 +101,10 @@ interface CoursewareFileItemProps {
   onSelectedChange?: (fileId: number, selected: boolean) => void
 }
 
+/**
+ * One courseware file with preview, download and selection controls.
+ * @param props The file, extra class names, selection state and its setter.
+ */
 export function CoursewareFileItem({
   file,
   className,

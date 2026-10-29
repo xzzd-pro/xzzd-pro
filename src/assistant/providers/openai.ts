@@ -25,6 +25,12 @@ const customFetchIntercept = async (
   return response
 }
 
+/**
+ * Creates a streaming OpenAI chat model.
+ * @param config API key, model and optional base URL.
+ * @returns LangChain chat model.
+ * @throws If the API key or model is missing.
+ */
 export function createOpenAIModel(config: ProviderConfig): ChatOpenAI {
   if (!config.apiKey) {
     throw new Error("API Key is missing for OpenAI provider")
@@ -42,6 +48,12 @@ export function createOpenAIModel(config: ProviderConfig): ChatOpenAI {
   })
 }
 
+/**
+ * Creates a chat model for an OpenAI-compatible API such as OpenRouter or a self-hosted gateway.
+ * @param config API key, model and the required base URL.
+ * @returns LangChain chat model.
+ * @throws If the API key, model or base URL is missing.
+ */
 export function createOpenAICompatibleModel(
   config: ProviderConfig
 ): ChatOpenAI {

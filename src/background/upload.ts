@@ -190,6 +190,11 @@ function getContentType(fileName: string): string {
   return mimeTypes[ext || ""] || "application/octet-stream"
 }
 
+/**
+ * Uploads a homework file: registers the upload with the course site, then sends the file content.
+ * @param request File name, size and base64 content.
+ * @returns The upload id on success, or an error message.
+ */
 export async function uploadHomeworkFile(
   request: UploadFileRequest
 ): Promise<UploadResponse> {

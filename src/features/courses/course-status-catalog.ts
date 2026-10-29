@@ -6,6 +6,11 @@ import {
 import { COURSE_STATUSES } from "./course-filters"
 
 // Resolve status using the existing server-side status semantics, once per visit.
+/**
+ * Fetches the course list once per status to learn which statuses each course has.
+ * @returns Statuses of each course, keyed by course id.
+ * @throws If any request fails.
+ */
 export async function collectCourseStatuses(): Promise<
   Map<number, Set<string>>
 > {

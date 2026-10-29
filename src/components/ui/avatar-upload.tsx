@@ -20,6 +20,10 @@ const SIZE_CLASSES = {
   xl: "h-16 w-16"
 }
 
+/**
+ * Avatar that the user can replace by uploading an image; the image is saved in extension storage.
+ * @param props Size, fallback initials and extra class names.
+ */
 export function AvatarUpload({
   className,
   fallback = "U",
@@ -29,7 +33,6 @@ export function AvatarUpload({
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Load saved avatar on mount
   React.useEffect(() => {
     const loadAvatar = async () => {
       try {
@@ -65,13 +68,11 @@ export function AvatarUpload({
     setIsUploading(true)
 
     try {
-      // Create image element to compress
       const img = new Image()
       const objectUrl = URL.createObjectURL(file)
 
       img.onload = async () => {
         try {
-          // Create canvas for compression
           const canvas = document.createElement("canvas")
           const ctx = canvas.getContext("2d")
 
@@ -130,7 +131,6 @@ export function AvatarUpload({
 
                 setAvatarSrc(compressedBase64)
 
-                // Save to storage
                 try {
                   await storage.set(AVATAR_STORAGE_KEY, compressedBase64)
                   console.log("头像保存成功")

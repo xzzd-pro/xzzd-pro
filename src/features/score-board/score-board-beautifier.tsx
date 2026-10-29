@@ -4,6 +4,9 @@ import { ScoreBoardPanel } from "@/features/score-board/components"
 import { mountCourseDetailPage } from "@/shared/course-detail/course-detail-helpers"
 import { mountCoursePanel } from "@/shared/course-detail/mount-panel"
 
+/**
+ * Replaces the score page with the extension layout and the score board panel.
+ */
 export async function scoreBoardBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing score board page...")
 

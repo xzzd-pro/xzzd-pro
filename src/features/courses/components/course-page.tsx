@@ -20,6 +20,10 @@ interface CoursePageProps {
   loading?: boolean
 }
 
+/**
+ * Course list page with keyword, status and semester filters.
+ * @param props All courses and loading flag.
+ */
 export function CoursePage({ courses, loading = false }: CoursePageProps) {
   const [options, setOptions] = React.useState<SemesterOption[]>([])
   const [ready, setReady] = React.useState(false)

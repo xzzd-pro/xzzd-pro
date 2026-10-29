@@ -25,6 +25,11 @@ const MY_COURSES_URLS = [
   "https://courses.zju.edu.cn/api/my-courses"
 ] as const
 
+/**
+ * Builds the request body for the course list API.
+ * @param conditions Filters to override; defaults list all statuses.
+ * @returns Request body.
+ */
 export function createMyCoursesPayload(
   conditions: MyCoursesConditions = {}
 ): MyCoursesPayload {
@@ -40,6 +45,12 @@ export function createMyCoursesPayload(
   }
 }
 
+/**
+ * Requests the course list, moving to the next known endpoint when one returns 404 or fails to connect.
+ * @param payload Request body from createMyCoursesPayload.
+ * @returns The first response that is not a 404; the last endpoint's response is returned as is.
+ * @throws The last network error if no endpoint responds.
+ */
 export async function fetchMyCoursesResponse(
   payload: MyCoursesPayload
 ): Promise<Response> {

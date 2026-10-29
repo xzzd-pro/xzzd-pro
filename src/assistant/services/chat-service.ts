@@ -32,6 +32,11 @@ export interface StreamChatOptions {
   signal?: AbortSignal
 }
 
+/**
+ * Sends the conversation with course context to the model and streams the reply.
+ * @param options Messages, course context, provider config and streaming callbacks.
+ * @returns The full reply text.
+ */
 export async function streamChat(options: StreamChatOptions): Promise<string> {
   const {
     messages,
@@ -232,6 +237,15 @@ function extractChunkText(content: unknown): string {
   return ""
 }
 
+/**
+ * Sends the conversation with course context to the model and waits for the whole reply.
+ * @param messages Conversation so far.
+ * @param context Course materials and homework used as context.
+ * @param provider Provider id.
+ * @param config Provider config.
+ * @param onProgress Receives status text while context is being prepared.
+ * @returns The reply text.
+ */
 export async function generateResponse(
   messages: ChatMessage[],
   context: CourseContext,
@@ -500,6 +514,11 @@ function extractApiErrorCode(errorMessage: string): number | null {
   return null
 }
 
+/**
+ * Turns a provider error into a short message for the user, keeping API details when available.
+ * @param error Error thrown by the model call.
+ * @returns Message to show in the chat.
+ */
 export function formatErrorMessage(error: Error): string {
   const lowerMessage = error.message.toLowerCase()
   const originalError = error.message
@@ -574,6 +593,5 @@ export function formatErrorMessage(error: Error): string {
     simplifiedMessage += `\n详细原因：${apiErrorDetail}`
   }
 
-  // Return simplified message + original error details
   return `${simplifiedMessage}\n\n原始错误详情：\n${originalError}`
 }

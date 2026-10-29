@@ -2,10 +2,17 @@ import type { Storage } from "@plasmohq/storage"
 
 export type XzzdTheme = "light" | "dark"
 
+/**
+ * @param theme Stored theme value.
+ * @returns "dark" if the value is "dark", otherwise "light".
+ */
 export function normalizeTheme(theme: unknown): XzzdTheme {
   return theme === "dark" ? "dark" : "light"
 }
 
+/**
+ * @returns The theme matching the system color scheme.
+ */
 export function getFallbackTheme(): XzzdTheme {
   try {
     return window.matchMedia &&
@@ -17,6 +24,10 @@ export function getFallbackTheme(): XzzdTheme {
   }
 }
 
+/**
+ * Applies a theme to the page: data-theme attributes, the dark class and color-scheme.
+ * @param theme Theme to apply.
+ */
 export function applyThemeToDocument(theme: XzzdTheme) {
   const html = document.documentElement
   html.setAttribute("data-theme", theme)

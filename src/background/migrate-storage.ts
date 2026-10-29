@@ -14,6 +14,9 @@ const LEGACY_SYNC_KEYS = [
   "xzzdpro_read_timestamps"
 ] as const
 
+/**
+ * Copies settings saved by older versions from sync storage to local storage, without overwriting values that already exist locally.
+ */
 export async function migrateLegacySyncStorage(): Promise<void> {
   try {
     const legacy = await chrome.storage.sync.get([...LEGACY_SYNC_KEYS])

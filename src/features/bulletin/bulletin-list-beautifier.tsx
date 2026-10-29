@@ -30,6 +30,9 @@ function mountNotificationsPanel(): void {
   console.log("XZZDPRO: React 组件已挂载")
 }
 
+/**
+ * Replaces the bulletin page with the extension layout and the two-column notifications panel.
+ */
 export function bulletinListBeautifier(): void {
   console.log("XZZDPRO: 准备接管公告页...")
 

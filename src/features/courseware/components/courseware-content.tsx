@@ -16,6 +16,10 @@ interface CoursewareContentProps {
   onDownloadSection?: () => void
 }
 
+/**
+ * Files of one courseware section with selection checkboxes and a section download button.
+ * @param props The section, download state and progress, selected file ids, and selection and download callbacks.
+ */
 export function CoursewareContent({
   section,
   downloading = false,

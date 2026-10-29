@@ -16,6 +16,9 @@ import {
 import { COURSE_DETAIL_ICONS } from "../layout/icons"
 
 // Extract course ID from URL
+/**
+ * @returns The course id in the current URL path, or null.
+ */
 export function getCourseIdFromUrl(): string | null {
   const pathname = window.location.pathname
   const courseMatch = pathname.match(/\/course\/(\d+)/)
@@ -23,13 +26,19 @@ export function getCourseIdFromUrl(): string | null {
 }
 
 // Extract activity ID from URL hash
+/**
+ * @returns The activity id in the current URL hash (including exam links), or null.
+ */
 export function getActivityIdFromUrl(): string | null {
   const hash = window.location.hash
   const activityMatch = hash.match(/#\/(?:exam\/)?(\d+)/)
   return activityMatch ? activityMatch[1] : null
 }
 
-// Get course name from API
+/**
+ * Fetches the name of the course in the current URL.
+ * @returns The course name, or "课程" if it cannot be loaded.
+ */
 export async function getCourseName(): Promise<string> {
   try {
     const courseId = getCourseIdFromUrl()
@@ -49,6 +58,10 @@ export async function getCourseName(): Promise<string> {
 }
 
 // Get user ID by fetching from API - iterates through all courses until a valid userId is found
+/**
+ * Finds the current user's id from the activity reads of their courses.
+ * @returns The user id, or null if no course has one.
+ */
 export async function getUserId(): Promise<string | null> {
   try {
     const coursesResponse = await fetchMyCoursesResponse(
@@ -105,6 +118,12 @@ export async function getUserId(): Promise<string | null> {
 }
 
 // Detect if activity is courseware or homework by checking API
+/**
+ * Tells whether an activity is homework or courseware by asking for its homework score.
+ * @param activityId Activity id.
+ * @param userId Current user id.
+ * @returns The activity type, or "unknown" if the request fails.
+ */
 export async function detectActivityType(
   activityId: string,
   userId: string
@@ -267,6 +286,11 @@ function setupCourseDetailLayout(): void {
   void setupSidebarToggle()
 }
 
+/**
+ * Replaces a course detail page with the extension layout: header, sidebar, course navigation and the given content.
+ * @param options Active navigation item, page title, initial content HTML and optional course name.
+ * @returns The course id and content container, or null if the URL has no course id.
+ */
 export async function mountCourseDetailPage({
   currentPage,
   pageTitle,

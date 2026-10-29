@@ -9,6 +9,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
+/**
+ * Downloads a file from the course site, retrying through the background script when the page cannot fetch it directly.
+ * @param url File URL.
+ * @returns The file contents.
+ * @throws If access is denied or both attempts fail.
+ */
 export async function fetchBlob(url: string): Promise<Blob> {
   let directError: unknown
   try {

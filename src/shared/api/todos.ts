@@ -9,6 +9,11 @@ export const TODO_TYPE_NAMES: Record<string, string> = {
   vote: "投票"
 }
 
+/**
+ * Builds the link to a to-do's activity page; exams use their own path.
+ * @param item To-do from the API.
+ * @returns The activity URL, or "#" if the to-do lacks ids.
+ */
 export function todoActivityUrl(item: ApiTodoData): string {
   if (!item.course_id || !item.id) {
     return "#"

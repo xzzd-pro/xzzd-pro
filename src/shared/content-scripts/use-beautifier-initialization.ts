@@ -12,6 +12,10 @@ const ROOT_SELECTOR = ".xzzdpro-root"
 
 // Keep the in-flight operation across effect cleanup (including StrictMode).
 // Theme changes must not restart an asynchronous page mount.
+/**
+ * Runs a page beautifier once when enabled, retrying until the extension root appears, and never restarting a mount that is in progress.
+ * @param options Page name, beautifier, skip check, enabled flag and whether to wait for DOMContentLoaded.
+ */
 export function useBeautifierInitialization({
   pageName,
   beautify,

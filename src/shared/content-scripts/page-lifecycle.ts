@@ -1,9 +1,16 @@
+/**
+ * Removes the course site's floating AI chatbot widget from the page.
+ */
 export function removeAirChatbot(): void {
   document.querySelectorAll("air-chatbot-app").forEach((element) => {
     element.remove()
   })
 }
 
+/**
+ * Removes the chatbot widget and keeps removing it if the site re-adds it.
+ * @param durationMs How long to keep watching, in ms.
+ */
 export function suppressAirChatbot(durationMs: number = 5000): void {
   removeAirChatbot()
 

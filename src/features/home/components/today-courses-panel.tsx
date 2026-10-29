@@ -7,6 +7,10 @@ interface TodayCoursesPanelProps {
   loading?: boolean
 }
 
+/**
+ * Panel listing today's classes.
+ * @param props Today's courses and loading flag.
+ */
 export function TodayCoursesPanel({
   courses,
   loading = false

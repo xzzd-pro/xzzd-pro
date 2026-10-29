@@ -29,6 +29,9 @@ const selectedHistoryDeleteIds = new Set<string>()
 let coursesRequestId = 0
 let materialsRequestId = 0
 
+/**
+ * Binds the assistant entry in the sidebar: opening the assistant and expanding its course and material lists.
+ */
 export function setupAssistantNavigation(): void {
   const link = document.getElementById("nav-assistant-link")
   const expandBtn = document.getElementById("nav-assistant-expand")
@@ -166,7 +169,6 @@ export function setupAssistantNavigation(): void {
     )
   }
 
-  // Load courses on initial setup
   loadAssistantCourses()
   if (materialNavItem && materialSubmenu) {
     loadAssistantMaterials()
@@ -220,7 +222,6 @@ async function loadAssistantCourses(): Promise<void> {
       return
     }
 
-    // Render course list
     const courseHTML = courses
       .map(
         (course) => `
@@ -233,7 +234,6 @@ async function loadAssistantCourses(): Promise<void> {
 
     courseListEl.innerHTML = courseHTML
 
-    // Add click handlers for each course
     courseListEl.querySelectorAll(".course-submenu-item").forEach((item) => {
       item.addEventListener("click", (e) => {
         e.preventDefault()

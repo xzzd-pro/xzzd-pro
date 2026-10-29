@@ -1,7 +1,5 @@
 // lib/components/icons.ts
-// 统一的图标集合
-
-// 主题切换图标
+// Theme toggle icons
 export const THEME_ICONS = {
   sun: `<svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_147_26)">
@@ -19,7 +17,7 @@ export const THEME_ICONS = {
 </svg>`
 }
 
-// 导航栏图标
+// Sidebar navigation icons
 export const NAV_ICONS = {
   home: `<svg width="25" height="23" viewBox="0 0 25 23" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 <path d="M9.59714 20.8733V14.2067H14.9305V20.8733C14.9305 21.6067 15.5305 22.2067 16.2638 22.2067H20.2638C20.9971 22.2067 21.5971 21.6067 21.5971 20.8733V11.54H23.8638C24.4771 11.54 24.7705 10.78 24.3038 10.38L13.1571 0.34C12.6505 -0.113333 11.8771 -0.113333 11.3705 0.34L0.223803 10.38C-0.229531 10.78 0.0504692 11.54 0.663803 11.54H2.93047V20.8733C2.93047 21.6067 3.53047 22.2067 4.2638 22.2067H8.2638C8.99714 22.2067 9.59714 21.6067 9.59714 20.8733Z"/>
@@ -46,7 +44,6 @@ export const NAV_ICONS = {
 </svg>`
 }
 
-// 课程详情页图标
 // Solid course-detail icons on a 24px grid: shapes stay inside 2..22, corners
 // use a 2px radius, and cut-out details (arrow, check, question mark) are 2px wide
 // so they read at the 20px display size and in the inverted active state.

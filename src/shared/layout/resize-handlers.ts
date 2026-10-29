@@ -9,7 +9,6 @@ const LAYOUT_STORAGE_KEY = "indexPageLayout"
 // The summary bar's content (greeting, date, counts) needs this much; less would clip it.
 const WELCOME_MIN_HEIGHT = 112
 
-// Check if extension context is still valid
 function isExtensionContextValid(): boolean {
   try {
     // Try to access chrome.runtime to check if context is valid
@@ -29,7 +28,6 @@ const DEFAULT_LAYOUT: LayoutState = {
   sidebarCollapsed: false
 }
 
-// Save layout state to storage
 async function saveLayoutState(state: Partial<LayoutState>): Promise<void> {
   try {
     const currentState =
@@ -42,7 +40,6 @@ async function saveLayoutState(state: Partial<LayoutState>): Promise<void> {
   }
 }
 
-// Load layout state from storage
 async function loadLayoutState(): Promise<LayoutState> {
   try {
     const state = await storage.get<LayoutState>(LAYOUT_STORAGE_KEY)
@@ -53,7 +50,9 @@ async function loadLayoutState(): Promise<LayoutState> {
   }
 }
 
-// Apply saved layout state to DOM
+/**
+ * Restores the saved column widths of the home page grid.
+ */
 export async function applySavedLayout(): Promise<void> {
   if (!isExtensionContextValid()) {
     console.warn(
@@ -88,6 +87,9 @@ export async function applySavedLayout(): Promise<void> {
   console.log("XZZDPRO: Layout state applied", state)
 }
 
+/**
+ * Makes the home page columns resizable by dragging and saves the widths.
+ */
 export function setupResizeHandlers(): void {
   if (!isExtensionContextValid()) {
     console.warn(
@@ -167,7 +169,6 @@ export function setupResizeHandlers(): void {
           document.body.style.cursor = ""
           document.body.style.userSelect = ""
 
-          // Save state
           saveLayoutState({ leftHandleWidth: handleLeft.offsetWidth })
         }
       },
@@ -220,7 +221,6 @@ export function setupResizeHandlers(): void {
           document.body.style.cursor = ""
           document.body.style.userSelect = ""
 
-          // Save state
           saveLayoutState({ rightHandleWidth: handleRight.offsetWidth })
         }
       },
@@ -274,7 +274,6 @@ export function setupResizeHandlers(): void {
           document.body.style.cursor = ""
           document.body.style.userSelect = ""
 
-          // Save state
           const welcomeCard = document.querySelector(
             ".welcome-card"
           ) as HTMLElement
@@ -348,7 +347,6 @@ export function setupResizeHandlers(): void {
           document.body.style.cursor = ""
           document.body.style.userSelect = ""
 
-          // Save state
           const currentColumns = window
             .getComputedStyle(mainContentWrapper)
             .gridTemplateColumns.split(" ")

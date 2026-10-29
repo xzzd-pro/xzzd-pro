@@ -6,6 +6,12 @@ import workerUrl from "url:pdfjs-dist/build/pdf.worker.min.mjs"
 import { fetchBlob } from "./file-fetch"
 import { decodeText } from "./text-decode"
 
+/**
+ * Downloads a text file and decodes it.
+ * @param url File URL.
+ * @returns Decoded text.
+ * @throws If the server returns an HTML page instead of the file.
+ */
 export async function fetchTextContent(url: string): Promise<string> {
   const blob = await fetchBlob(url)
   if (blob.type.toLowerCase().includes("text/html")) {
@@ -21,6 +27,12 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl
 const DEFAULT_PDF_IMAGE_MAX_PAGES = 6
 const DEFAULT_PDF_IMAGE_SCALE = 1.25
 
+/**
+ * Downloads a file and extracts its text, choosing a parser by extension (PDF, PPTX, DOCX or plain text).
+ * @param url File URL.
+ * @param filename Name used to pick the parser.
+ * @returns Extracted text, or a note explaining why it could not be read.
+ */
 export async function fetchFileContent(
   url: string,
   filename: string
@@ -79,6 +91,11 @@ export async function fetchFileContent(
   }
 }
 
+/**
+ * Downloads a PDF.
+ * @param url File URL.
+ * @returns The PDF, or null if the download fails.
+ */
 export async function fetchPdfBlob(url: string): Promise<Blob | null> {
   try {
     return await fetchBlob(url)
@@ -90,6 +107,12 @@ export async function fetchPdfBlob(url: string): Promise<Blob | null> {
   }
 }
 
+/**
+ * Renders PDF pages to PNG data URIs, for models that read images better than extracted text.
+ * @param blob The PDF.
+ * @param options Page limit, render scale, a per-page callback and a cancel check.
+ * @returns Data URIs of the rendered pages.
+ */
 export async function convertPdfToImages(
   blob: Blob,
   options?: {
@@ -151,6 +174,11 @@ export async function convertPdfToImages(
   return images
 }
 
+/**
+ * Extracts the text of a PDF.
+ * @param blob The PDF.
+ * @returns Text of all pages.
+ */
 export async function extractPdfText(blob: Blob): Promise<string> {
   return await parsePdf(blob)
 }

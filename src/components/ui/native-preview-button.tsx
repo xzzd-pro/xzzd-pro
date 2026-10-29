@@ -4,6 +4,10 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { fetchNativePreviewUrl } from "@/lib/native-preview"
 
+/**
+ * Button that opens the file in the course site's own previewer.
+ * @param props The file URL and the URL of the activity that contains it.
+ */
 export function NativePreviewButton({
   fileUrl,
   activityUrl

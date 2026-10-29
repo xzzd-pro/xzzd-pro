@@ -227,6 +227,10 @@ interface HomeworkPanelProps {
   courseId: string
 }
 
+/**
+ * Loads a course's homework and shows it as expandable items.
+ * @param props Course id.
+ */
 export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
   const [homeworks, setHomeworks] = React.useState<ProcessedHomework[]>([])
   const [userId, setUserId] = React.useState<string | null>(null)

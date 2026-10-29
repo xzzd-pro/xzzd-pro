@@ -8,6 +8,11 @@ export class TimetableRequestError extends Error {
   }
 }
 
+/**
+ * Checks whether a URL is the ZJU unified login page or the academic system's login page.
+ * @param raw URL to check.
+ * @returns True for a login page; false for anything else, including invalid URLs.
+ */
 export function isLoginUrl(raw: string): boolean {
   try {
     const url = new URL(raw)
@@ -22,6 +27,11 @@ export function isLoginUrl(raw: string): boolean {
   }
 }
 
+/**
+ * Throws a typed error when a timetable request was redirected to login or rejected.
+ * @param response Response of the timetable request.
+ * @throws TimetableRequestError with a login_required or request_failed reason.
+ */
 export function checkTimetableResponse(response: Response): void {
   if (response.status === 401 || isLoginUrl(response.url)) {
     throw new TimetableRequestError("需要登录教务系统", "login_required")
@@ -40,6 +50,10 @@ export function checkTimetableResponse(response: Response): void {
 
 export type LoginResult = "ok" | "login_required" | "unavailable"
 
+/**
+ * Tries to sign in to the academic system through the existing ZJU single sign-on session.
+ * @returns "ok" when the SSO redirect landed on the academic system, "login_required" when the user must sign in, or "unavailable" on any other failure.
+ */
 export async function performBackgroundLogin(): Promise<LoginResult> {
   try {
     const response = await fetch(

@@ -148,6 +148,11 @@ async function fetchFileBytes(url: string): Promise<Uint8Array> {
   }
 }
 
+/**
+ * Downloads the downloadable files one by one and saves them as a single zip archive.
+ * @param options Archive name, files to include and a progress callback (completed, total).
+ * @throws If none of the files can be downloaded.
+ */
 export async function downloadCoursewareZip({
   archiveName,
   entries,

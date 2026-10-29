@@ -66,7 +66,6 @@ async function fetchCoursesFromApi(
   }
 }
 
-// Render course page using React
 function renderCoursePageReact(
   container: HTMLElement,
   courses: ApiCourseData[],
@@ -88,7 +87,6 @@ async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
   if (!container) return
   const requestId = ++coursesRequestId
 
-  // Show loading state
   renderCoursePageReact(container, [], true)
 
   let courses: ApiCourseData[] = []
@@ -114,6 +112,9 @@ function setupSearchHandler() {
   // No additional setup needed
 }
 
+/**
+ * Replaces the course list page with the extension layout and the filterable course grid.
+ */
 export function coursePageBeautifier(): void {
   console.log("XZZDPRO: 准备接管课程页...")
 

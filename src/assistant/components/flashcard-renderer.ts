@@ -236,6 +236,12 @@ function markSessionArchived(messageId: string) {
   saveArchivedSessionIds(ids)
 }
 
+/**
+ * Renders a short chat bubble telling the user that flashcards were generated in the flashcard panel.
+ * @param data Generated flashcards.
+ * @param messageId Id of the chat message.
+ * @returns HTML string.
+ */
 export function renderFlashcardTipBubble(
   data: FlashcardData,
   messageId: string
@@ -258,6 +264,12 @@ export function renderFlashcardTipBubble(
   `
 }
 
+/**
+ * Renders an interactive flashcard session with favorite, fuzzy and mastered packs. Call hydrateFlashcardBubbles afterwards to make it interactive.
+ * @param data Generated flashcards.
+ * @param messageId Id of the chat message; also keys the saved review state.
+ * @returns HTML string.
+ */
 export function renderFlashcardBubble(
   data: FlashcardData,
   messageId: string
@@ -884,6 +896,10 @@ function wireEvents(
   })
 }
 
+/**
+ * Attaches event handlers and restores saved review state for flashcard sessions that are not interactive yet.
+ * @param root Element or document to search for sessions.
+ */
 export function hydrateFlashcardBubbles(
   root: HTMLElement | Document = document
 ): void {

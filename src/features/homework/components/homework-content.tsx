@@ -157,6 +157,10 @@ interface HomeworkContentProps {
   userId: string
 }
 
+/**
+ * Details of one homework: description, attachments, submitted files and the upload form.
+ * @param props The homework and the current user's id.
+ */
 export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
   const [submissions, setSubmissions] = React.useState<
     HomeworkSubmission[] | null

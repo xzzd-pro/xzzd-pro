@@ -103,6 +103,12 @@ function buildInsufficientContentMessage(
   return `[文件 ${fileName}：内容过短或为空，已忽略]`
 }
 
+/**
+ * Builds the system prompt with the course name and the text of its materials.
+ * @param context Course context to include.
+ * @param onProgress Receives status text while files are read.
+ * @returns The system prompt.
+ */
 export async function buildSystemPrompt(
   context: CourseContext,
   onProgress?: (msg: string) => void
@@ -147,6 +153,11 @@ export function getVisualContext(context?: CourseContext): VisualContent[] {
   return visuals
 }
 
+/**
+ * Reads every material file once so later prompts use the cache.
+ * @param context Course context whose files to read.
+ * @param onProgress Receives status text and its type.
+ */
 export async function preloadCourseContext(
   context: CourseContext,
   onProgress?: (msg: string, type?: "success" | "error" | "info") => void
@@ -169,14 +180,12 @@ export async function preloadCourseContext(
       if (material.files && material.files.length > 0) {
         for (const file of material.files) {
           const ext = file.name.split(".").pop()?.toLowerCase() || ""
-          // Check if valid type
           if (SUPPORTED_TEXT_LIKE_EXTENSIONS.includes(ext)) {
             const cached = fileContentCache.get(file.downloadUrl)
             if (cached && isLegacyIgnoredPlaceholder(cached) && ext !== "pdf") {
               fileContentCache.delete(file.downloadUrl)
             }
 
-            // Check cache
             if (
               fileContentCache.has(file.downloadUrl) ||
               visualContentCache.has(file.downloadUrl)
@@ -247,7 +256,6 @@ export async function preloadCourseContext(
 
     if (onProgress && fileCount > 0) {
       onProgress(`课程资料预加载完成`, "success")
-      // Hide after a delay? logic handled in UI
     }
   }
 }
@@ -268,13 +276,11 @@ async function formatContextToText(
       if (material.files && material.files.length > 0) {
         line += `\n  包含文件：${material.files.map((f) => f.name).join(", ")}`
 
-        // Fetch full content for files
         for (const file of material.files) {
           const ext = file.name.split(".").pop()?.toLowerCase() || ""
           if (SUPPORTED_TEXT_LIKE_EXTENSIONS.includes(ext)) {
             line += `\n\n  --- 文件内容: ${file.name} ---\n`
 
-            // Check cache first
             const cached = fileContentCache.get(file.downloadUrl)
             const shouldBypassLegacyPlaceholder =
               !!cached && isLegacyIgnoredPlaceholder(cached) && ext !== "pdf"
@@ -304,7 +310,6 @@ async function formatContextToText(
                   line += `  ${content}`
                   fileContentCache.set(file.downloadUrl, content)
                 } else if (isInsufficientTextContent(content, ext)) {
-                  // Check if we have visual content for this file
                   if (visualContentCache.has(file.downloadUrl)) {
                     const visual = visualContentCache.get(file.downloadUrl)
                     line += `  [文件 ${file.name} 为图片PDF，包含 ${visual?.images.length} 页图片，请查看附带的图片内容]`

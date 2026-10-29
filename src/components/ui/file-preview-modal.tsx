@@ -241,6 +241,10 @@ function canPreviewFile(filename: string): boolean {
   ].includes(ext)
 }
 
+/**
+ * Modal that previews a course file (PDF, images, text, Office documents) with download and native-preview actions.
+ * @param props Open state, close callback, file name, URL and size, whether downloading is allowed, and the native preview URL.
+ */
 export function FilePreviewModal({
   isOpen,
   onClose,

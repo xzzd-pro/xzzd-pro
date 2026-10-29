@@ -13,6 +13,9 @@ import {
   setupResizeHandlers
 } from "@/shared/layout/resize-handlers"
 
+/**
+ * Replaces the course site's AI page with the extension layout and the embedded learning assistant.
+ */
 export async function mountAirPage() {
   // 1. Clear existing body content and reset styles
   document.body.innerHTML = ""

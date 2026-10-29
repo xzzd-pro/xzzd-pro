@@ -46,6 +46,11 @@ function disableBeautification() {
   document.body?.classList.add("xzzdpro-disabled")
 }
 
+/**
+ * Creates the content script component that applies the theme and runs a page beautifier once, unless the user disabled beautification.
+ * @param options Page name for logs, the beautifier to run and an optional skip check.
+ * @returns The component to export from a content script.
+ */
 export function createBeautifierInjector({
   pageName,
   beautify,

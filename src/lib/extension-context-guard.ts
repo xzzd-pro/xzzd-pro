@@ -18,6 +18,9 @@ function isExtensionContextInvalidated(value: unknown): boolean {
   return EXTENSION_CONTEXT_INVALIDATED_RE.test(getErrorMessage(value))
 }
 
+/**
+ * Silences the "Extension context invalidated" errors that old content scripts throw after the extension is reloaded. Installs once per page.
+ */
 export function installExtensionContextGuard(): void {
   if (typeof window === "undefined") return
 

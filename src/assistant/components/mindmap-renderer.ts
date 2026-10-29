@@ -288,6 +288,12 @@ function wireSessionEvents(sessionEl: HTMLElement, messageId: string) {
   sessionEl.dataset.eventsReady = "true"
 }
 
+/**
+ * Renders a short chat bubble telling the user that a mindmap was generated in the mindmap panel.
+ * @param data Generated mindmap.
+ * @param messageId Id of the chat message.
+ * @returns HTML string.
+ */
 export function renderMindmapTipBubble(
   data: MindmapData,
   messageId: string
@@ -311,6 +317,13 @@ export function renderMindmapTipBubble(
   `
 }
 
+/**
+ * Renders a mindmap container with a picker for switching between generated mindmaps. Call hydrateMindmapBubbles afterwards to draw it.
+ * @param data Mindmap to show.
+ * @param messageId Id of the chat message.
+ * @param options Other mindmaps to offer in the picker and which one is active.
+ * @returns HTML string.
+ */
 export function renderMindmapBubble(
   data: MindmapData,
   messageId: string,
@@ -386,6 +399,10 @@ export function renderMindmapBubble(
   `
 }
 
+/**
+ * Draws mindmaps with Markmap in sessions that are not rendered yet and binds their toolbar and menus.
+ * @param root Element or document to search for sessions.
+ */
 export async function hydrateMindmapBubbles(
   root: HTMLElement | Document = document
 ): Promise<void> {

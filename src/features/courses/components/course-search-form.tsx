@@ -9,6 +9,10 @@ interface CourseSearchFormProps {
   disabled?: boolean
 }
 
+/**
+ * Search box for filtering courses by keyword.
+ * @param props Called with the keyword on submit; disabled while filters load.
+ */
 export function CourseSearchForm({
   onSearch,
   disabled

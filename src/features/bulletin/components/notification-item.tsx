@@ -46,6 +46,10 @@ function getScoreStyles(score: string | undefined): string {
   return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
 }
 
+/**
+ * One notification row linking to its activity, with type and score badges.
+ * @param props The notification to show.
+ */
 export function NotificationItem({ notification }: NotificationItemProps) {
   const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || "通知"
   const scoreStyles = getScoreStyles(notification.score)

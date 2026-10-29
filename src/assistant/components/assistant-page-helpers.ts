@@ -17,6 +17,11 @@ import {
 } from "./flashcard-renderer"
 import { renderMindmapBubble, renderMindmapTipBubble } from "./mindmap-renderer"
 
+/**
+ * Renders the HTML of the full assistant page: tool panels, chat area and composer.
+ * @param username Name shown in the page header.
+ * @returns HTML string.
+ */
 export function renderAssistantPage(username: string = ""): string {
   return `
     <div class="assistant-layout">
@@ -133,6 +138,12 @@ export function renderAssistantPage(username: string = ""): string {
   `
 }
 
+/**
+ * Renders the course picker list.
+ * @param courses Courses to list.
+ * @param activeId Id of the course to highlight.
+ * @returns HTML string, or an empty-state message when there are no courses.
+ */
 export function renderCourseList(
   courses: CourseInfo[],
   activeId?: string
@@ -286,6 +297,12 @@ export function renderAttachmentCard(
           </div>`
 }
 
+/**
+ * Renders one chat message, using the flashcard or mindmap layout when the message carries tool output.
+ * @param message Message to render.
+ * @param showToolContent False renders tool output as a short tip pointing to its panel.
+ * @returns HTML string.
+ */
 export function renderChatMessage(
   message: ChatMessage,
   showToolContent: boolean = true
@@ -364,6 +381,11 @@ export function renderChatMessage(
   `
 }
 
+/**
+ * Converts model output to sanitized HTML: strips model control tokens, keeps math formulas intact for rendering, and parses Markdown.
+ * @param text Raw model output.
+ * @returns Sanitized HTML string.
+ */
 export function parseMarkdown(text: string): string {
   if (!text) return ""
 
@@ -390,7 +412,6 @@ export function parseMarkdown(text: string): string {
     return `@@INLINE_MATH_${inlineMath.length - 1}@@`
   })
 
-  // Use marked to convert Markdown to HTML
   marked.setOptions({
     breaks: true,
     gfm: true
@@ -414,6 +435,10 @@ export function parseMarkdown(text: string): string {
   return sanitizeHtml(html)
 }
 
+/**
+ * Renders the settings panel with provider, model, API key and base URL fields.
+ * @returns HTML string.
+ */
 export function renderSettingsPanel(): string {
   const providerOptions = (Object.keys(PROVIDER_LABELS) as Provider[])
     .map((p) => `<option value="${p}">${PROVIDER_LABELS[p]}</option>`)

@@ -15,6 +15,11 @@ interface HeaderOptions {
   showUsername?: boolean
 }
 
+/**
+ * Renders the extension header with logo, help, theme toggle and avatar.
+ * @param options Username and whether to show it.
+ * @returns HTML string.
+ */
 export function renderHeader(options: HeaderOptions = {}): string {
   const { username = "", showUsername = true } = options
   const themeToggle = createThemeToggle()
@@ -60,6 +65,9 @@ export function renderHeader(options: HeaderOptions = {}): string {
   `
 }
 
+/**
+ * Binds the header's theme toggle button.
+ */
 export function setupThemeToggle(): void {
   const themeToggle = createThemeToggle()
   themeToggle.setup()
@@ -95,7 +103,7 @@ export function setupHelpModal(): void {
     { signal }
   )
 
-  // 点击遮罩层关闭
+  // Close when the backdrop is clicked.
   modal.addEventListener(
     "click",
     (e) => {
@@ -106,7 +114,7 @@ export function setupHelpModal(): void {
     { signal }
   )
 
-  // ESC 键关闭
+  // Close on Escape.
   document.addEventListener(
     "keydown",
     (e) => {
@@ -118,6 +126,9 @@ export function setupHelpModal(): void {
   )
 }
 
+/**
+ * Mounts the avatar upload component in the header.
+ */
 export function setupAvatarUpload(): void {
   const container = document.getElementById("user-avatar-container")
   if (!container) return

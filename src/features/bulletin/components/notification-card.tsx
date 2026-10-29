@@ -121,6 +121,10 @@ function LoadingSkeleton() {
   )
 }
 
+/**
+ * Card that lists notifications with a type filter and optional mark-as-read and undo actions.
+ * @param props Title, notifications, active filter and its setter, badge visibility, read actions and loading state.
+ */
 export function NotificationCard({
   title,
   notifications,

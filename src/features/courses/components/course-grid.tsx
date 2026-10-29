@@ -7,6 +7,10 @@ interface CourseGridProps {
   loading?: boolean
 }
 
+/**
+ * Grid of all courses that match the current filters.
+ * @param props Courses to show and loading flag.
+ */
 export function CourseGrid({ courses, loading = false }: CourseGridProps) {
   return (
     <CourseList

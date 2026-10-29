@@ -4,6 +4,9 @@ import { HomeworkPanel } from "@/features/homework/components"
 import { mountCourseDetailPage } from "@/shared/course-detail/course-detail-helpers"
 import { mountCoursePanel } from "@/shared/course-detail/mount-panel"
 
+/**
+ * Replaces the homework page with the extension layout and the homework panel.
+ */
 export async function homeworkBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing homework page...")
 

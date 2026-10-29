@@ -59,6 +59,9 @@ export interface CourseData {
 }
 
 // Generate skeleton loading HTML in the same two-column shape as the loaded page.
+/**
+ * @returns Skeleton HTML shown while the course overview loads.
+ */
 export function renderOverviewLoading(): string {
   const facts = Array(4)
     .fill("")
@@ -264,6 +267,11 @@ function renderActivityCard(
   `
 }
 
+/**
+ * Renders the course's unfinished items with deadline badges.
+ * @param items Pending items, or null if loading failed.
+ * @returns HTML string.
+ */
 export function renderPendingBody(items: PendingItem[] | null): string {
   if (!items)
     return '<p class="overview-empty">待完成事项加载失败，请刷新页面重试</p>'
@@ -294,6 +302,12 @@ export function renderPendingBody(items: PendingItem[] | null): string {
   `
 }
 
+/**
+ * Renders recently published courseware with relative dates.
+ * @param items Recent uploads, or null if loading failed.
+ * @param now Reference time for relative dates.
+ * @returns HTML string.
+ */
 export function renderRecentBody(
   items: RecentUpload[] | null,
   now = new Date()
@@ -322,6 +336,12 @@ export function renderRecentBody(
   return `<ul class="overview-list">${rows}</ul>`
 }
 
+/**
+ * Renders the course overview: course facts, pending items and recent courseware.
+ * @param data Course details, or null if loading failed.
+ * @param courseId Course id used in links.
+ * @returns HTML string.
+ */
 export function renderOverviewContent(
   data: CourseData | null,
   courseId: string | number = data?.id ?? ""
@@ -355,6 +375,9 @@ export function renderOverviewContent(
   `
 }
 
+/**
+ * Replaces the course overview page with the extension layout and fills it with course details, pending items and recent courseware.
+ */
 export async function courseOverviewBeautifier(): Promise<void> {
   console.log("XZZDPRO: 准备接管课程概览页...")
 

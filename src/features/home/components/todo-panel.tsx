@@ -7,6 +7,10 @@ interface TodoPanelProps {
   loading?: boolean
 }
 
+/**
+ * Panel listing the user's to-dos.
+ * @param props To-dos and loading flag.
+ */
 export function TodoPanel({ todos, loading = false }: TodoPanelProps) {
   return (
     <TodoList

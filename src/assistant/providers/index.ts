@@ -5,6 +5,13 @@ import { createAnthropicModel } from "./anthropic"
 import { createGoogleModel } from "./google"
 import { createOpenAICompatibleModel, createOpenAIModel } from "./openai"
 
+/**
+ * Creates the chat model for the chosen provider.
+ * @param provider Provider id.
+ * @param config API key, model and optional base URL.
+ * @returns LangChain chat model.
+ * @throws If the provider is unknown or its config is incomplete.
+ */
 export function createChatModel(
   provider: Provider,
   config: ProviderConfig

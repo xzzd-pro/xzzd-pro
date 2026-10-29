@@ -25,6 +25,11 @@ interface HomeworkActivity {
   is_closed: boolean
 }
 
+/**
+ * Fetches the user's ongoing and upcoming courses.
+ * @returns Courses for the assistant's picker.
+ * @throws If the request fails.
+ */
 export async function fetchAllCourses(): Promise<CourseInfo[]> {
   const response = await fetchMyCoursesResponse(
     createMyCoursesPayload({
@@ -60,6 +65,11 @@ interface CoursewareActivity {
   uploads?: CoursewareUpload[]
 }
 
+/**
+ * Fetches the courseware of a course.
+ * @param courseId Course id.
+ * @returns Materials with their files; an empty list if the request fails.
+ */
 export async function fetchCourseMaterials(
   courseId: string
 ): Promise<MaterialSummary[]> {
@@ -88,6 +98,11 @@ export async function fetchCourseMaterials(
   }))
 }
 
+/**
+ * Fetches the homework of a course, including closed ones.
+ * @param courseId Course id.
+ * @returns Homework summaries; an empty list if the request fails.
+ */
 export async function fetchHomeworkList(
   courseId: string
 ): Promise<HomeworkSummary[]> {
@@ -111,6 +126,11 @@ export async function fetchHomeworkList(
   }))
 }
 
+/**
+ * Fetches the display name of a course.
+ * @param courseId Course id.
+ * @returns The name, or `Course <id>` if the request fails.
+ */
 export async function fetchCourseName(courseId: string): Promise<string> {
   const response = await fetch(
     `https://courses.zju.edu.cn/api/courses/${courseId}`,
@@ -129,6 +149,12 @@ interface BuildCourseContextOptions {
   includeHomeworks?: boolean
 }
 
+/**
+ * Collects a course's name, materials and (optionally) homework for the assistant.
+ * @param courseId Course id.
+ * @param options Set includeHomeworks to false to skip homework.
+ * @returns The course context.
+ */
 export async function buildCourseContext(
   courseId: string,
   options: BuildCourseContextOptions = {}

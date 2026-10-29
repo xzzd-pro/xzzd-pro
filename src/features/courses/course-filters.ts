@@ -13,6 +13,11 @@ export interface SemesterOption {
 }
 
 // Academic years begin in autumn; calendar-year labels begin in spring.
+/**
+ * Converts a semester name into a sortable number (four terms per year).
+ * @param name Semester name, e.g. "2025-2026学年秋冬" or "2026春".
+ * @returns Sort key, or null if no year is found.
+ */
 export function semesterOrder(name: string): number | null {
   const years = name.match(/(?:19|20)\d{2}/g)
   if (!years) return null
@@ -29,6 +34,13 @@ export function semesterOrder(name: string): number | null {
   return year * 4 + season
 }
 
+/**
+ * Looks up the semester of each course (eight requests at a time, cached for ten minutes) and builds the semester filter options.
+ * @param courses Courses to look up.
+ * @param signal Cancels the lookups.
+ * @param refresh True to ignore the cache.
+ * @returns Filter options newest first, the id of the latest option, a warning if some lookups failed, and each course's semester id.
+ */
 export async function collectCourseSemesters(
   courses: { id: number }[],
   signal: AbortSignal,
@@ -138,6 +150,12 @@ export async function collectCourseSemesters(
 }
 
 // Use the same academic-year half for autumn/winter and spring/summer variants.
+/**
+ * Groups a semester into its academic half-year (autumn-winter or spring-summer).
+ * @param name Semester name.
+ * @param fallbackId Used as the group id when the name has no year.
+ * @returns Group id and display name.
+ */
 export function semesterGroup(
   name: string,
   fallbackId: string
@@ -153,6 +171,14 @@ export function semesterGroup(
   }
 }
 
+/**
+ * Filters courses by semester, status and keyword (matched against course and instructor names).
+ * @param courses Courses to filter.
+ * @param filters Selected semesters, statuses and keyword.
+ * @param semesters Semester id of each course.
+ * @param statuses Statuses of each course.
+ * @returns Courses that match every filter.
+ */
 export function filterCourses<
   T extends {
     id: number

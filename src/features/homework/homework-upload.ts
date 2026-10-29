@@ -14,6 +14,11 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary)
 }
 
+/**
+ * Uploads a file through the background script, which can call the upload endpoints.
+ * @param file File to upload.
+ * @returns The upload id, or null if the upload failed.
+ */
 export async function uploadHomeworkAttachment(
   file: File
 ): Promise<number | null> {

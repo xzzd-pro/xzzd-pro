@@ -93,6 +93,12 @@ export interface ReadUndo {
   savedAt: number
 }
 
+/**
+ * Checks that a stored undo record is well formed and still inside the undo window.
+ * @param value Value read from storage.
+ * @param now Current time in ms.
+ * @returns True if the record can still be undone.
+ */
 export function isUsableUndo(
   value: unknown,
   now = Date.now()

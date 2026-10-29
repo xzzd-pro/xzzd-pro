@@ -1,5 +1,10 @@
 // UTF BOMs take precedence. Otherwise prefer strict UTF-8 and fall back to
 // GB18030, which covers the common GBK/GB2312 Chinese text files.
+/**
+ * Decodes file bytes, detecting UTF-16 by BOM and falling back from UTF-8 to GB18030.
+ * @param bytes Raw file bytes.
+ * @returns Decoded text.
+ */
 export function decodeText(bytes: Uint8Array): string {
   if (bytes[0] === 0xff && bytes[1] === 0xfe)
     return new TextDecoder("utf-16le").decode(bytes)

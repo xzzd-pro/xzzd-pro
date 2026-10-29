@@ -1,6 +1,12 @@
 import { uploadHomeworkAttachment } from "@/features/homework/homework-upload"
 import type { HomeworkSubmission, SubmissionUpload } from "@/types"
 
+/**
+ * Fetches a student's submissions for a homework.
+ * @param activityId Homework activity id.
+ * @param userId Student id.
+ * @returns Submissions; an empty list if the request fails.
+ */
 export async function fetchHomeworkSubmissions(
   activityId: number,
   userId: string
@@ -20,10 +26,21 @@ export async function fetchHomeworkSubmissions(
   }
 }
 
+/**
+ * Uploads a file to attach to a homework submission.
+ * @param file File to upload.
+ * @returns The upload id, or null if the upload failed.
+ */
 export async function uploadHomeworkFile(file: File): Promise<number | null> {
   return uploadHomeworkAttachment(file)
 }
 
+/**
+ * Submits a homework with the given uploaded files.
+ * @param activityId Homework activity id.
+ * @param uploadIds Ids returned by uploadHomeworkFile.
+ * @returns True if the course site accepted the submission.
+ */
 export async function submitHomework(
   activityId: number,
   uploadIds: number[]
@@ -64,6 +81,12 @@ export async function submitHomework(
   }
 }
 
+/**
+ * Builds the upload record shown for a file the user just submitted.
+ * @param uploadId Upload id.
+ * @param file The submitted file.
+ * @returns Upload record in the course site's format.
+ */
 export function createSubmissionUpload(
   uploadId: number,
   file: File
@@ -185,6 +208,11 @@ function buildSubmittedFiles(
   }
 }
 
+/**
+ * Finds the files of the latest real submission, ignoring drafts and submissions without files.
+ * @param submissions Submissions of one homework.
+ * @returns Submission time and files, or null if there is none.
+ */
 export function getLatestSubmittedFiles(
   submissions: HomeworkSubmission[] | null
 ): { submittedAt: string; uploads: SubmissionUpload[] } | null {
@@ -254,6 +282,12 @@ export function getLatestSubmittedFiles(
   return visibleFiles
 }
 
+/**
+ * Combines submitted files from two sources, removing duplicates.
+ * @param primary Preferred source; its submission time wins.
+ * @param fallback Source used when the primary one is empty.
+ * @returns Merged result, or null if both are empty.
+ */
 export function mergeSubmittedFiles(
   primary: { submittedAt: string; uploads: SubmissionUpload[] } | null,
   fallback: { submittedAt: string; uploads: SubmissionUpload[] } | null

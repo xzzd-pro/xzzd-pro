@@ -9,6 +9,12 @@ interface Binding {
 const bindings = new Map<string, Binding>()
 let observer: MutationObserver | undefined
 
+/**
+ * Registers a layout control (such as the sidebar toggle) so its listeners are removed when its element leaves the page or is bound again.
+ * @param key Name of the control.
+ * @param owner Element the listeners belong to.
+ * @returns A binding with an abort signal and cleanup hook, or null if this element is already bound.
+ */
 export function bindLayoutControl(
   key: string,
   owner: HTMLElement

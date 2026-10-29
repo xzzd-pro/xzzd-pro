@@ -201,7 +201,7 @@ function processNotification(
     title = "未知通知"
   }
 
-  // 判断是否属于主要分类
+  // Types tracked separately; every other type shares the "others" read timestamp.
   const mainTypes = [
     "activity_opened",
     "homework_opened_for_submission",
@@ -235,6 +235,9 @@ function processNotification(
   }
 }
 
+/**
+ * Loads notifications and shows them split into unread and read columns with a draggable divider.
+ */
 export function NotificationsPanel() {
   const [allNotifications, setAllNotifications] = useState<
     ProcessedNotification[]
@@ -245,9 +248,9 @@ export function NotificationsPanel() {
   const [unreadFilter, setUnreadFilter] = useState("all")
   const [readFilter, setReadFilter] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
-  // 临时已读的通知类型，用于去掉红点但保持在未读栏中
+  // Types marked read in this visit: their badges clear, but they stay in the unread column until reload.
   const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
-  // 上次“标为已读”之前的状态，24 小时内可撤销
+  // State before the last "mark as read", restorable for 24 hours.
   const [readUndo, setReadUndo] = useState<ReadUndo | null>(null)
 
   useEffect(() => {
@@ -264,7 +267,7 @@ export function NotificationsPanel() {
       cancelled = true
     }
   }, [])
-  // 未读栏占两栏总宽的比例，可拖动中间分隔条调整（仅宽屏双栏时生效）
+  // Share of the width given to the unread column; adjustable by dragging the divider (two-column layout only).
   const [splitRatio, setSplitRatioState] = useState(SPLIT_DEFAULT)
   // Mirrors the state so fast key repeats read the latest value, not the last render's.
   const splitRatioRef = useRef(SPLIT_DEFAULT)
@@ -388,7 +391,7 @@ export function NotificationsPanel() {
     return () => controller.abort()
   }, [])
 
-  // 标记若干筛选类别为临时已读：红点立即消失，刷新后移动到已读栏
+  // Marks filter categories as read: badges clear now, items move to the read column after reload.
   const markFiltersAsRead = useCallback(
     async (filters: readonly string[]) => {
       setTempReadTypes((prev) => {
@@ -399,7 +402,7 @@ export function NotificationsPanel() {
         return newSet
       })
 
-      // 一次算出所有类别的时间戳再保存，避免连续保存互相覆盖
+      // Compute every category's timestamp first and save once, so consecutive saves don't overwrite each other.
       const newTimestamps = advanceReadTimestamps(
         readTimestamps,
         filters,
@@ -414,7 +417,7 @@ export function NotificationsPanel() {
     [readTimestamps, allNotifications]
   )
 
-  // 标记前保存当前状态，24 小时内可撤销
+  // Snapshot the current state before marking, so it can be undone within 24 hours.
   const handleMarkRead = useCallback(
     async (filters: readonly string[]) => {
       const snapshot: ReadUndo = {
@@ -432,7 +435,7 @@ export function NotificationsPanel() {
     [readTimestamps, markFiltersAsRead]
   )
 
-  // 恢复到上次“标为已读”之前：时间戳、红点和已读/未读分栏都立即还原
+  // Restore the state before the last "mark as read": timestamps, badges and columns revert at once.
   const handleUndoMarkRead = useCallback(async () => {
     if (!readUndo) return
     const restored: ReadTimestamps = {

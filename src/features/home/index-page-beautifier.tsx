@@ -129,7 +129,6 @@ function generateCourseUrl(item: ApiCourseData): string {
   return generateCourseUrlById(item.id)
 }
 
-// Render courses using React
 function renderCoursesReact(
   container: HTMLElement,
   courses: TodayCourse[],
@@ -238,7 +237,6 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
     return
   }
 
-  // Show loading state
   renderCoursesReact(container, [], true)
 
   // Parallel fetch: Background (ZDBK) and API (Courses)
@@ -564,7 +562,6 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
   }
 }
 
-// Render todos using React
 function renderTodosReact(
   container: HTMLElement,
   todos: TodoItem[],
@@ -580,7 +577,6 @@ async function loadAndRenderTodos() {
   const container = $(".todo-list-container")
   if (!container) return
 
-  // Show loading state
   renderTodosReact(container, [], true)
 
   let fetchedTodos: ApiTodoData[] | null = null
@@ -592,8 +588,6 @@ async function loadAndRenderTodos() {
   const rawTodos = fetchedTodos ?? []
 
   const today = new Date()
-
-  // Process todos
 
   const todos: TodoItem[] = rawTodos
     .map((item) => {
@@ -639,13 +633,15 @@ async function loadAndRenderTodos() {
 }
 
 // main function
+/**
+ * Replaces the home page with the extension layout: summary bar, today's classes and to-dos.
+ */
 export async function indexPageBeautifier(): Promise<void> {
   console.log("XZZDPRO: 准备接管主页...")
 
   const usernameElement = $("#userCurrentName")
   const username = usernameElement?.textContent?.trim() ?? ""
 
-  // Get student ID from .user-no
   const userNoElement = $(".user-no")
   const studentId = userNoElement?.textContent?.trim() ?? ""
   console.log("XZZDPRO: Found student ID:", studentId)
@@ -702,7 +698,6 @@ export async function indexPageBeautifier(): Promise<void> {
   loadAndRenderCourses(studentId)
   loadAndRenderTodos()
 
-  // Apply saved layout state and setup resize handlers
   // Use requestAnimationFrame to ensure DOM is ready
   requestAnimationFrame(() => {
     void applySavedLayout()

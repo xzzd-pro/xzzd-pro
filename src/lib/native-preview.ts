@@ -1,3 +1,9 @@
+/**
+ * Builds the URL of an activity page that the extension leaves unmodified, for the site's own previewer.
+ * @param courseId Course id.
+ * @param activityId Activity id.
+ * @returns The activity URL with the native flag.
+ */
 export function nativeActivityUrl(
   courseId: number | string,
   activityId: number | string
@@ -5,10 +11,18 @@ export function nativeActivityUrl(
   return `https://courses.zju.edu.cn/course/${encodeURIComponent(courseId)}/learning-activity?xzzdpro-native=1#/${encodeURIComponent(activityId)}`
 }
 
+/**
+ * @param url Page URL.
+ * @returns True if the page was opened for the site's own previewer and must not be replaced.
+ */
 export function isNativePreviewPage(url: string): boolean {
   return new URL(url).searchParams.get("xzzdpro-native") === "1"
 }
 
+/**
+ * @param url Page URL.
+ * @returns The same URL with the native flag, so the extension leaves it unmodified.
+ */
 export function nativeCurrentPageUrl(url: string): string {
   const parsed = new URL(url)
   parsed.searchParams.set("xzzdpro-native", "1")
@@ -16,6 +30,13 @@ export function nativeCurrentPageUrl(url: string): string {
 }
 
 // Request a fresh school-issued URL; preview links must not be cached.
+/**
+ * Asks the course site for the preview URL of a file inside an activity.
+ * @param fileUrl Blob URL of the file (/api/uploads/<id>/blob).
+ * @param activityUrl Activity page URL (#/<activityId>).
+ * @returns The site's preview URL.
+ * @throws If either URL is not a course-site URL of the expected shape or the request fails.
+ */
 export async function fetchNativePreviewUrl(
   fileUrl: string,
   activityUrl: string

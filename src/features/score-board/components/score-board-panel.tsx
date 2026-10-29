@@ -195,6 +195,10 @@ interface ScoreBoardPanelProps {
   courseId: string
 }
 
+/**
+ * Loads a course's scores and shows them in the score board.
+ * @param props Course id.
+ */
 export function ScoreBoardPanel({ courseId }: ScoreBoardPanelProps) {
   const [data, setData] = React.useState<ScoreData | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)

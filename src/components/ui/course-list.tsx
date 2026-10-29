@@ -153,6 +153,10 @@ function EmptyState({ message }: { message: string }) {
   )
 }
 
+/**
+ * List of course cards, with loading skeletons and an empty state.
+ * @param props Courses to show, the card variant (today's or all courses), loading flag and empty-state message.
+ */
 export function CourseList({
   courses,
   variant,

@@ -328,7 +328,7 @@ export interface LayoutState {
 }
 
 // Score board types
-// 1. 总成绩设置
+// 1. Final score settings
 export interface AnnounceScoreSettings {
   announce_raw_score_time: string | null
   announce_raw_score_type: string
@@ -342,7 +342,7 @@ export interface AnnounceScoreSettingsResponse {
   announce_score_settings: AnnounceScoreSettings
 }
 
-// 2. 考勤成绩
+// 2. Attendance scores
 export interface RollcallItem {
   is_expired: boolean
   is_number: boolean
@@ -365,7 +365,7 @@ export interface RollcallsResponse {
   rollcalls: RollcallItem[]
 }
 
-// 3. 课堂表现成绩
+// 3. Class performance scores
 export interface PerformanceScoreResponse {
   announce_score_setting: string
   extra_score_updated_time: string | null
@@ -380,7 +380,7 @@ export interface PerformanceScoreResponse {
   standard_score: number
 }
 
-// 4. 自定义成绩项
+// 4. Custom score items
 export interface CustomScoreItem {
   announce_score_time: string | null
   announce_score_type: string
@@ -398,7 +398,7 @@ export interface CustomScoreItemsResponse {
   custom_score_items: CustomScoreItem[]
 }
 
-// 5. 学习活动成绩 - 作业
+// 5. Learning activity scores: homework
 export interface HomeworkScoreActivity {
   id: number
   title: string
@@ -424,7 +424,7 @@ export interface HomeworkScoresResponse {
   scores: HomeworkScoreItem[]
 }
 
-// 5. 学习活动成绩 - 测试
+// 5. Learning activity scores: exams
 export interface ExamScoreItem {
   activity_id: number
   score: number
@@ -446,7 +446,7 @@ export interface ExamsResponse {
   exams: ExamInfo[]
 }
 
-// 6. 讨论成绩
+// 6. Discussion scores
 export interface ForumScoreItem {
   activity_id: number
   score: number | null
@@ -458,7 +458,7 @@ export interface ForumScoresResponse {
   forum_scores: ForumScoreItem[]
 }
 
-// 7. 课堂测试成绩
+// 7. In-class quiz scores
 export interface ClassroomScoreItem {
   activity_id: number
   score: number | null
@@ -470,7 +470,7 @@ export interface ClassroomScoresResponse {
   classroom_scores: ClassroomScoreItem[]
 }
 
-// 8. 问卷成绩
+// 8. Questionnaire scores
 export interface QuestionnaireScoreItem {
   activity_id: number
   score: number | null

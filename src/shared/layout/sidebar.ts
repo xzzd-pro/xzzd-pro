@@ -16,6 +16,11 @@ interface SidebarOptions {
   currentPage?: "home" | "notification" | "courses" | "assistant"
 }
 
+/**
+ * Renders the extension sidebar navigation.
+ * @param options Page to highlight.
+ * @returns HTML string.
+ */
 export function renderSidebar(options: SidebarOptions = {}): string {
   const { currentPage } = options
 
@@ -123,6 +128,9 @@ export function renderSidebar(options: SidebarOptions = {}): string {
   `
 }
 
+/**
+ * Binds the sidebar collapse button and resize handle, and restores the saved sidebar state.
+ */
 export async function setupSidebarToggle(): Promise<void> {
   const toggleBtn = document.getElementById("sidebar-toggle")
   const resizeHandle = document.getElementById("sidebar-resize-handle")
@@ -180,7 +188,6 @@ export async function setupSidebarToggle(): Promise<void> {
     })
   }
 
-  // Load and apply saved state
   try {
     const state = await storage.get<{
       sidebarCollapsed?: boolean
@@ -199,7 +206,6 @@ export async function setupSidebarToggle(): Promise<void> {
     setSidebarWidth(SIDEBAR_DEFAULT_WIDTH)
   }
 
-  // Setup click handler
   toggleBtn.addEventListener(
     "click",
     async () => {
@@ -210,7 +216,6 @@ export async function setupSidebarToggle(): Promise<void> {
         setSidebarWidth(SIDEBAR_DEFAULT_WIDTH)
       }
 
-      // Save state
       try {
         const width = readSidebarWidth()
         await persistSidebarState(isCollapsed, width)

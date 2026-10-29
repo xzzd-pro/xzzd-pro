@@ -171,6 +171,10 @@ type CoursewareDownloadTarget =
   | { type: "selected"; completed: number; total: number }
   | { type: "section"; sectionId: number; completed: number; total: number }
 
+/**
+ * Loads a course's courseware and shows it by section, with zip download of selected files.
+ * @param props Course id.
+ */
 export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
   const [sections, setSections] = React.useState<ProcessedCoursewareSection[]>(
     []

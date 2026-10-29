@@ -16,7 +16,6 @@ import {
   setMessages,
   setupChatHandlers
 } from "../assistant/handlers/chat-handler"
-// Import handlers
 import {
   clearSelectedCourseMaterials,
   initAssistant,
@@ -31,7 +30,6 @@ import {
   setOverlayElement as setSettingsOverlayElement,
   setupSettingsHandlers
 } from "../assistant/handlers/settings-handler"
-// Import CSS content
 import { OVERLAY_STYLES } from "../assistant/styles/overlay-styles"
 import type {
   AssistantSettings,
@@ -66,58 +64,108 @@ let externalClearHistoryHandler: ((event: Event) => void) | null = null
 let externalMaterialToggleHandler: ((event: Event) => void) | null = null
 
 // Export state getters/setters for handlers
+/**
+ * Returns the assistant's root container inside the shadow DOM.
+ * @returns The container element, or null when the assistant is not mounted.
+ */
 export function getOverlayElement(): HTMLElement | null {
   return overlayElement
 }
 
+/**
+ * Returns the host element that carries the assistant's shadow root.
+ * @returns The host element, or null when the overlay is closed.
+ */
 export function getOverlayHost(): HTMLElement | null {
   return overlayHost
 }
 
+/**
+ * Marks whether a model response is currently being generated.
+ * @param value True while a response is streaming.
+ */
 export function setGenerating(value: boolean): void {
   isGenerating = value
 }
 
+/**
+ * @returns True while a model response is being generated.
+ */
 export function getGenerating(): boolean {
   return isGenerating
 }
 
+/**
+ * @returns True when the assistant is in flashcard mode.
+ */
 export function getIsFlashcardMode(): boolean {
   return isFlashcardMode
 }
 
+/**
+ * Switches flashcard mode on or off.
+ * @param value True to enable flashcard mode.
+ */
 export function setIsFlashcardMode(value: boolean): void {
   isFlashcardMode = value
 }
 
+/**
+ * @returns True when the flashcard panel is shown beside the chat.
+ */
 export function getIsFlashcardSplitView(): boolean {
   return isFlashcardSplitView
 }
 
+/**
+ * Shows or hides the flashcard panel beside the chat.
+ * @param value True to show the split view.
+ */
 export function setIsFlashcardSplitView(value: boolean): void {
   isFlashcardSplitView = value
 }
 
+/**
+ * @returns True while the split-view animation is running.
+ */
 export function getIsSplitTransitioning(): boolean {
   return isSplitTransitioning
 }
 
+/**
+ * Records whether the split-view animation is running, so input can be ignored meanwhile.
+ * @param value True while the animation runs.
+ */
 export function setIsSplitTransitioning(value: boolean): void {
   isSplitTransitioning = value
 }
 
+/**
+ * @returns Files the user attached that have not been sent yet.
+ */
 export function getPendingAttachments(): File[] {
   return pendingAttachments
 }
 
+/**
+ * Replaces the list of files waiting to be sent.
+ * @param files Files attached in the composer.
+ */
 export function setPendingAttachments(files: File[]): void {
   pendingAttachments = files
 }
 
+/**
+ * @returns The loaded assistant settings, or null before they are loaded.
+ */
 export function getCurrentSettings(): AssistantSettings | null {
   return currentSettings
 }
 
+/**
+ * Stores the assistant settings here and in the course handler.
+ * @param settings Settings to use, or null to clear them.
+ */
 export function setCurrentSettingsState(
   settings: AssistantSettings | null
 ): void {
@@ -125,33 +173,57 @@ export function setCurrentSettingsState(
   setCurrentSettings(settings)
 }
 
+/**
+ * @returns The id of the course the assistant is talking about, or null.
+ */
 export function getCurrentCourseId(): string | null {
   return currentCourseId
 }
 
+/**
+ * Sets the active course id here and in the course handler.
+ * @param id Course id, or null when no course is selected.
+ */
 export function setCurrentCourseIdState(id: string | null): void {
   currentCourseId = id
   setCurrentCourseId(id)
 }
 
+/**
+ * @returns The display name of the active course.
+ */
 export function getCurrentCourseName(): string {
   return currentCourseName
 }
 
+/**
+ * Sets the active course name here and in the course handler.
+ * @param name Display name of the course.
+ */
 export function setCurrentCourseNameState(name: string): void {
   currentCourseName = name
   setCurrentCourseName(name)
 }
 
+/**
+ * @returns Courses the user can pick in the assistant.
+ */
 export function getCourses(): CourseInfo[] {
   return courses
 }
 
+/**
+ * Replaces the course list here and in the course handler.
+ * @param newCourses Courses available to the assistant.
+ */
 export function setCoursesState(newCourses: CourseInfo[]): void {
   courses = newCourses
   setCourses(newCourses)
 }
 
+/**
+ * @returns Materials the user selected as context, keyed by selection key.
+ */
 export function getSelectedCourseMaterialsMap(): Map<
   string,
   { file: MaterialFile; materialTitle: string }
@@ -159,51 +231,82 @@ export function getSelectedCourseMaterialsMap(): Map<
   return selectedCourseMaterials
 }
 
+/**
+ * Clears the selected materials here and in the course handler.
+ */
 export function clearSelectedMaterials(): void {
   selectedCourseMaterials.clear()
   clearSelectedCourseMaterials()
 }
 
+/**
+ * @returns Messages of the current chat session.
+ */
 export function getMessagesState(): ChatMessage[] {
   return messages
 }
 
+/**
+ * Replaces the chat messages here and in the chat handler, which re-renders them.
+ * @param newMessages Messages to show.
+ */
 export function setMessagesState(newMessages: ChatMessage[]): void {
   messages = newMessages
   setMessages(newMessages)
 }
 
 // Event handlers export for cleanup
+/**
+ * @returns The window listener that toggles the flashcard split view, if registered.
+ */
 export function getExternalSplitToggleHandler():
   | ((event: Event) => void)
   | null {
   return externalSplitToggleHandler
 }
 
+/**
+ * Remembers the flashcard split-view listener so it can be removed on close.
+ * @param handler The listener, or null once removed.
+ */
 export function setExternalSplitToggleHandler(
   handler: ((event: Event) => void) | null
 ): void {
   externalSplitToggleHandler = handler
 }
 
+/**
+ * @returns The window listener that clears chat history, if registered.
+ */
 export function getExternalClearHistoryHandler():
   | ((event: Event) => void)
   | null {
   return externalClearHistoryHandler
 }
 
+/**
+ * Remembers the clear-history listener so it can be removed on close.
+ * @param handler The listener, or null once removed.
+ */
 export function setExternalClearHistoryHandler(
   handler: ((event: Event) => void) | null
 ): void {
   externalClearHistoryHandler = handler
 }
 
+/**
+ * @returns The window listener that toggles a course material, if registered.
+ */
 export function getExternalMaterialToggleHandler():
   | ((event: Event) => void)
   | null {
   return externalMaterialToggleHandler
 }
 
+/**
+ * Remembers the material-toggle listener so it can be removed on close.
+ * @param handler The listener, or null once removed.
+ */
 export function setExternalMaterialToggleHandler(
   handler: ((event: Event) => void) | null
 ): void {
@@ -211,10 +314,16 @@ export function setExternalMaterialToggleHandler(
 }
 
 // Main functions
+/**
+ * @returns True when the floating assistant overlay is attached to the page.
+ */
 export function isAssistantOpen(): boolean {
   return overlayHost !== null && document.body.contains(overlayHost)
 }
 
+/**
+ * Closes the floating assistant: removes its window listeners and overlay, and restores page scrolling.
+ */
 export function closeAssistant(): void {
   if (externalSplitToggleHandler) {
     window.removeEventListener(
@@ -260,8 +369,11 @@ function injectOverlayStyles(root: ShadowRoot): void {
 }
 
 // Factory function to create the assistant host element
+/**
+ * Builds the assistant embedded in the AI page: a host element with a closed shadow root, styles and the chat UI, then initializes course data.
+ * @returns The host element, ready to be inserted into the page.
+ */
 export async function createAssistantHost(): Promise<HTMLElement> {
-  // Create Host
   const host = document.createElement("div")
   host.id = "xzzdpro-assistant-embedded-host"
   host.style.width = "100%"
@@ -271,10 +383,8 @@ export async function createAssistantHost(): Promise<HTMLElement> {
   // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
   const shadow = host.attachShadow({ mode: "closed" })
 
-  // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)
 
-  // Create Container
   overlayElement = document.createElement("div")
   overlayElement.className = "assistant-fullpage"
   overlayElement.innerHTML = `
@@ -285,15 +395,12 @@ export async function createAssistantHost(): Promise<HTMLElement> {
 
   shadow.appendChild(overlayElement)
 
-  // Set overlayHost for global reference
   overlayHost = host
   setOverlayElement(overlayElement)
   setChatOverlayElement(overlayElement)
   setSettingsOverlayElement(overlayElement)
   setUiUtilsOverlayElement(overlayElement)
 
-  // Initialize Logic
-  // Apply initial theme
   const theme = (await storage.get("theme")) || "light"
   host.setAttribute("data-theme", theme)
 
@@ -312,6 +419,9 @@ export async function createAssistantHost(): Promise<HTMLElement> {
   return host
 }
 
+/**
+ * Opens the floating assistant overlay, or closes it if it is already open.
+ */
 export async function openAssistant(): Promise<void> {
   console.log("XZZDPRO: openAssistant called")
   if (isAssistantOpen()) {
@@ -322,7 +432,6 @@ export async function openAssistant(): Promise<void> {
 
   document.body.style.overflow = "hidden"
 
-  // Create Host
   overlayHost = document.createElement("div")
   overlayHost.id = "xzzdpro-assistant-host"
   overlayHost.style.position = "fixed"
@@ -335,10 +444,8 @@ export async function openAssistant(): Promise<void> {
   // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
   const shadow = overlayHost.attachShadow({ mode: "closed" })
 
-  // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)
 
-  // Create Container (overlayElement)
   overlayElement = document.createElement("div")
   overlayElement.className = "assistant-overlay"
   overlayElement.innerHTML = `
@@ -356,13 +463,11 @@ export async function openAssistant(): Promise<void> {
 
   shadow.appendChild(overlayElement)
 
-  // Update global reference
   setOverlayElement(overlayElement)
   setChatOverlayElement(overlayElement)
   setSettingsOverlayElement(overlayElement)
   setUiUtilsOverlayElement(overlayElement)
 
-  // Close button handler
   const closeBtn = overlayElement.querySelector("#assistant-close-btn")
   closeBtn?.addEventListener("click", () => {
     closeAssistant()
@@ -377,7 +482,6 @@ export async function openAssistant(): Promise<void> {
   // ESC key handler
   document.addEventListener("keydown", handleEscClose)
 
-  // Apply theme
   const theme = (await storage.get("theme")) || "light"
   overlayHost.setAttribute("data-theme", theme)
 
@@ -389,10 +493,8 @@ export async function openAssistant(): Promise<void> {
     }
   })
 
-  // Add to body
   document.body.appendChild(overlayHost)
 
-  // Initialize
   await initAssistant()
 }
 

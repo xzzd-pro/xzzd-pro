@@ -119,6 +119,10 @@ function EmptyState({ message }: { message: string }) {
   )
 }
 
+/**
+ * List of to-do items with deadline badges, loading skeletons and an empty state.
+ * @param props To-dos to show, loading flag and empty-state message.
+ */
 export function TodoList({
   todos,
   loading = false,

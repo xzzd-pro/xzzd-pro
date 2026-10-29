@@ -64,7 +64,6 @@ export class ThemeToggle {
     if (!binding) return
     const { signal } = binding
 
-    // 初始化图标
     const fallbackTheme = getFallbackTheme()
     this.applyTheme(fallbackTheme)
 
@@ -77,7 +76,7 @@ export class ThemeToggle {
       })
       .catch((error) => console.warn("XZZDPRO: Failed to load theme", error))
 
-    // 监听storage变化
+    // Follow theme changes made in other tabs.
     const callbacks = {
       theme: (change: { newValue?: string }) => {
         if (signal.aborted || !themeToggleBtn.isConnected) return
@@ -87,7 +86,6 @@ export class ThemeToggle {
     this.storage.watch(callbacks)
     binding.onCleanup(() => this.storage.unwatch(callbacks))
 
-    // 绑定点击事件
     themeToggleBtn.addEventListener(
       "click",
       async () => {
@@ -96,7 +94,6 @@ export class ThemeToggle {
           if (signal.aborted || !themeToggleBtn.isConnected) return
           const newTheme = currentTheme === "light" ? "dark" : "light"
 
-          // 保存到storage
           await this.storage.set("theme", newTheme)
           if (signal.aborted || !themeToggleBtn.isConnected) return
           this.applyTheme(newTheme)
@@ -120,6 +117,12 @@ export class ThemeToggle {
   }
 }
 
+/**
+ * Creates a theme toggle for a button.
+ * @param buttonId Id of the toggle button.
+ * @param iconClass Class of the icon element inside it.
+ * @returns The theme toggle.
+ */
 export function createThemeToggle(
   buttonId?: string,
   iconClass?: string

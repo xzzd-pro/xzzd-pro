@@ -7,6 +7,11 @@ export const SPLIT_KEYBOARD_STEP = 0.05
 /** Width of the drag strip between the two cards, in px. */
 export const SPLIT_HANDLE_WIDTH = 24
 
+/**
+ * Turns a stored value into a valid column ratio.
+ * @param value Stored ratio as a number or numeric string.
+ * @returns The ratio clamped to [SPLIT_MIN, SPLIT_MAX], or SPLIT_DEFAULT if the value is missing or not a number.
+ */
 export function clampSplitRatio(value: unknown): number {
   // Number(null) and Number("") are 0, which would collapse the column; treat them as missing.
   const ratio =
