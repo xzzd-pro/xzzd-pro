@@ -30,7 +30,7 @@ export function isLoginUrl(raw: string): boolean {
 /**
  * Throws a typed error when a timetable request was redirected to login or rejected.
  * @param response Response of the timetable request.
- * @throws TimetableRequestError with a login_required or request_failed reason.
+ * @throws TimetableRequestError with code "login_required", or "unavailable" (plus the HTTP status) for any other failure.
  */
 export function checkTimetableResponse(response: Response): void {
   if (response.status === 401 || isLoginUrl(response.url)) {

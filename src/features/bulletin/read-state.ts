@@ -94,7 +94,8 @@ export interface ReadUndo {
 }
 
 /**
- * Checks that a stored undo record is well formed and still inside the undo window.
+ * Checks that a stored undo record has a timestamps object and a savedAt time
+ * inside the undo window. The individual timestamps are not validated.
  * @param value Value read from storage.
  * @param now Current time in ms.
  * @returns True if the record can still be undone.
