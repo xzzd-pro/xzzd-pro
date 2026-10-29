@@ -1,8 +1,8 @@
 // lib/homeworkBeautifier.tsx
 
-import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
-import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { HomeworkPanel } from "@/features/homework/components"
+import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 
 export async function homeworkBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing homework page...")

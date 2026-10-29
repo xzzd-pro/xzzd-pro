@@ -1,5 +1,6 @@
+import { ChevronDown, Download, Loader2 } from "lucide-react"
 import * as React from "react"
-import { nativeActivityUrl } from "@/lib/nativePreview"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader } from "@/components/ui/card"
@@ -9,12 +10,11 @@ import {
   CollapsibleTrigger
 } from "@/components/ui/collapsible"
 import { Skeleton } from "@/components/ui/skeleton"
-import { downloadCoursewareZip } from "@/features/courseware/coursewareDownload"
 import { fetchCoursewares } from "@/features/courseware/coursewareApi"
+import { downloadCoursewareZip } from "@/features/courseware/coursewareDownload"
 import { formatFileSize } from "@/lib/fileFormat"
+import { nativeActivityUrl } from "@/lib/nativePreview"
 import { cn } from "@/lib/utils"
-import { ChevronDown, Download, Loader2 } from "lucide-react"
-import { CoursewareContent } from "./CoursewareContent"
 import type {
   CourseModule,
   CourseModulesResponse,
@@ -22,7 +22,11 @@ import type {
   ProcessedCoursewareSection
 } from "@/types"
 
-function toFiniteNumber(value: number | string | null | undefined): number | null {
+import { CoursewareContent } from "./CoursewareContent"
+
+function toFiniteNumber(
+  value: number | string | null | undefined
+): number | null {
   if (value === null || value === undefined) return null
 
   const normalized = typeof value === "number" ? value : Number(value)
@@ -30,7 +34,9 @@ function toFiniteNumber(value: number | string | null | undefined): number | nul
 }
 
 function getActivityModuleId(activity: CoursewareActivity): number | null {
-  return toFiniteNumber(activity.module_id) ?? toFiniteNumber(activity.module?.id)
+  return (
+    toFiniteNumber(activity.module_id) ?? toFiniteNumber(activity.module?.id)
+  )
 }
 
 function sortCoursewaresByModule(
@@ -166,7 +172,9 @@ type CoursewareDownloadTarget =
   | { type: "section"; sectionId: number; completed: number; total: number }
 
 export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
-  const [sections, setSections] = React.useState<ProcessedCoursewareSection[]>([])
+  const [sections, setSections] = React.useState<ProcessedCoursewareSection[]>(
+    []
+  )
   const [isLoading, setIsLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [downloadTarget, setDownloadTarget] =
@@ -202,7 +210,9 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
         setSections(nextSections)
         setSelectedFileIds(
           (previous) =>
-            new Set([...previous].filter((fileId) => downloadableIds.has(fileId)))
+            new Set(
+              [...previous].filter((fileId) => downloadableIds.has(fileId))
+            )
         )
         setOpenSectionIds(
           (previous) =>
@@ -319,9 +329,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
     }
   }
 
-  const handleDownloadSection = async (
-    section: ProcessedCoursewareSection
-  ) => {
+  const handleDownloadSection = async (section: ProcessedCoursewareSection) => {
     const entries = section.files
       .filter((file) => file.canDownload)
       .map((file) => ({
@@ -364,9 +372,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
 
   if (error) {
     return (
-      <p className="text-center text-destructive py-10 text-base">
-        {error}
-      </p>
+      <p className="text-center text-destructive py-10 text-base">{error}</p>
     )
   }
 
@@ -382,10 +388,12 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
     <div className="courseware-panel space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/70 pb-5">
         <div className="min-w-0">
-          <div className="text-base font-semibold text-foreground">课程资料</div>
+          <div className="text-base font-semibold text-foreground">
+            课程资料
+          </div>
           <div className="mt-1 text-sm text-muted-foreground">
-            {sections.length} 个章节 · 共 {allDownloadableEntries.length} 个可下载文件，已选{" "}
-            {selectedDownloadableEntries.length} 个
+            {sections.length} 个章节 · 共 {allDownloadableEntries.length}{" "}
+            个可下载文件，已选 {selectedDownloadableEntries.length} 个
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -393,7 +401,11 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
             <span className="text-sm text-destructive">{downloadError}</span>
           )}
           {selectedDownloadableEntries.length > 0 && !isDownloading && (
-            <Button size="sm" variant="ghost" className="bg-transparent" onClick={handleClearSelection}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="bg-transparent"
+              onClick={handleClearSelection}>
               清空选择
             </Button>
           )}
@@ -464,7 +476,8 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                         className={cn(
                           section.isClosed &&
                             "border-success/25 bg-success/10 text-success",
-                          !section.isClosed && section.isStarted &&
+                          !section.isClosed &&
+                            section.isStarted &&
                             "border-red-500/25 bg-red-100 text-red-700 dark:border-red-400/25 dark:bg-red-950 dark:text-red-300",
                           !section.isStarted &&
                             !section.isClosed &&
@@ -505,7 +518,9 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                       }
                       selectedFileIds={selectedFileIds}
                       onFileSelectionChange={handleFileSelectionChange}
-                      onDownloadSection={() => void handleDownloadSection(section)}
+                      onDownloadSection={() =>
+                        void handleDownloadSection(section)
+                      }
                     />
                   </div>
                 </CollapsibleContent>

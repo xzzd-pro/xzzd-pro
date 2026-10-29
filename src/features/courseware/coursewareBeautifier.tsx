@@ -1,8 +1,8 @@
 // lib/coursewareBeautifier.tsx
 
-import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
-import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { CoursewarePanel } from "@/features/courseware/components"
+import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 
 export async function coursewareBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing courseware page...")
@@ -10,7 +10,8 @@ export async function coursewareBeautifier(): Promise<void> {
   const page = await mountCourseDetailPage({
     currentPage: "materials",
     pageTitle: "课件下载",
-    contentHtml: '<div id="courseware-mount-point" class="materials-list"></div>'
+    contentHtml:
+      '<div id="courseware-mount-point" class="materials-list"></div>'
   })
   if (!page) return
 

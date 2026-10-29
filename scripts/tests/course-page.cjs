@@ -12,8 +12,8 @@ function createHarness() {
     __dirname,
     "../../src/features/courses/coursePageBeautifier.tsx"
   )
-  const source = fs.readFileSync(filename, "utf8") +
-    "\nexport { loadAndRenderCourses };"
+  const source =
+    fs.readFileSync(filename, "utf8") + "\nexport { loadAndRenderCourses };"
   const code = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
@@ -39,8 +39,12 @@ function createHarness() {
             const root = {
               container: target,
               unmounted: false,
-              unmount() { this.unmounted = true },
-              render(props) { renders.push({ container: target, props }) }
+              unmount() {
+                this.unmounted = true
+              },
+              render(props) {
+                renders.push({ container: target, props })
+              }
             }
             roots.push(root)
             return root
@@ -49,13 +53,19 @@ function createHarness() {
       }
       if (name === "@/shared/api/myCoursesApi") {
         return {
-          createMyCoursesPayload: (payload) => { payloads.push(payload); return payload },
-          fetchMyCoursesResponse: () => new Promise((resolve) => {
-            pending.push((courses) => resolve({
-              ok: true,
-              json: async () => ({ courses })
-            }))
-          })
+          createMyCoursesPayload: (payload) => {
+            payloads.push(payload)
+            return payload
+          },
+          fetchMyCoursesResponse: () =>
+            new Promise((resolve) => {
+              pending.push((courses) =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ courses })
+                })
+              )
+            })
         }
       }
       // Layout/component imports are outside these loader-focused tests.
@@ -69,7 +79,9 @@ function createHarness() {
     payloads,
     renders,
     roots,
-    get container() { return container },
+    get container() {
+      return container
+    },
     replaceContainer() {
       container.isConnected = false
       container = { isConnected: true }

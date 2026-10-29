@@ -1,31 +1,47 @@
 // lib/indexPageBeautifier
 
-import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
-import { bindLayoutControl } from "@/shared/layout/bindings"
 import * as React from "react"
 import { createRoot, type Root } from "react-dom/client"
+
 import { sendToBackground } from "@plasmohq/messaging"
+
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
+import {
+  TodayCoursesPanel,
+  type TodayCourse
+} from "@/features/home/components/TodayCoursesPanel"
+import { TodoPanel, type TodoItem } from "@/features/home/components/TodoPanel"
+import {
+  countDeadlines,
+  renderQuote,
+  renderSummaryHeading,
+  setSummaryStat,
+  setupQuoteRotation
+} from "@/features/home/homeSummary"
+import {
+  createMyCoursesPayload,
+  fetchMyCoursesResponse
+} from "@/shared/api/myCoursesApi"
+import {
+  fetchTodos,
+  TODO_TYPE_NAMES,
+  todoActivityUrl
+} from "@/shared/api/todos"
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 import {
   renderHeader,
   renderSidebar,
-  setupThemeToggle,
+  setupAvatarUpload,
   setupHelpModal,
   setupSidebarToggle,
-  setupAvatarUpload,
+  setupThemeToggle
 } from "@/shared/layout"
-import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
+import { bindLayoutControl } from "@/shared/layout/bindings"
 import {
-  setupResizeHandlers,
   applySavedLayout,
+  setupResizeHandlers
 } from "@/shared/layout/resizeHandlers"
-
-import { TodayCoursesPanel, type TodayCourse } from "@/features/home/components/TodayCoursesPanel"
-import { TodoPanel, type TodoItem } from "@/features/home/components/TodoPanel"
-import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
-import { countDeadlines, renderQuote, renderSummaryHeading, setSummaryStat, setupQuoteRotation } from "@/features/home/homeSummary"
-
-import type { ApiTodoData, ApiCourseData } from "@/types"
-import { fetchTodos, todoActivityUrl, TODO_TYPE_NAMES } from "@/shared/api/todos"
+import type { ApiCourseData, ApiTodoData } from "@/types"
 
 const $ = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
@@ -83,7 +99,9 @@ function stripHtmlToText(raw: string): string {
   if (!raw) return ""
   const temp = document.createElement("div")
   temp.innerHTML = raw
-  return (temp.textContent || temp.innerText || "").replace(/\u00a0/g, " ").trim()
+  return (temp.textContent || temp.innerText || "")
+    .replace(/\u00a0/g, " ")
+    .trim()
 }
 
 function normalizeCourseName(raw: string): string {
@@ -170,29 +188,44 @@ function loadAndRenderCourses(studentId: string): Promise<void> {
   if (pendingCourseLoad) return pendingCourseLoad
   const container = $(".today-courses-card .courses-list-container")
   if (!container) return Promise.resolve()
-  const binding = bindLayoutControl('homepage-courses', container)
+  const binding = bindLayoutControl("homepage-courses", container)
   if (binding) {
-    binding.onCleanup(() => { stopLoginPolling(); pageGeneration++ })
-    window.addEventListener('pagehide', () => {
-      pageSuspended = true
-      pageGeneration++
+    binding.onCleanup(() => {
       stopLoginPolling()
-    }, { signal: binding.signal })
-    window.addEventListener('pageshow', (event) => {
-      pageSuspended = false
-      if (event.persisted) {
-        // Wait for the pre-navigation request to settle, then fetch fresh data.
-        void (pendingCourseLoad || Promise.resolve()).then(() => loadAndRenderCourses(studentId))
-      }
-    }, { signal: binding.signal })
+      pageGeneration++
+    })
+    window.addEventListener(
+      "pagehide",
+      () => {
+        pageSuspended = true
+        pageGeneration++
+        stopLoginPolling()
+      },
+      { signal: binding.signal }
+    )
+    window.addEventListener(
+      "pageshow",
+      (event) => {
+        pageSuspended = false
+        if (event.persisted) {
+          // Wait for the pre-navigation request to settle, then fetch fresh data.
+          void (pendingCourseLoad || Promise.resolve()).then(() =>
+            loadAndRenderCourses(studentId)
+          )
+        }
+      },
+      { signal: binding.signal }
+    )
   }
   pendingCourseLoad = loadAndRenderCoursesOnce(studentId, pageGeneration)
     .catch((error) => {
       if (!pageSuspended && container.isConnected) {
-        console.error('XZZDPRO: Failed to render timetable', error)
+        console.error("XZZDPRO: Failed to render timetable", error)
       }
     })
-    .finally(() => { pendingCourseLoad = null })
+    .finally(() => {
+      pendingCourseLoad = null
+    })
   return pendingCourseLoad
 }
 
@@ -212,25 +245,31 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
   const [response, apiCourses] = await Promise.all([
     sendToBackground({
       name: "get-courses",
-      body: { studentId },
+      body: { studentId }
     } as any).catch(() => ({
       status: "error",
-      message: "课表连接已中断，请刷新页面重试。",
+      message: "课表连接已中断，请刷新页面重试。"
     })),
     fetchCoursesFromApi().catch((e) => {
       console.warn("XZZDPRO: Failed to fetch API courses", e)
       return [] as ApiCourseData[]
-    }),
+    })
   ])
-  if (pageSuspended || generation !== pageGeneration || !container.isConnected) return
+  if (pageSuspended || generation !== pageGeneration || !container.isConnected)
+    return
 
   console.log("XZZDPRO: Received response from background:", response)
   console.log("XZZDPRO: Background summary:", {
     xnm: response?.data?.xnm,
     xqm: response?.data?.xqm,
-    kbListLength: Array.isArray(response?.data?.kbList) ? response.data.kbList.length : -1,
+    kbListLength: Array.isArray(response?.data?.kbList)
+      ? response.data.kbList.length
+      : -1
   })
-  console.log("XZZDPRO: API courses count:", Array.isArray(apiCourses) ? apiCourses.length : -1)
+  console.log(
+    "XZZDPRO: API courses count:",
+    Array.isArray(apiCourses) ? apiCourses.length : -1
+  )
 
   if (response && response.status === "ok" && response.data) {
     // Login successful: Clean up polling and window
@@ -262,7 +301,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
       10: "17:05-17:50",
       11: "18:30-19:15",
       12: "19:20-20:05",
-      13: "20:10-20:55",
+      13: "20:10-20:55"
     }
 
     // Helper to parse kcb string
@@ -279,13 +318,16 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
       return { name, teacher, location }
     }
 
-    const getCandidateCourseNames = (course: any, fallbackName: string): string[] => {
+    const getCandidateCourseNames = (
+      course: any,
+      fallbackName: string
+    ): string[] => {
       return [
         fallbackName,
         course?.kcmc,
         course?.course_name,
         course?.courseName,
-        course?.kchmc,
+        course?.kchmc
       ]
         .filter((value): value is string => typeof value === "string")
         .map((value) => value.trim())
@@ -342,21 +384,27 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
         return apiNames.some((apiName) => zdbkNames.includes(apiName))
       })
 
-      const narrowedMatches = narrowMatchesByTeacher(exactMatches, details.teacher)
+      const narrowedMatches = narrowMatchesByTeacher(
+        exactMatches,
+        details.teacher
+      )
       if (narrowedMatches.length === 1) {
         return narrowedMatches[0]
       }
 
       if (exactMatches.length > 1) {
-        console.debug("XZZDPRO: Course link omitted because multiple courses match", {
-          zdbkNames,
-          teacher: details.teacher,
-          candidateCourses: exactMatches.map((apiCourse) => ({
-            id: apiCourse.id,
-            name: apiCourse.name,
-            displayName: apiCourse.display_name,
-          })),
-        })
+        console.debug(
+          "XZZDPRO: Course link omitted because multiple courses match",
+          {
+            zdbkNames,
+            teacher: details.teacher,
+            candidateCourses: exactMatches.map((apiCourse) => ({
+              id: apiCourse.id,
+              name: apiCourse.name,
+              displayName: apiCourse.display_name
+            }))
+          }
+        )
       }
 
       return null
@@ -370,7 +418,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
         course?.kcid,
         course?.kc_id,
         course?.courseid,
-        course?.id,
+        course?.id
       ]
 
       for (const candidate of idCandidates) {
@@ -414,7 +462,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
           parsedLocation: details.location,
           startPeriod: startPeriod,
           endPeriod: endPeriod,
-          link: link,
+          link: link
         }
       })
       .sort((a: any, b: any) => {
@@ -465,7 +513,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
         parsedLocation: course.parsedLocation,
         periodStr,
         timeRange,
-        link: course.link,
+        link: course.link
       }
     })
 
@@ -510,8 +558,8 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
       <pre style="font-size:10px;overflow:auto;max-height:100px"></pre>
     `
     // Display the actionable reason as text, without embedding response HTML.
-    const detail = container.querySelector('pre')
-    if (detail) detail.textContent = response?.message || '请稍后重试。'
+    const detail = container.querySelector("pre")
+    if (detail) detail.textContent = response?.message || "请稍后重试。"
     setSummaryStat(document, "courses", null)
   }
 }
@@ -547,7 +595,6 @@ async function loadAndRenderTodos() {
 
   // Process todos
 
-
   const todos: TodoItem[] = rawTodos
     .map((item) => {
       const title = item.title || "未知任务"
@@ -571,7 +618,7 @@ async function loadAndRenderTodos() {
         courseName,
         deadline: deadlineText,
         daysLeft,
-        link: linkUrl,
+        link: linkUrl
       }
     })
     .sort((a, b) => {
@@ -583,7 +630,10 @@ async function loadAndRenderTodos() {
 
   renderTodosReact(container, todos, false)
 
-  const counts = fetchedTodos === null ? null : countDeadlines(todos.map((todo) => todo.daysLeft))
+  const counts =
+    fetchedTodos === null
+      ? null
+      : countDeadlines(todos.map((todo) => todo.daysLeft))
   setSummaryStat(document, "dueSoon", counts?.dueSoon ?? null)
   setSummaryStat(document, "overdue", counts?.overdue ?? null)
 }

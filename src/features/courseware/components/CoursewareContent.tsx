@@ -1,8 +1,10 @@
-import * as React from "react"
-import { Button } from "@/components/ui/button"
 import { Download, Loader2 } from "lucide-react"
-import { CoursewareFileItem } from "./CoursewareFileItem"
+import * as React from "react"
+
+import { Button } from "@/components/ui/button"
 import type { ProcessedCoursewareSection } from "@/types"
+
+import { CoursewareFileItem } from "./CoursewareFileItem"
 
 interface CoursewareContentProps {
   section: ProcessedCoursewareSection
@@ -23,7 +25,9 @@ export function CoursewareContent({
   onFileSelectionChange,
   onDownloadSection
 }: CoursewareContentProps) {
-  const downloadableCount = section.files.filter((file) => file.canDownload).length
+  const downloadableCount = section.files.filter(
+    (file) => file.canDownload
+  ).length
 
   return (
     <div className="flex flex-col divide-y divide-border/50">

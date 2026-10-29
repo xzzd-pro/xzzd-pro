@@ -34,7 +34,9 @@
 }
 
 /* Force override shadcn/ui Card default styles */
-.course-page-container .rounded-lg.border.bg-card .flex.flex-col.space-y-1\.5.p-6 {
+.course-page-container
+  .rounded-lg.border.bg-card
+  .flex.flex-col.space-y-1\.5.p-6 {
   gap: 0.25rem !important;
   padding: 1.5rem !important;
   padding-bottom: 0.25rem !important;

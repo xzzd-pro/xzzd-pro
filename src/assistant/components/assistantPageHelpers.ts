@@ -1,16 +1,21 @@
-import { escapeHtml, sanitizeHtml } from "@/lib/html";
-import { themeIcons, navIcons } from "@/shared/layout/icons";
-import { PROVIDER_LABELS, PROVIDER_MODELS, PROVIDER_DEFAULTS } from "../config";
+import { marked } from "marked"
+
+import { escapeHtml, sanitizeHtml } from "@/lib/html"
+import { navIcons, themeIcons } from "@/shared/layout/icons"
+
+import { PROVIDER_DEFAULTS, PROVIDER_LABELS, PROVIDER_MODELS } from "../config"
 import type {
+  AssistantSettings,
   ChatMessage,
   CourseInfo,
-  AssistantSettings,
-  Provider,
-} from "../types";
-import { renderFlashcardBubble, renderFlashcardTipBubble } from "./flashcardRenderer";
-import { renderMindmapBubble, renderMindmapTipBubble } from "./mindmapRenderer";
-import { normalizeMathDelimiters } from "../utils/mathUtils";
-import { marked } from "marked";
+  Provider
+} from "../types"
+import { normalizeMathDelimiters } from "../utils/mathUtils"
+import {
+  renderFlashcardBubble,
+  renderFlashcardTipBubble
+} from "./flashcardRenderer"
+import { renderMindmapBubble, renderMindmapTipBubble } from "./mindmapRenderer"
 
 export function renderAssistantPage(username: string = ""): string {
   return `
@@ -125,15 +130,15 @@ export function renderAssistantPage(username: string = ""): string {
       
       ${renderSettingsPanel()}
     </div>
-  `;
+  `
 }
 
 export function renderCourseList(
   courses: CourseInfo[],
-  activeId?: string,
+  activeId?: string
 ): string {
   if (courses.length === 0) {
-    return '<div class="empty-state"><p>暂无正在进行的课程</p></div>';
+    return '<div class="empty-state"><p>暂无正在进行的课程</p></div>'
   }
 
   return courses
@@ -145,23 +150,23 @@ export function renderCourseList(
         <span>${escapeHtml(course.instructors[0] || "未知教师")}</span>
       </div>
     </div>
-  `,
+  `
     )
-    .join("");
+    .join("")
 }
 
 function getFileTypeInfo(
   name: string,
-  type: string,
+  type: string
 ): { badge: string; colorClass: string; description: string } {
-  const ext = name.split(".").pop()?.toLowerCase() || "";
+  const ext = name.split(".").pop()?.toLowerCase() || ""
 
   if (type === "pdf" || type === "application/pdf" || ext === "pdf") {
     return {
       badge: "PDF",
       colorClass: "file-badge-red",
-      description: "PDF Document",
-    };
+      description: "PDF Document"
+    }
   }
 
   const codeExtensions: Record<string, { badge: string; desc: string }> = {
@@ -184,14 +189,14 @@ function getFileTypeInfo(
     scala: { badge: "SCALA", desc: "Scala" },
     sh: { badge: "SH", desc: "Shell Script" },
     bash: { badge: "BASH", desc: "Bash Script" },
-    sql: { badge: "SQL", desc: "SQL" },
-  };
+    sql: { badge: "SQL", desc: "SQL" }
+  }
   if (codeExtensions[ext]) {
     return {
       badge: codeExtensions[ext].badge,
       colorClass: "file-badge-blue",
-      description: codeExtensions[ext].desc,
-    };
+      description: codeExtensions[ext].desc
+    }
   }
 
   const markupExtensions: Record<string, { badge: string; desc: string }> = {
@@ -203,14 +208,14 @@ function getFileTypeInfo(
     json: { badge: "JSON", desc: "JSON Data" },
     yaml: { badge: "YAML", desc: "YAML Config" },
     yml: { badge: "YAML", desc: "YAML Config" },
-    toml: { badge: "TOML", desc: "TOML Config" },
-  };
+    toml: { badge: "TOML", desc: "TOML Config" }
+  }
   if (markupExtensions[ext]) {
     return {
       badge: markupExtensions[ext].badge,
       colorClass: "file-badge-orange",
-      description: markupExtensions[ext].desc,
-    };
+      description: markupExtensions[ext].desc
+    }
   }
 
   const docExtensions: Record<string, { badge: string; desc: string }> = {
@@ -222,30 +227,30 @@ function getFileTypeInfo(
     xlsx: { badge: "XLSX", desc: "Excel Spreadsheet" },
     ppt: { badge: "PPT", desc: "PowerPoint" },
     pptx: { badge: "PPTX", desc: "PowerPoint" },
-    csv: { badge: "CSV", desc: "CSV Data" },
-  };
+    csv: { badge: "CSV", desc: "CSV Data" }
+  }
   if (docExtensions[ext]) {
     return {
       badge: docExtensions[ext].badge,
       colorClass: "file-badge-green",
-      description: docExtensions[ext].desc,
-    };
+      description: docExtensions[ext].desc
+    }
   }
 
-  const archiveExtensions = ["zip", "rar", "7z", "tar", "gz", "bz2"];
+  const archiveExtensions = ["zip", "rar", "7z", "tar", "gz", "bz2"]
   if (archiveExtensions.includes(ext)) {
     return {
       badge: ext.toUpperCase(),
       colorClass: "file-badge-purple",
-      description: "Archive",
-    };
+      description: "Archive"
+    }
   }
 
   return {
     badge: ext.toUpperCase() || "FILE",
     colorClass: "file-badge-gray",
-    description: "File",
-  };
+    description: "File"
+  }
 }
 
 /**
@@ -258,19 +263,19 @@ function getFileTypeInfo(
 export function renderAttachmentCard(
   name: string,
   type: string,
-  content?: string,
+  content?: string
 ): string {
-  const isImage = type === "image" || type.startsWith("image/");
+  const isImage = type === "image" || type.startsWith("image/")
 
   if (isImage && content) {
     // Image thumbnail with tooltip
     return `<div class="attachment-thumbnail" data-filename="${escapeHtml(name)}">
               <img src="${escapeHtml(content)}" class="chat-thumbnail" />
-            </div>`;
+            </div>`
   }
 
   // All file types use consistent card layout
-  const { badge, colorClass, description } = getFileTypeInfo(name, type);
+  const { badge, colorClass, description } = getFileTypeInfo(name, type)
 
   return `<div class="attachment-card">
             <div class="file-badge ${colorClass}">${badge}</div>
@@ -278,29 +283,36 @@ export function renderAttachmentCard(
               <div class="file-name">${escapeHtml(name)}</div>
               <div class="file-type">${description}</div>
             </div>
-          </div>`;
+          </div>`
 }
 
-export function renderChatMessage(message: ChatMessage, showToolContent: boolean = true): string {
-  const isUser = message.role === "user";
+export function renderChatMessage(
+  message: ChatMessage,
+  showToolContent: boolean = true
+): string {
+  const isUser = message.role === "user"
   if (message.flashcards) {
-    return showToolContent ? renderFlashcardBubble(message.flashcards, message.id) : renderFlashcardTipBubble(message.flashcards, message.id);
+    return showToolContent
+      ? renderFlashcardBubble(message.flashcards, message.id)
+      : renderFlashcardTipBubble(message.flashcards, message.id)
   }
   if (message.mindmap) {
-    return showToolContent ? renderMindmapBubble(message.mindmap, message.id) : renderMindmapTipBubble(message.mindmap, message.id);
+    return showToolContent
+      ? renderMindmapBubble(message.mindmap, message.id)
+      : renderMindmapTipBubble(message.mindmap, message.id)
   }
-  const contentHtml = parseMarkdown(message.content);
+  const contentHtml = parseMarkdown(message.content)
 
-  let attachmentsHtml = "";
+  let attachmentsHtml = ""
   if (message.attachments && message.attachments.length > 0) {
-    attachmentsHtml = '<div class="message-attachments">';
+    attachmentsHtml = '<div class="message-attachments">'
     message.attachments.forEach((att) => {
       // For images, pass the content (base64) for thumbnail display
       const imageContent =
-        att.type === "image" ? (att.content as string) : undefined;
-      attachmentsHtml += renderAttachmentCard(att.name, att.type, imageContent);
-    });
-    attachmentsHtml += "</div>";
+        att.type === "image" ? (att.content as string) : undefined
+      attachmentsHtml += renderAttachmentCard(att.name, att.type, imageContent)
+    })
+    attachmentsHtml += "</div>"
   }
 
   return `
@@ -349,61 +361,63 @@ export function renderChatMessage(message: ChatMessage, showToolContent: boolean
         }
       </div>
     </div>
-  `;
+  `
 }
 
 export function parseMarkdown(text: string): string {
-  if (!text) return "";
+  if (!text) return ""
 
   // Remove tokens like <|begin_of_box|>, <|end_of_box|>, etc.
-  let cleanText = text.replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "").trim();
-  cleanText = normalizeMathDelimiters(cleanText);
+  let cleanText = text
+    .replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "")
+    .trim()
+  cleanText = normalizeMathDelimiters(cleanText)
 
   // Process Math formulas first
-  const mathBlocks: string[] = [];
-  const inlineMath: string[] = [];
+  const mathBlocks: string[] = []
+  const inlineMath: string[] = []
 
   let processedText = cleanText.replace(
     /\$\$\s*([\s\S]+?)\s*\$\$/g,
     (match, formula) => {
-      mathBlocks.push(formula);
-      return `@@BLOCK_MATH_${mathBlocks.length - 1}@@`;
-    },
-  );
+      mathBlocks.push(formula)
+      return `@@BLOCK_MATH_${mathBlocks.length - 1}@@`
+    }
+  )
 
   processedText = processedText.replace(/\$([^\$\n]+)\$/g, (match, formula) => {
-    inlineMath.push(formula);
-    return `@@INLINE_MATH_${inlineMath.length - 1}@@`;
-  });
+    inlineMath.push(formula)
+    return `@@INLINE_MATH_${inlineMath.length - 1}@@`
+  })
 
   // Use marked to convert Markdown to HTML
   marked.setOptions({
     breaks: true,
-    gfm: true,
-  });
+    gfm: true
+  })
 
-  let html = marked.parse(processedText) as string;
+  let html = marked.parse(processedText) as string
 
   // Render Math formulas as images using codecogs
   html = html.replace(/@@BLOCK_MATH_(\d+)@@/g, (match, index) => {
-    const formula = mathBlocks[parseInt(index)];
-    const encoded = encodeURIComponent(formula.trim());
-    return `<div class="math-block" style="text-align: center; margin: 12px 0;"><img src="https://latex.codecogs.com/svg.latex?\\Large&space;${encoded}" alt="math" style="filter: var(--math-filter);"></div>`;
-  });
+    const formula = mathBlocks[parseInt(index)]
+    const encoded = encodeURIComponent(formula.trim())
+    return `<div class="math-block" style="text-align: center; margin: 12px 0;"><img src="https://latex.codecogs.com/svg.latex?\\Large&space;${encoded}" alt="math" style="filter: var(--math-filter);"></div>`
+  })
 
   html = html.replace(/@@INLINE_MATH_(\d+)@@/g, (match, index) => {
-    const formula = inlineMath[parseInt(index)];
-    const encoded = encodeURIComponent(formula.trim());
-    return `<img src="https://latex.codecogs.com/svg.latex?${encoded}" alt="math" style="vertical-align: middle; filter: var(--math-filter); margin: 0 2px;">`;
-  });
+    const formula = inlineMath[parseInt(index)]
+    const encoded = encodeURIComponent(formula.trim())
+    return `<img src="https://latex.codecogs.com/svg.latex?${encoded}" alt="math" style="vertical-align: middle; filter: var(--math-filter); margin: 0 2px;">`
+  })
 
-  return sanitizeHtml(html);
+  return sanitizeHtml(html)
 }
 
 export function renderSettingsPanel(): string {
   const providerOptions = (Object.keys(PROVIDER_LABELS) as Provider[])
     .map((p) => `<option value="${p}">${PROVIDER_LABELS[p]}</option>`)
-    .join("");
+    .join("")
 
   return `
     <div class="settings-panel" id="settings-panel">
@@ -444,5 +458,5 @@ export function renderSettingsPanel(): string {
         </div>
       </div>
     </div>
-  `;
+  `
 }

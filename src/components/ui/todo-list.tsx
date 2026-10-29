@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -68,8 +69,7 @@ function TodoCard({ todo }: { todo: TodoItem }) {
   return (
     <CardWrapper
       {...linkProps}
-      className={cn("block no-underline", todo.link && "cursor-pointer group")}
-    >
+      className={cn("block no-underline", todo.link && "cursor-pointer group")}>
       <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/50">
         <CardHeader className="p-3 pb-1">
           {todo.courseName && (
@@ -95,7 +95,9 @@ function TodoCard({ todo }: { todo: TodoItem }) {
                 {todo.deadline}
               </span>
               {deadlineInfo && (
-                <Badge variant={deadlineInfo.variant} className="shrink-0 text-xs">
+                <Badge
+                  variant={deadlineInfo.variant}
+                  className="shrink-0 text-xs">
                   {deadlineInfo.text}
                 </Badge>
               )}
@@ -120,7 +122,7 @@ function EmptyState({ message }: { message: string }) {
 export function TodoList({
   todos,
   loading = false,
-  emptyMessage = "太棒了，没有待办事项！",
+  emptyMessage = "太棒了，没有待办事项！"
 }: TodoListProps) {
   if (loading) {
     return (

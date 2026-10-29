@@ -1,45 +1,61 @@
-import { findNotificationUser } from "../findNotificationUser"
 import * as React from "react"
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+
 import { storage } from "@/lib/storage"
-import { NotificationCard } from "./NotificationCard"
-import { advanceReadTimestamps, isReadAt, isUsableUndo, typesForFilter, type ReadUndo } from "../readState"
 import {
+  createMyCoursesPayload,
+  fetchMyCoursesResponse
+} from "@/shared/api/myCoursesApi"
+import type {
+  ApiNotificationData,
+  NotificationType,
+  ProcessedNotification,
+  ReadTimestamps
+} from "@/types"
+
+import { findNotificationUser } from "../findNotificationUser"
+import {
+  advanceReadTimestamps,
+  isReadAt,
+  isUsableUndo,
+  typesForFilter,
+  type ReadUndo
+} from "../readState"
+import {
+  clampSplitRatio,
+  ratioFromPointer,
   SPLIT_DEFAULT,
   SPLIT_KEYBOARD_STEP,
   SPLIT_MAX,
   SPLIT_MIN,
   SPLIT_STORAGE_KEY,
-  clampSplitRatio,
-  ratioFromPointer,
   splitColumns
 } from "../splitRatio"
-import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
-import type { ApiNotificationData, ProcessedNotification, ReadTimestamps, NotificationType } from "@/types"
+import { NotificationCard } from "./NotificationCard"
 
-const READ_TIMESTAMPS_KEY = 'xzzdpro_read_timestamps'
+const READ_TIMESTAMPS_KEY = "xzzdpro_read_timestamps"
 // Read state from just before the last "mark all read", kept so it can be undone.
-const READ_UNDO_KEY = 'xzzdpro_read_timestamps_undo'
+const READ_UNDO_KEY = "xzzdpro_read_timestamps_undo"
 
 const VALID_TYPES = [
-  'activity_opened',
-  'homework_opened_for_submission',
-  'course_homework_make_up',
-  'homework_score_updated',
-  'exam_opened',
-  'exam_will_start',
-  'exam_submit_started',
-  'activity_expiring',
-  'course_opened',
-  'course_closed',
-  'course_updated',
-  'announcement_published',
-  'forum_topic_created',
-  'forum_reply_created',
-  'rollcall_started',
-  'rollcall_ended',
-  'grade_published',
-  'certificate_issued'
+  "activity_opened",
+  "homework_opened_for_submission",
+  "course_homework_make_up",
+  "homework_score_updated",
+  "exam_opened",
+  "exam_will_start",
+  "exam_submit_started",
+  "activity_expiring",
+  "course_opened",
+  "course_closed",
+  "course_updated",
+  "announcement_published",
+  "forum_topic_created",
+  "forum_reply_created",
+  "rollcall_started",
+  "rollcall_ended",
+  "grade_published",
+  "certificate_issued"
 ]
 
 const DEFAULT_READ_TIMESTAMPS: ReadTimestamps = {
@@ -60,7 +76,7 @@ async function loadReadTimestamps(): Promise<ReadTimestamps> {
       return { ...DEFAULT_READ_TIMESTAMPS, ...stored }
     }
   } catch (error) {
-    console.error('XZZDPRO: 加载已读时间戳失败', error)
+    console.error("XZZDPRO: 加载已读时间戳失败", error)
   }
   return { ...DEFAULT_READ_TIMESTAMPS }
 }
@@ -68,9 +84,9 @@ async function loadReadTimestamps(): Promise<ReadTimestamps> {
 async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
   try {
     await storage.set(READ_TIMESTAMPS_KEY, timestamps)
-    console.log('XZZDPRO: 已保存已读时间戳', timestamps)
+    console.log("XZZDPRO: 已保存已读时间戳", timestamps)
   } catch (error) {
-    console.error('XZZDPRO: 保存已读时间戳失败', error)
+    console.error("XZZDPRO: 保存已读时间戳失败", error)
   }
 }
 
@@ -81,30 +97,35 @@ async function getUserId(signal?: AbortSignal): Promise<string | null> {
     )
 
     if (!coursesResponse.ok) {
-      console.error('XZZDPRO: 获取课程列表失败', coursesResponse.status)
+      console.error("XZZDPRO: 获取课程列表失败", coursesResponse.status)
       return null
     }
 
     const coursesData = await coursesResponse.json()
     if (!coursesData.courses || coursesData.courses.length === 0) {
-      console.error('XZZDPRO: 没有找到任何课程')
+      console.error("XZZDPRO: 没有找到任何课程")
       return null
     }
 
     return findNotificationUser(coursesData.courses, signal)
   } catch (error) {
-    console.error('XZZDPRO: 获取用户ID时出错', error)
+    console.error("XZZDPRO: 获取用户ID时出错", error)
     return null
   }
 }
 
-async function fetchNotifications(userId: string, offset = 0, limit = 100, signal?: AbortSignal): Promise<ApiNotificationData[]> {
+async function fetchNotifications(
+  userId: string,
+  offset = 0,
+  limit = 100,
+  signal?: AbortSignal
+): Promise<ApiNotificationData[]> {
   try {
     const url = `https://courses.zju.edu.cn/ntf/users/${userId}/notifications?offset=${offset}&limit=${limit}&removed=only_mobile&additionalFields=total_count`
     const response = await fetch(url, { signal })
 
     if (!response.ok) {
-      console.error('XZZDPRO: 公告API请求失败', response.status)
+      console.error("XZZDPRO: 公告API请求失败", response.status)
       return []
     }
 
@@ -115,7 +136,7 @@ async function fetchNotifications(userId: string, offset = 0, limit = 100, signa
 
     return []
   } catch (error) {
-    console.error('XZZDPRO: 公告网络请求出错', error)
+    console.error("XZZDPRO: 公告网络请求出错", error)
     return []
   }
 }
@@ -137,8 +158,8 @@ function formatTime(timestamp: number): string {
     return `${days}天前`
   } else {
     const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, "0")
+    const day = String(date.getDate()).padStart(2, "0")
     return `${year}.${month}.${day}`
   }
 }
@@ -156,7 +177,7 @@ function generateNotificationLink(notification: ApiNotificationData): string {
     return `https://courses.zju.edu.cn/course/${payload.course_id}`
   }
 
-  return '#'
+  return "#"
 }
 
 function processNotification(
@@ -168,7 +189,7 @@ function processNotification(
   }
 
   const { payload } = notification
-  let title = ''
+  let title = ""
 
   if (payload.activity_title) {
     title = payload.activity_title
@@ -177,25 +198,25 @@ function processNotification(
   } else if (payload.exam_title) {
     title = payload.exam_title
   } else {
-    title = '未知通知'
+    title = "未知通知"
   }
 
   // 判断是否属于主要分类
   const mainTypes = [
-    'activity_opened',
-    'homework_opened_for_submission',
-    'course_homework_make_up',
-    'homework_score_updated',
-    'exam_opened',
-    'exam_will_start',
-    'exam_submit_started'
+    "activity_opened",
+    "homework_opened_for_submission",
+    "course_homework_make_up",
+    "homework_score_updated",
+    "exam_opened",
+    "exam_will_start",
+    "exam_submit_started"
   ]
 
   let typeKey: keyof ReadTimestamps
   if (mainTypes.includes(notification.type)) {
     typeKey = notification.type as keyof ReadTimestamps
   } else {
-    typeKey = 'others'
+    typeKey = "others"
   }
 
   const storedTimestamp = readTimestamps[typeKey] || 0
@@ -215,10 +236,14 @@ function processNotification(
 }
 
 export function NotificationsPanel() {
-  const [allNotifications, setAllNotifications] = useState<ProcessedNotification[]>([])
-  const [readTimestamps, setReadTimestamps] = useState<ReadTimestamps>(DEFAULT_READ_TIMESTAMPS)
-  const [unreadFilter, setUnreadFilter] = useState('all')
-  const [readFilter, setReadFilter] = useState('all')
+  const [allNotifications, setAllNotifications] = useState<
+    ProcessedNotification[]
+  >([])
+  const [readTimestamps, setReadTimestamps] = useState<ReadTimestamps>(
+    DEFAULT_READ_TIMESTAMPS
+  )
+  const [unreadFilter, setUnreadFilter] = useState("all")
+  const [readFilter, setReadFilter] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
   // 临时已读的通知类型，用于去掉红点但保持在未读栏中
   const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
@@ -227,14 +252,17 @@ export function NotificationsPanel() {
 
   useEffect(() => {
     let cancelled = false
-    storage.get<unknown>(READ_UNDO_KEY)
+    storage
+      .get<unknown>(READ_UNDO_KEY)
       .then((saved) => {
         if (cancelled || saved === undefined) return
         if (isUsableUndo(saved)) setReadUndo(saved)
         else void storage.remove(READ_UNDO_KEY)
       })
-      .catch((error) => console.warn('XZZDPRO: 读取撤销记录失败', error))
-    return () => { cancelled = true }
+      .catch((error) => console.warn("XZZDPRO: 读取撤销记录失败", error))
+    return () => {
+      cancelled = true
+    }
   }, [])
   // 未读栏占两栏总宽的比例，可拖动中间分隔条调整（仅宽屏双栏时生效）
   const [splitRatio, setSplitRatioState] = useState(SPLIT_DEFAULT)
@@ -249,50 +277,80 @@ export function NotificationsPanel() {
 
   useEffect(() => {
     let cancelled = false
-    storage.get<number>(SPLIT_STORAGE_KEY)
+    storage
+      .get<number>(SPLIT_STORAGE_KEY)
       .then((saved) => {
-        if (!cancelled && saved !== undefined) setSplitRatio(clampSplitRatio(saved))
+        if (!cancelled && saved !== undefined)
+          setSplitRatio(clampSplitRatio(saved))
       })
-      .catch((error) => console.warn('XZZDPRO: 读取公告栏宽度失败', error))
-    return () => { cancelled = true }
+      .catch((error) => console.warn("XZZDPRO: 读取公告栏宽度失败", error))
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const saveSplitRatio = useCallback((ratio: number) => {
-    storage.set(SPLIT_STORAGE_KEY, ratio)
-      .catch((error) => console.warn('XZZDPRO: 保存公告栏宽度失败', error))
+    storage
+      .set(SPLIT_STORAGE_KEY, ratio)
+      .catch((error) => console.warn("XZZDPRO: 保存公告栏宽度失败", error))
   }, [])
 
-  const handleSplitPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    draggingRef.current = true
-  }, [])
+  const handleSplitPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return
+      event.preventDefault()
+      event.currentTarget.setPointerCapture(event.pointerId)
+      draggingRef.current = true
+    },
+    []
+  )
 
-  const handleSplitPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || !splitContainerRef.current) return
-    setSplitRatio(ratioFromPointer(event.clientX, splitContainerRef.current.getBoundingClientRect()))
-  }, [])
+  const handleSplitPointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!draggingRef.current || !splitContainerRef.current) return
+      setSplitRatio(
+        ratioFromPointer(
+          event.clientX,
+          splitContainerRef.current.getBoundingClientRect()
+        )
+      )
+    },
+    []
+  )
 
-  const handleSplitPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return
-    draggingRef.current = false
-    event.currentTarget.releasePointerCapture(event.pointerId)
-    if (splitContainerRef.current) {
-      const ratio = ratioFromPointer(event.clientX, splitContainerRef.current.getBoundingClientRect())
-      setSplitRatio(ratio)
-      saveSplitRatio(ratio)
-    }
-  }, [saveSplitRatio])
+  const handleSplitPointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!draggingRef.current) return
+      draggingRef.current = false
+      event.currentTarget.releasePointerCapture(event.pointerId)
+      if (splitContainerRef.current) {
+        const ratio = ratioFromPointer(
+          event.clientX,
+          splitContainerRef.current.getBoundingClientRect()
+        )
+        setSplitRatio(ratio)
+        saveSplitRatio(ratio)
+      }
+    },
+    [saveSplitRatio]
+  )
 
-  const handleSplitKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
-    const step = event.key === 'ArrowLeft' ? -SPLIT_KEYBOARD_STEP : event.key === 'ArrowRight' ? SPLIT_KEYBOARD_STEP : 0
-    if (!step) return
-    event.preventDefault()
-    const next = clampSplitRatio(splitRatioRef.current + step)
-    setSplitRatio(next)
-    saveSplitRatio(next)
-  }, [setSplitRatio, saveSplitRatio])
+  const handleSplitKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const step =
+        event.key === "ArrowLeft"
+          ? -SPLIT_KEYBOARD_STEP
+          : event.key === "ArrowRight"
+            ? SPLIT_KEYBOARD_STEP
+            : 0
+      if (!step) return
+      event.preventDefault()
+      const next = clampSplitRatio(splitRatioRef.current + step)
+      setSplitRatio(next)
+      saveSplitRatio(next)
+    },
+    [setSplitRatio, saveSplitRatio]
+  )
 
   const resetSplitRatio = useCallback(() => {
     setSplitRatio(SPLIT_DEFAULT)
@@ -306,13 +364,22 @@ export function NotificationsPanel() {
       try {
         const [timestamps, rawNotifications] = await Promise.all([
           loadReadTimestamps(),
-          getUserId(controller.signal).then(id => id && !controller.signal.aborted ? fetchNotifications(id, 0, 100, controller.signal) : [])
+          getUserId(controller.signal).then((id) =>
+            id && !controller.signal.aborted
+              ? fetchNotifications(id, 0, 100, controller.signal)
+              : []
+          )
         ])
         if (controller.signal.aborted) return
         setReadTimestamps(timestamps)
-        setAllNotifications(rawNotifications.map(n => processNotification(n, timestamps)).filter((n): n is ProcessedNotification => n !== null))
+        setAllNotifications(
+          rawNotifications
+            .map((n) => processNotification(n, timestamps))
+            .filter((n): n is ProcessedNotification => n !== null)
+        )
       } catch (error) {
-        if (!controller.signal.aborted) console.warn('XZZDPRO: 获取公告异常', error)
+        if (!controller.signal.aborted)
+          console.warn("XZZDPRO: 获取公告异常", error)
       } finally {
         if (!controller.signal.aborted) setIsLoading(false)
       }
@@ -322,55 +389,78 @@ export function NotificationsPanel() {
   }, [])
 
   // 标记若干筛选类别为临时已读：红点立即消失，刷新后移动到已读栏
-  const markFiltersAsRead = useCallback(async (filters: readonly string[]) => {
-    setTempReadTypes(prev => {
-      const newSet = new Set(prev)
-      filters.forEach(filter => typesForFilter(filter).forEach(t => newSet.add(t)))
-      return newSet
-    })
+  const markFiltersAsRead = useCallback(
+    async (filters: readonly string[]) => {
+      setTempReadTypes((prev) => {
+        const newSet = new Set(prev)
+        filters.forEach((filter) =>
+          typesForFilter(filter).forEach((t) => newSet.add(t))
+        )
+        return newSet
+      })
 
-    // 一次算出所有类别的时间戳再保存，避免连续保存互相覆盖
-    const newTimestamps = advanceReadTimestamps(readTimestamps, filters, allNotifications)
-    if (newTimestamps) {
-      await saveReadTimestamps(newTimestamps)
-      setReadTimestamps(newTimestamps)
-      console.log('XZZDPRO: 已标记为临时已读，刷新后将移动到已读栏', filters)
-    }
-  }, [readTimestamps, allNotifications])
+      // 一次算出所有类别的时间戳再保存，避免连续保存互相覆盖
+      const newTimestamps = advanceReadTimestamps(
+        readTimestamps,
+        filters,
+        allNotifications
+      )
+      if (newTimestamps) {
+        await saveReadTimestamps(newTimestamps)
+        setReadTimestamps(newTimestamps)
+        console.log("XZZDPRO: 已标记为临时已读，刷新后将移动到已读栏", filters)
+      }
+    },
+    [readTimestamps, allNotifications]
+  )
 
   // 标记前保存当前状态，24 小时内可撤销
-  const handleMarkRead = useCallback(async (filters: readonly string[]) => {
-    const snapshot: ReadUndo = { timestamps: readTimestamps, savedAt: Date.now() }
-    try {
-      await storage.set(READ_UNDO_KEY, snapshot)
-      setReadUndo(snapshot)
-    } catch (error) {
-      console.warn('XZZDPRO: 保存撤销记录失败', error)
-    }
-    await markFiltersAsRead(filters)
-  }, [readTimestamps, markFiltersAsRead])
+  const handleMarkRead = useCallback(
+    async (filters: readonly string[]) => {
+      const snapshot: ReadUndo = {
+        timestamps: readTimestamps,
+        savedAt: Date.now()
+      }
+      try {
+        await storage.set(READ_UNDO_KEY, snapshot)
+        setReadUndo(snapshot)
+      } catch (error) {
+        console.warn("XZZDPRO: 保存撤销记录失败", error)
+      }
+      await markFiltersAsRead(filters)
+    },
+    [readTimestamps, markFiltersAsRead]
+  )
 
   // 恢复到上次“标为已读”之前：时间戳、红点和已读/未读分栏都立即还原
   const handleUndoMarkRead = useCallback(async () => {
     if (!readUndo) return
-    const restored: ReadTimestamps = { ...DEFAULT_READ_TIMESTAMPS, ...readUndo.timestamps }
+    const restored: ReadTimestamps = {
+      ...DEFAULT_READ_TIMESTAMPS,
+      ...readUndo.timestamps
+    }
     await saveReadTimestamps(restored)
     setReadTimestamps(restored)
     setTempReadTypes(new Set())
-    setAllNotifications(prev => prev.map(n => ({ ...n, read: isReadAt(restored, n) })))
+    setAllNotifications((prev) =>
+      prev.map((n) => ({ ...n, read: isReadAt(restored, n) }))
+    )
     setReadUndo(null)
-    await storage.remove(READ_UNDO_KEY).catch((error) => console.warn('XZZDPRO: 清除撤销记录失败', error))
+    await storage
+      .remove(READ_UNDO_KEY)
+      .catch((error) => console.warn("XZZDPRO: 清除撤销记录失败", error))
   }, [readUndo])
 
-  const unreadNotifications = allNotifications.filter(n => !n.read)
-  const readNotifications = allNotifications.filter(n => n.read)
+  const unreadNotifications = allNotifications.filter((n) => !n.read)
+  const readNotifications = allNotifications.filter((n) => n.read)
 
   return (
     <div
       ref={splitContainerRef}
       className="grid grid-cols-1 gap-6 h-full min-h-0 lg:gap-0 lg:[grid-template-columns:var(--bulletin-split)]"
-      style={{ "--bulletin-split": splitColumns(splitRatio) } as React.CSSProperties}
-    >
+      style={
+        { "--bulletin-split": splitColumns(splitRatio) } as React.CSSProperties
+      }>
       <NotificationCard
         title="未读公告"
         notifications={unreadNotifications}
@@ -397,8 +487,7 @@ export function NotificationsPanel() {
         onPointerUp={handleSplitPointerUp}
         onPointerCancel={handleSplitPointerUp}
         onKeyDown={handleSplitKeyDown}
-        onDoubleClick={resetSplitRatio}
-      >
+        onDoubleClick={resetSplitRatio}>
         <div className="w-0.5 h-full rounded-full bg-transparent transition-colors group-hover:bg-primary/40 group-focus-visible:bg-primary group-active:bg-primary" />
       </div>
       <NotificationCard

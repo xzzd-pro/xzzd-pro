@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
@@ -85,7 +84,9 @@ const patchZipManifest = (zipPath) => {
 }
 
 if (!fs.existsSync(buildRoot)) {
-  console.warn(`[inject-firefox-addon-id] build directory not found: ${buildRoot}`)
+  console.warn(
+    `[inject-firefox-addon-id] build directory not found: ${buildRoot}`
+  )
   process.exit(0)
 }
 

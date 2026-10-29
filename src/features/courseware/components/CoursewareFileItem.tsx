@@ -1,14 +1,15 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
 import { Download, Eye } from "lucide-react"
+import * as React from "react"
+
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
 import { NativePreviewButton } from "@/components/ui/native-preview-button"
+import { cn } from "@/lib/utils"
 import type { ProcessedCoursewareFile } from "@/types"
 
 // Get file extension icon as JSX
 function getFileIcon(filename: string): React.ReactNode {
-  const ext = filename.split('.').pop()?.toLowerCase() || ''
+  const ext = filename.split(".").pop()?.toLowerCase() || ""
 
   const svgProps = {
     viewBox: "0 0 24 24",
@@ -19,76 +20,78 @@ function getFileIcon(filename: string): React.ReactNode {
   }
 
   const iconMap: Record<string, React.ReactNode> = {
-    'pdf': (
+    pdf: (
       <svg {...svgProps}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <path d="M9 13h6"/>
-        <path d="M9 17h6"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+        <path d="M9 13h6" />
+        <path d="M9 17h6" />
       </svg>
     ),
-    'doc': (
+    doc: (
       <svg {...svgProps}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <path d="M9 13h6"/>
-        <path d="M9 17h3"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+        <path d="M9 13h6" />
+        <path d="M9 17h3" />
       </svg>
     ),
-    'ppt': (
+    ppt: (
       <svg {...svgProps}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <rect x="8" y="12" width="8" height="6" rx="1"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+        <rect x="8" y="12" width="8" height="6" rx="1" />
       </svg>
     ),
-    'xls': (
+    xls: (
       <svg {...svgProps}>
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14,2 14,8 20,8"/>
-        <path d="M8 13h8M8 17h8M12 13v8"/>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+        <path d="M8 13h8M8 17h8M12 13v8" />
       </svg>
     ),
-    'zip': (
+    zip: (
       <svg {...svgProps}>
-        <path d="M21 8v13H3V3h12l6 5z"/>
-        <path d="M12 3v6h-2v2h2v2h-2v2h2v6"/>
+        <path d="M21 8v13H3V3h12l6 5z" />
+        <path d="M12 3v6h-2v2h2v2h-2v2h2v6" />
       </svg>
     ),
-    'mp4': (
+    mp4: (
       <svg {...svgProps}>
-        <polygon points="5,3 19,12 5,21" fill="currentColor"/>
+        <polygon points="5,3 19,12 5,21" fill="currentColor" />
       </svg>
     ),
-    'mp3': (
+    mp3: (
       <svg {...svgProps}>
-        <path d="M9 18V5l12-2v13"/>
-        <circle cx="6" cy="18" r="3"/>
-        <circle cx="18" cy="16" r="3"/>
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
       </svg>
     ),
-    'jpg': (
+    jpg: (
       <svg {...svgProps}>
-        <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <circle cx="8.5" cy="8.5" r="1.5"/>
-        <polyline points="21,15 16,10 5,21"/>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21,15 16,10 5,21" />
       </svg>
-    ),
+    )
   }
 
   // Aliases
-  iconMap['docx'] = iconMap['doc']
-  iconMap['pptx'] = iconMap['ppt']
-  iconMap['xlsx'] = iconMap['xls']
-  iconMap['rar'] = iconMap['zip']
-  iconMap['jpeg'] = iconMap['jpg']
-  iconMap['png'] = iconMap['jpg']
+  iconMap["docx"] = iconMap["doc"]
+  iconMap["pptx"] = iconMap["ppt"]
+  iconMap["xlsx"] = iconMap["xls"]
+  iconMap["rar"] = iconMap["zip"]
+  iconMap["jpeg"] = iconMap["jpg"]
+  iconMap["png"] = iconMap["jpg"]
 
-  return iconMap[ext] || (
-    <svg {...svgProps}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14,2 14,8 20,8"/>
-    </svg>
+  return (
+    iconMap[ext] || (
+      <svg {...svgProps}>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14,2 14,8 20,8" />
+      </svg>
+    )
   )
 }
 
@@ -113,11 +116,12 @@ export function CoursewareFileItem({
 
   return (
     <>
-      <div className={cn(
-        "flex flex-wrap items-center gap-3 py-3 text-foreground transition-colors hover:bg-muted/30 sm:flex-nowrap",
-        isSelected && "bg-primary/5",
-        className
-      )}>
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 py-3 text-foreground transition-colors hover:bg-muted/30 sm:flex-nowrap",
+          isSelected && "bg-primary/5",
+          className
+        )}>
         {onSelectedChange && (
           <div className="flex h-9 w-5 flex-shrink-0 items-center justify-center">
             <input
@@ -146,29 +150,31 @@ export function CoursewareFileItem({
         </div>
         <div className="ml-auto flex-shrink-0 flex items-center gap-1">
           {useNativePreview && file.nativePreviewUrl ? (
-            <NativePreviewButton fileUrl={file.downloadUrl} activityUrl={file.nativePreviewUrl} />
-          ) : <Button
-            size="sm"
-            variant="ghost"
-            className="gap-1.5 bg-transparent"
-            onClick={() => setShowPreview(true)}
-          >
-            <Eye className="w-4 h-4" />
-            <span>预览</span>
-          </Button>}
+            <NativePreviewButton
+              fileUrl={file.downloadUrl}
+              activityUrl={file.nativePreviewUrl}
+            />
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="gap-1.5 bg-transparent"
+              onClick={() => setShowPreview(true)}>
+              <Eye className="w-4 h-4" />
+              <span>预览</span>
+            </Button>
+          )}
           {file.canDownload ? (
             <Button
               asChild
               variant="ghost"
               size="sm"
-              className="gap-1.5 bg-transparent no-underline"
-            >
+              className="gap-1.5 bg-transparent no-underline">
               <a
                 href={file.downloadUrl}
                 download={file.name}
                 target="_blank"
-                rel="noopener noreferrer"
-              >
+                rel="noopener noreferrer">
                 <Download className="w-4 h-4" />
                 <span>下载</span>
               </a>

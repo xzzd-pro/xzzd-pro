@@ -9,7 +9,10 @@ interface Binding {
 const bindings = new Map<string, Binding>()
 let observer: MutationObserver | undefined
 
-export function bindLayoutControl(key: string, owner: HTMLElement): Binding | null {
+export function bindLayoutControl(
+  key: string,
+  owner: HTMLElement
+): Binding | null {
   const previous = bindings.get(key)
   if (previous?.owner === owner && !previous.signal.aborted) return null
   previous?.dispose()
@@ -28,7 +31,9 @@ export function bindLayoutControl(key: string, owner: HTMLElement): Binding | nu
       controller.abort()
       bindings.delete(key)
       for (const cleanup of cleanups.splice(0)) {
-        try { cleanup() } catch (error) {
+        try {
+          cleanup()
+        } catch (error) {
           console.error("XZZDPRO: layout cleanup failed", error)
         }
       }
@@ -46,7 +51,10 @@ export function bindLayoutControl(key: string, owner: HTMLElement): Binding | nu
         if (!current.owner.isConnected) current.dispose()
       }
     })
-    observer.observe(document.documentElement, { childList: true, subtree: true })
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    })
   }
   return binding
 }

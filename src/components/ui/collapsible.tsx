@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { cn } from "@/lib/utils"
 
 interface CollapsibleContextValue {
@@ -58,8 +59,7 @@ const Collapsible = React.forwardRef<HTMLDivElement, CollapsibleProps>(
           ref={ref}
           data-state={open ? "open" : "closed"}
           className={cn(className)}
-          {...props}
-        >
+          {...props}>
           {children}
         </div>
       </CollapsibleContext.Provider>
@@ -95,16 +95,14 @@ const CollapsibleTrigger = React.forwardRef<
       aria-expanded={open}
       className={cn(className)}
       onClick={handleClick}
-      {...props}
-    >
+      {...props}>
       {children}
     </button>
   )
 })
 CollapsibleTrigger.displayName = "CollapsibleTrigger"
 
-interface CollapsibleContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {
+interface CollapsibleContentProps extends React.HTMLAttributes<HTMLDivElement> {
   durationMs?: number
   unmountOnExit?: boolean
 }

@@ -38,7 +38,8 @@ export function useBeautifierInitialization({
           if (
             (!attempted.current || succeeded.current) &&
             document.querySelector(rootSelector)
-          ) return
+          )
+            return
 
           attempted.current = true
           // Invoke inside then so synchronous exceptions also reach catch.
@@ -68,7 +69,9 @@ export function useBeautifierInitialization({
       }
     }
 
-    const onReady = () => { void initialize() }
+    const onReady = () => {
+      void initialize()
+    }
     if (waitForDom && document.readyState === "loading") {
       document.addEventListener("DOMContentLoaded", onReady, { once: true })
     } else {

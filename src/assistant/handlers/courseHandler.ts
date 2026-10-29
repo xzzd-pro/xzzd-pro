@@ -1,13 +1,21 @@
 /**
  * Course Handler - Manages course switching, initialization, and sidebar synchronization
  */
-import { loadSettings, loadChatHistory } from '../storage'
-import { fetchAllCourses, buildCourseContext } from '../services/courseDataService'
-import { preloadCourseContext } from '../services/contextBuilder'
-import { showStatus, renderMessages } from '../utils/uiUtils'
-import { setupSettingsHandlers } from './settingsHandler'
-import { setupChatHandlers } from './chatHandler'
-import type { CourseInfo, CourseContext, MaterialFile, AssistantSettings } from '../types'
+import { preloadCourseContext } from "../services/contextBuilder"
+import {
+  buildCourseContext,
+  fetchAllCourses
+} from "../services/courseDataService"
+import { loadChatHistory, loadSettings } from "../storage"
+import type {
+  AssistantSettings,
+  CourseContext,
+  CourseInfo,
+  MaterialFile
+} from "../types"
+import { renderMessages, showStatus } from "../utils/uiUtils"
+import { setupChatHandlers } from "./chatHandler"
+import { setupSettingsHandlers } from "./settingsHandler"
 
 type SelectedMaterial = {
   file: MaterialFile
@@ -18,18 +26,18 @@ type SelectedMaterial = {
 let overlayElement: HTMLElement | null = null
 let currentSettings: AssistantSettings | null = null
 let currentCourseId: string | null = null
-let currentCourseName: string = ''
+let currentCourseName: string = ""
 let courses: CourseInfo[] = []
 const selectedCourseMaterials = new Map<string, SelectedMaterial>()
 
 function normalizeMaterialUrl(downloadUrl: string): string {
-  const raw = (downloadUrl || '').trim()
-  if (!raw) return ''
+  const raw = (downloadUrl || "").trim()
+  if (!raw) return ""
   try {
     const parsed = new URL(raw)
-    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '')
+    return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, "")
   } catch {
-    return raw.split('?')[0].split('#')[0].replace(/\/+$/, '')
+    return raw.split("?")[0].split("#")[0].replace(/\/+$/, "")
   }
 }
 
@@ -91,20 +99,20 @@ export function clearSelectedCourseMaterials(): void {
 function getInitialCourseIdFromUrl(): string | null {
   try {
     const params = new URLSearchParams(window.location.search)
-    return params.get('courseId')
+    return params.get("courseId")
   } catch (error) {
-    console.error('XZZDPRO: Failed to parse courseId from URL', error)
+    console.error("XZZDPRO: Failed to parse courseId from URL", error)
     return null
   }
 }
 
 export function syncSidebarCourseActive(courseId: string): void {
-  document.querySelectorAll('.course-submenu-item').forEach(el => {
+  document.querySelectorAll(".course-submenu-item").forEach((el) => {
     if (!(el instanceof HTMLElement)) return
-    if (el.getAttribute('data-course-id') === courseId) {
-      el.classList.add('active')
+    if (el.getAttribute("data-course-id") === courseId) {
+      el.classList.add("active")
     } else {
-      el.classList.remove('active')
+      el.classList.remove("active")
     }
   })
 }
@@ -117,11 +125,19 @@ export function bindSidebarCourseSelection(): void {
     void switchCourse(courseId)
   }
 
-  window.removeEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
-  window.addEventListener('xzzd:assistant-course-select', handleCourseSelect as EventListener)
+  window.removeEventListener(
+    "xzzd:assistant-course-select",
+    handleCourseSelect as EventListener
+  )
+  window.addEventListener(
+    "xzzd:assistant-course-select",
+    handleCourseSelect as EventListener
+  )
 }
 
-export function filterContextBySelectedMaterials(context: CourseContext): CourseContext {
+export function filterContextBySelectedMaterials(
+  context: CourseContext
+): CourseContext {
   if (selectedCourseMaterials.size === 0) {
     return context
   }
@@ -130,11 +146,13 @@ export function filterContextBySelectedMaterials(context: CourseContext): Course
   const selectedByUploadId = new Set<string>()
 
   selectedCourseMaterials.forEach(({ file }, selectionKey) => {
-    const normalizedKey = normalizeMaterialUrl(selectionKey || file.downloadUrl || '')
+    const normalizedKey = normalizeMaterialUrl(
+      selectionKey || file.downloadUrl || ""
+    )
     if (normalizedKey) {
       selectedByUrl.add(normalizedKey)
     }
-    const uploadId = extractUploadId(normalizedKey || file.downloadUrl || '')
+    const uploadId = extractUploadId(normalizedKey || file.downloadUrl || "")
     if (uploadId) {
       selectedByUploadId.add(uploadId)
     }
@@ -146,22 +164,27 @@ export function filterContextBySelectedMaterials(context: CourseContext): Course
   const filteredMaterials = context.materials
     .map((material) => {
       const filteredFiles = (material.files || []).filter((file) => {
-        const normalizedUrl = normalizeMaterialUrl(file.downloadUrl || '')
+        const normalizedUrl = normalizeMaterialUrl(file.downloadUrl || "")
         if (normalizedUrl && selectedByUrl.has(normalizedUrl)) {
           return true
         }
-        const uploadId = extractUploadId(normalizedUrl || file.downloadUrl || '')
+        const uploadId = extractUploadId(
+          normalizedUrl || file.downloadUrl || ""
+        )
         if (uploadId && selectedByUploadId.has(uploadId)) {
           return true
         }
-        return Number.isFinite(Number(file.id)) && selectedByUploadId.has(String(file.id))
+        return (
+          Number.isFinite(Number(file.id)) &&
+          selectedByUploadId.has(String(file.id))
+        )
       })
       return {
         ...material,
         files: filteredFiles
       }
     })
-    .filter(material => (material.files || []).length > 0)
+    .filter((material) => (material.files || []).length > 0)
 
   return {
     ...context,
@@ -169,7 +192,10 @@ export function filterContextBySelectedMaterials(context: CourseContext): Course
   }
 }
 
-export async function preloadSelectedMaterial(file: MaterialFile, materialTitle: string): Promise<void> {
+export async function preloadSelectedMaterial(
+  file: MaterialFile,
+  materialTitle: string
+): Promise<void> {
   if (!currentCourseId) return
 
   const context: CourseContext = {
@@ -185,7 +211,9 @@ export async function preloadSelectedMaterial(file: MaterialFile, materialTitle:
     homeworks: []
   }
 
-  await preloadCourseContext(context, (msg, type) => showStatus(msg, type || 'info'))
+  await preloadCourseContext(context, (msg, type) =>
+    showStatus(msg, type || "info")
+  )
 }
 
 export async function initAssistant(): Promise<void> {
@@ -197,7 +225,9 @@ export async function initAssistant(): Promise<void> {
 
     setupSettingsHandlers(
       () => currentSettings,
-      (settings) => { currentSettings = settings }
+      (settings) => {
+        currentSettings = settings
+      }
     )
     setupChatHandlers()
 
@@ -205,9 +235,8 @@ export async function initAssistant(): Promise<void> {
     if (initialCourseId) {
       await switchCourse(initialCourseId)
     }
-
   } catch (error) {
-    console.error('XZZDPRO: Failed to init assistant', error)
+    console.error("XZZDPRO: Failed to init assistant", error)
   }
 }
 
@@ -215,30 +244,42 @@ export async function switchCourse(courseId: string): Promise<void> {
   if (currentCourseId === courseId) return
 
   currentCourseId = courseId
-  const course = courses.find(c => String(c.id) === courseId)
+  const course = courses.find((c) => String(c.id) === courseId)
   if (!course) return
 
   try {
     const url = new URL(window.location.href)
-    url.searchParams.set('courseId', courseId)
-    window.history.replaceState({}, '', url.toString())
+    url.searchParams.set("courseId", courseId)
+    window.history.replaceState({}, "", url.toString())
   } catch (error) {
-    console.error('XZZDPRO: Failed to sync courseId to URL', error)
+    console.error("XZZDPRO: Failed to sync courseId to URL", error)
   }
 
   currentCourseName = course.displayName
   selectedCourseMaterials.clear()
   syncSidebarCourseActive(courseId)
-  window.dispatchEvent(new CustomEvent('xzzd:assistant-course-changed', {
-    detail: { courseId }
-  }))
+  window.dispatchEvent(
+    new CustomEvent("xzzd:assistant-course-changed", {
+      detail: { courseId }
+    })
+  )
 
   // Enable inputs
-  const chatInput = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
-  const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
-  const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
-  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
-  const mindmapSendBtn = overlayElement?.querySelector('#mindmap-send-btn') as HTMLButtonElement
+  const chatInput = overlayElement?.querySelector(
+    "#chat-input"
+  ) as HTMLTextAreaElement
+  const sendBtn = overlayElement?.querySelector(
+    "#send-btn"
+  ) as HTMLButtonElement
+  const attachBtn = overlayElement?.querySelector(
+    "#attach-btn"
+  ) as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector(
+    "#flashcard-send-btn"
+  ) as HTMLButtonElement
+  const mindmapSendBtn = overlayElement?.querySelector(
+    "#mindmap-send-btn"
+  ) as HTMLButtonElement
   if (chatInput) chatInput.disabled = false
   if (sendBtn) sendBtn.disabled = false
   if (attachBtn) attachBtn.disabled = false
@@ -250,16 +291,20 @@ export async function switchCourse(courseId: string): Promise<void> {
   const chatMessages = session?.messages || []
   // Note: messages are managed in chatHandler
   // We'll dispatch an event to update messages in chatHandler
-  window.dispatchEvent(new CustomEvent('xzzd:assistant-messages-load', {
-    detail: { messages: chatMessages }
-  }))
+  window.dispatchEvent(
+    new CustomEvent("xzzd:assistant-messages-load", {
+      detail: { messages: chatMessages }
+    })
+  )
 
   renderMessages(chatMessages, overlayElement)
 
   // Update course subtitle
-  const subtitleEl = overlayElement?.querySelector('#chat-course-subtitle') as HTMLElement
+  const subtitleEl = overlayElement?.querySelector(
+    "#chat-course-subtitle"
+  ) as HTMLElement
   if (subtitleEl) {
     subtitleEl.textContent = course.displayName
-    subtitleEl.style.display = 'block'
+    subtitleEl.style.display = "block"
   }
 }

@@ -1,5 +1,3 @@
-import * as React from "react"
-import { createPortal } from "react-dom"
 import {
   Archive,
   Download,
@@ -12,17 +10,19 @@ import {
   Video,
   X
 } from "lucide-react"
+import * as React from "react"
+import { createPortal } from "react-dom"
 
 import {
   convertPdfToImages,
   fetchFileContent,
-  fetchTextContent,
-  fetchPdfBlob
+  fetchPdfBlob,
+  fetchTextContent
 } from "@/assistant/services/fileService"
 import { Button } from "@/components/ui/button"
 import { NativePreviewButton } from "@/components/ui/native-preview-button"
-import { cn } from "@/lib/utils"
 import { nativeCurrentPageUrl } from "@/lib/nativePreview"
+import { cn } from "@/lib/utils"
 
 /** Set to false to render PDFs, text and media inside the extension again. */
 const NATIVE_PREVIEW_ONLY = true
@@ -268,7 +268,8 @@ export function FilePreviewModal({
   // All previews go through the school's reader. The in-extension renderers below
   // (pdf.js pages, extracted text, media) stay available behind this switch.
   const useNativePreview = NATIVE_PREVIEW_ONLY || !canDownload || ext === "doc"
-  const nativeUrl = nativePreviewUrl || nativeCurrentPageUrl(window.location.href)
+  const nativeUrl =
+    nativePreviewUrl || nativeCurrentPageUrl(window.location.href)
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -387,8 +388,7 @@ export function FilePreviewModal({
         if (event.target === event.currentTarget) {
           onClose()
         }
-      }}
-    >
+      }}>
       <div
         className={cn(
           "flex flex-col overflow-hidden border border-border/70 bg-background shadow-2xl",
@@ -396,8 +396,7 @@ export function FilePreviewModal({
             ? "h-full w-full rounded-none"
             : "max-h-[90vh] w-full max-w-5xl rounded-xl"
         )}
-        onClick={(event) => event.stopPropagation()}
-      >
+        onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4 border-b border-border px-4 py-3">
           <div className="flex min-w-0 items-start gap-3">
             <div className={cn("mt-1 flex-shrink-0", fileInfo.color)}>
@@ -430,8 +429,7 @@ export function FilePreviewModal({
                   href={fileUrl}
                   download={fileName}
                   target="_blank"
-                  rel="noopener noreferrer"
-                >
+                  rel="noopener noreferrer">
                   <Download className="h-4 w-4" />
                   下载
                 </a>
@@ -443,8 +441,7 @@ export function FilePreviewModal({
               variant="ghost"
               onClick={() => setIsFullscreen((prev) => !prev)}
               title={isFullscreen ? "退出全屏" : "全屏预览"}
-              aria-label={isFullscreen ? "退出全屏" : "全屏预览"}
-            >
+              aria-label={isFullscreen ? "退出全屏" : "全屏预览"}>
               {isFullscreen ? (
                 <Minimize2 className="h-4 w-4" />
               ) : (
@@ -457,8 +454,7 @@ export function FilePreviewModal({
               variant="ghost"
               onClick={onClose}
               title="关闭"
-              aria-label="关闭"
-            >
+              aria-label="关闭">
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -468,9 +464,13 @@ export function FilePreviewModal({
           {useNativePreview ? (
             <div className="flex h-full min-h-64 flex-col items-center justify-center text-center">
               <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h4 className="mb-2 text-lg font-medium">请使用学在浙大原生预览</h4>
+              <h4 className="mb-2 text-lg font-medium">
+                请使用学在浙大原生预览
+              </h4>
               <p className="mb-4 text-muted-foreground">
-                {canDownload ? "文件使用学校在线阅读器查看。" : "此文件禁止下载，插件不会请求原文件。"}
+                {canDownload
+                  ? "文件使用学校在线阅读器查看。"
+                  : "此文件禁止下载，插件不会请求原文件。"}
                 点击后将打开学校阅读器，是否可预览以学校权限为准。
               </p>
               <NativePreviewButton fileUrl={fileUrl} activityUrl={nativeUrl} />
@@ -496,8 +496,7 @@ export function FilePreviewModal({
                     href={fileUrl}
                     download={fileName}
                     target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                    rel="noopener noreferrer">
                     <Download className="mr-2 h-4 w-4" />
                     下载文件
                   </a>
@@ -518,8 +517,7 @@ export function FilePreviewModal({
                   {pdfImages.map((imageUrl, index) => (
                     <section
                       key={`${fileName}-page-${index + 1}`}
-                      className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
-                    >
+                      className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                       <div className="border-b border-border bg-muted/60 px-4 py-2 text-sm font-medium">
                         第 {index + 1} 页
                       </div>
@@ -558,10 +556,11 @@ export function FilePreviewModal({
                     controls
                     className={cn(
                       "mx-auto w-full max-w-5xl rounded-lg shadow-sm",
-                      isFullscreen ? "max-h-[calc(100dvh-10rem)]" : "max-h-[70vh]"
+                      isFullscreen
+                        ? "max-h-[calc(100dvh-10rem)]"
+                        : "max-h-[70vh]"
                     )}
-                    onError={() => setError("视频加载失败")}
-                  >
+                    onError={() => setError("视频加载失败")}>
                     您的浏览器不支持视频播放。
                   </video>
                 </div>
@@ -575,8 +574,7 @@ export function FilePreviewModal({
                       src={content}
                       controls
                       className="w-full max-w-md"
-                      onError={() => setError("音频加载失败")}
-                    >
+                      onError={() => setError("音频加载失败")}>
                       您的浏览器不支持音频播放。
                     </audio>
                   </div>
@@ -594,8 +592,7 @@ export function FilePreviewModal({
                       isFullscreen
                         ? "min-h-[calc(100dvh-12rem)] max-h-none"
                         : "max-h-[70vh]"
-                    )}
-                  >
+                    )}>
                     {content || "（空文件）"}
                   </pre>
                 </div>

@@ -29,11 +29,12 @@
   --input: 212.7 26.8% 83.9%;
   --ring: 222.2 84% 4.9%;
   --radius: 0.5rem;
-  --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06), 0 1px 3px 0 hsl(222 47% 11% / 0.08);
+  --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06),
+    0 1px 3px 0 hsl(222 47% 11% / 0.08);
 }
 
-:root[data-theme='dark'],
-.xzzdpro[data-theme='dark'] {
+:root[data-theme="dark"],
+.xzzdpro[data-theme="dark"] {
   --background: 222.2 84% 4.9%;
   --foreground: 210 40% 98%;
   --card: 222.2 47.4% 11.2%;

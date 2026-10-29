@@ -14,60 +14,61 @@
 }
 
 :root {
-    --background: 210 40% 98%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 215.4 16.3% 46.9%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 78.9% 42.7%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 134.9 81.4% 25.3%;
-    --success-foreground: 0 0% 100%;
-    --warning: 30 100% 27.8%;
-    --warning-foreground: 0 0% 100%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 212.7 26.8% 83.9%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06), 0 1px 3px 0 hsl(222 47% 11% / 0.08);
-  }
+  --background: 210 40% 98%;
+  --foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --primary: 215.4 16.3% 46.9%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 78.9% 42.7%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 134.9 81.4% 25.3%;
+  --success-foreground: 0 0% 100%;
+  --warning: 30 100% 27.8%;
+  --warning-foreground: 0 0% 100%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 212.7 26.8% 83.9%;
+  --ring: 222.2 84% 4.9%;
+  --radius: 0.5rem;
+  --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06),
+    0 1px 3px 0 hsl(222 47% 11% / 0.08);
+}
 
-:root[data-theme='dark'],
-.xzzdpro[data-theme='dark'] {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 11.2%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 47.4% 11.2%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 8.3 100% 72.9%;
-    --destructive-foreground: 0 100% 11.6%;
-    --success: 150 57.9% 52.5%;
-    --success-foreground: 134.2 100% 11.6%;
-    --warning: 42.9 100% 60%;
-    --warning-foreground: 29.5 100% 11.6%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 215.3 25% 26.7%;
-    --ring: 212.7 26.8% 83.9%;
-    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
-  }
+:root[data-theme="dark"],
+.xzzdpro[data-theme="dark"] {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 47.4% 11.2%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 47.4% 11.2%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 210 40% 98%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 8.3 100% 72.9%;
+  --destructive-foreground: 0 100% 11.6%;
+  --success: 150 57.9% 52.5%;
+  --success-foreground: 134.2 100% 11.6%;
+  --warning: 42.9 100% 60%;
+  --warning-foreground: 29.5 100% 11.6%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 215.3 25% 26.7%;
+  --ring: 212.7 26.8% 83.9%;
+  --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
+}
 
 /* Avoid a bright flash on initial render before JS reads the stored theme. */
 @media (prefers-color-scheme: dark) {
@@ -99,9 +100,8 @@
   }
 }
 
-
-  /* 强制应用字体到所有元素 */
-  /* 特别针对常见的文本元素 */
+/* 强制应用字体到所有元素 */
+/* 特别针对常见的文本元素 */
 .xzzdpro-root {
   --xzzd-sidebar-width: 280px;
   display: grid;
@@ -289,7 +289,9 @@
 .nav-text {
   white-space: nowrap;
   overflow: hidden;
-  transition: opacity 0.2s ease, width 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    width 0.2s ease;
 }
 
 /* Sidebar collapsed state */
@@ -309,8 +311,17 @@
 }
 
 .xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > a,
-.xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > .nav-link-expandable .nav-link-main,
-.xzzdpro-root.sidebar-collapsed .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn {
+.xzzdpro-root.sidebar-collapsed
+  .xzzdpro-sidebar
+  .sidebar-nav
+  > li
+  > .nav-link-expandable
+  .nav-link-main,
+.xzzdpro-root.sidebar-collapsed
+  .xzzdpro-sidebar
+  .sidebar-nav
+  > li
+  > .nav-action-btn {
   justify-content: center;
   padding: 10px;
   gap: 0;
@@ -357,7 +368,7 @@
 }
 
 .sidebar-resize-handle::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   bottom: 0;
@@ -945,7 +956,7 @@
   filter: invert(1);
 }
 
-[data-theme='dark'] .xzzdpro-header .logo-area img {
+[data-theme="dark"] .xzzdpro-header .logo-area img {
   filter: invert(0);
 }
 
@@ -1037,7 +1048,9 @@
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
 }
 
 .modal-overlay.active {

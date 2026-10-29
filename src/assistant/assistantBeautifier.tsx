@@ -8,38 +8,54 @@
  * - Handlers: src/assistant/handlers/
  */
 
-import { renderAssistantPage } from '../assistant/components/assistantPageHelpers'
 import { storage } from "@/lib/storage"
-import type { AssistantSettings, ChatMessage, CourseInfo, MaterialFile } from '../assistant/types'
 
+import { renderAssistantPage } from "../assistant/components/assistantPageHelpers"
+import {
+  setOverlayElement as setChatOverlayElement,
+  setMessages,
+  setupChatHandlers
+} from "../assistant/handlers/chatHandler"
 // Import handlers
 import {
-  setOverlayElement,
-  setCurrentSettings,
+  clearSelectedCourseMaterials,
+  initAssistant,
+  setCourses,
   setCurrentCourseId,
   setCurrentCourseName,
-  setCourses,
-  initAssistant,
-  switchCourse,
-  clearSelectedCourseMaterials
-} from '../assistant/handlers/courseHandler'
-
-import { setupSettingsHandlers, setOverlayElement as setSettingsOverlayElement } from '../assistant/handlers/settingsHandler'
-import { setupChatHandlers, setMessages, setOverlayElement as setChatOverlayElement } from '../assistant/handlers/chatHandler'
-import { renderMessages, setOverlayElement as setUiUtilsOverlayElement } from '../assistant/utils/uiUtils'
-
+  setCurrentSettings,
+  setOverlayElement,
+  switchCourse
+} from "../assistant/handlers/courseHandler"
+import {
+  setOverlayElement as setSettingsOverlayElement,
+  setupSettingsHandlers
+} from "../assistant/handlers/settingsHandler"
 // Import CSS content
-import { overlayStyles } from '../assistant/styles/overlayStyles'
+import { overlayStyles } from "../assistant/styles/overlayStyles"
+import type {
+  AssistantSettings,
+  ChatMessage,
+  CourseInfo,
+  MaterialFile
+} from "../assistant/types"
+import {
+  renderMessages,
+  setOverlayElement as setUiUtilsOverlayElement
+} from "../assistant/utils/uiUtils"
 
 // Global State
 let currentSettings: AssistantSettings | null = null
 let currentCourseId: string | null = null
-let currentCourseName: string = ''
+let currentCourseName: string = ""
 let isGenerating: boolean = false
 let courses: CourseInfo[] = []
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
-const selectedCourseMaterials = new Map<string, { file: MaterialFile; materialTitle: string }>()
+const selectedCourseMaterials = new Map<
+  string,
+  { file: MaterialFile; materialTitle: string }
+>()
 let overlayHost: HTMLElement | null = null
 let overlayElement: HTMLElement | null = null
 let isFlashcardMode = false
@@ -102,7 +118,9 @@ export function getCurrentSettings(): AssistantSettings | null {
   return currentSettings
 }
 
-export function setCurrentSettingsState(settings: AssistantSettings | null): void {
+export function setCurrentSettingsState(
+  settings: AssistantSettings | null
+): void {
   currentSettings = settings
   setCurrentSettings(settings)
 }
@@ -134,7 +152,10 @@ export function setCoursesState(newCourses: CourseInfo[]): void {
   setCourses(newCourses)
 }
 
-export function getSelectedCourseMaterialsMap(): Map<string, { file: MaterialFile; materialTitle: string }> {
+export function getSelectedCourseMaterialsMap(): Map<
+  string,
+  { file: MaterialFile; materialTitle: string }
+> {
   return selectedCourseMaterials
 }
 
@@ -153,27 +174,39 @@ export function setMessagesState(newMessages: ChatMessage[]): void {
 }
 
 // Event handlers export for cleanup
-export function getExternalSplitToggleHandler(): ((event: Event) => void) | null {
+export function getExternalSplitToggleHandler():
+  | ((event: Event) => void)
+  | null {
   return externalSplitToggleHandler
 }
 
-export function setExternalSplitToggleHandler(handler: ((event: Event) => void) | null): void {
+export function setExternalSplitToggleHandler(
+  handler: ((event: Event) => void) | null
+): void {
   externalSplitToggleHandler = handler
 }
 
-export function getExternalClearHistoryHandler(): ((event: Event) => void) | null {
+export function getExternalClearHistoryHandler():
+  | ((event: Event) => void)
+  | null {
   return externalClearHistoryHandler
 }
 
-export function setExternalClearHistoryHandler(handler: ((event: Event) => void) | null): void {
+export function setExternalClearHistoryHandler(
+  handler: ((event: Event) => void) | null
+): void {
   externalClearHistoryHandler = handler
 }
 
-export function getExternalMaterialToggleHandler(): ((event: Event) => void) | null {
+export function getExternalMaterialToggleHandler():
+  | ((event: Event) => void)
+  | null {
   return externalMaterialToggleHandler
 }
 
-export function setExternalMaterialToggleHandler(handler: ((event: Event) => void) | null): void {
+export function setExternalMaterialToggleHandler(
+  handler: ((event: Event) => void) | null
+): void {
   externalMaterialToggleHandler = handler
 }
 
@@ -184,15 +217,24 @@ export function isAssistantOpen(): boolean {
 
 export function closeAssistant(): void {
   if (externalSplitToggleHandler) {
-    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-toggle-flashcard",
+      externalSplitToggleHandler
+    )
     externalSplitToggleHandler = null
   }
   if (externalClearHistoryHandler) {
-    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+    window.removeEventListener(
+      "xzzd:assistant-clear-history",
+      externalClearHistoryHandler
+    )
     externalClearHistoryHandler = null
   }
   if (externalMaterialToggleHandler) {
-    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-material-toggle",
+      externalMaterialToggleHandler
+    )
     externalMaterialToggleHandler = null
   }
   if (overlayHost && document.body.contains(overlayHost)) {
@@ -200,16 +242,19 @@ export function closeAssistant(): void {
     overlayHost = null
     overlayElement = null
     setOverlayElement(null)
-    document.body.style.overflow = ''
+    document.body.style.overflow = ""
   }
 }
 
 // Helper to inject styles
 function injectOverlayStyles(root: ShadowRoot): void {
-  const style = document.createElement('style')
+  const style = document.createElement("style")
   // Handle both string and object exports from CSS import
-  const cssContent = typeof overlayStyles === 'string' ? overlayStyles : (overlayStyles as any)?.default || String(overlayStyles || '')
-  console.log('XZZDPRO: Injecting CSS, length:', cssContent.length)
+  const cssContent =
+    typeof overlayStyles === "string"
+      ? overlayStyles
+      : (overlayStyles as any)?.default || String(overlayStyles || "")
+  console.log("XZZDPRO: Injecting CSS, length:", cssContent.length)
   style.textContent = cssContent
   root.appendChild(style)
 }
@@ -217,24 +262,24 @@ function injectOverlayStyles(root: ShadowRoot): void {
 // Factory function to create the assistant host element
 export async function createAssistantHost(): Promise<HTMLElement> {
   // Create Host
-  const host = document.createElement('div')
-  host.id = 'xzzdpro-assistant-embedded-host'
-  host.style.width = '100%'
-  host.style.height = '100%'
-  host.style.overflow = 'hidden'
+  const host = document.createElement("div")
+  host.id = "xzzdpro-assistant-embedded-host"
+  host.style.width = "100%"
+  host.style.height = "100%"
+  host.style.overflow = "hidden"
 
   // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
-  const shadow = host.attachShadow({ mode: 'closed' })
+  const shadow = host.attachShadow({ mode: "closed" })
 
   // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)
 
   // Create Container
-  overlayElement = document.createElement('div')
-  overlayElement.className = 'assistant-fullpage'
+  overlayElement = document.createElement("div")
+  overlayElement.className = "assistant-fullpage"
   overlayElement.innerHTML = `
     <div class="assistant-content-container">
-      ${renderAssistantPage('')}
+      ${renderAssistantPage("")}
     </div>
   `
 
@@ -249,51 +294,53 @@ export async function createAssistantHost(): Promise<HTMLElement> {
 
   // Initialize Logic
   // Apply initial theme
-  const theme = await storage.get('theme') || 'light'
-  host.setAttribute('data-theme', theme)
+  const theme = (await storage.get("theme")) || "light"
+  host.setAttribute("data-theme", theme)
 
   // Watch for theme changes
   storage.watch({
     theme: (change) => {
-      if (host) host.setAttribute('data-theme', change.newValue || 'light')
+      if (host) host.setAttribute("data-theme", change.newValue || "light")
     }
   })
 
   // Start initialization but don't wait for it to return the element
-  initAssistant().catch(err => console.error('XZZDPRO: Async init failed', err))
+  initAssistant().catch((err) =>
+    console.error("XZZDPRO: Async init failed", err)
+  )
 
   return host
 }
 
 export async function openAssistant(): Promise<void> {
-  console.log('XZZDPRO: openAssistant called')
+  console.log("XZZDPRO: openAssistant called")
   if (isAssistantOpen()) {
-    console.log('XZZDPRO: Assistant already open, closing')
+    console.log("XZZDPRO: Assistant already open, closing")
     closeAssistant()
     return
   }
 
-  document.body.style.overflow = 'hidden'
+  document.body.style.overflow = "hidden"
 
   // Create Host
-  overlayHost = document.createElement('div')
-  overlayHost.id = 'xzzdpro-assistant-host'
-  overlayHost.style.position = 'fixed'
-  overlayHost.style.zIndex = '2147483647'
-  overlayHost.style.top = '0'
-  overlayHost.style.left = '0'
-  overlayHost.style.width = '0'
-  overlayHost.style.height = '0'
+  overlayHost = document.createElement("div")
+  overlayHost.id = "xzzdpro-assistant-host"
+  overlayHost.style.position = "fixed"
+  overlayHost.style.zIndex = "2147483647"
+  overlayHost.style.top = "0"
+  overlayHost.style.left = "0"
+  overlayHost.style.width = "0"
+  overlayHost.style.height = "0"
 
   // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
-  const shadow = overlayHost.attachShadow({ mode: 'closed' })
+  const shadow = overlayHost.attachShadow({ mode: "closed" })
 
   // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)
 
   // Create Container (overlayElement)
-  overlayElement = document.createElement('div')
-  overlayElement.className = 'assistant-overlay'
+  overlayElement = document.createElement("div")
+  overlayElement.className = "assistant-overlay"
   overlayElement.innerHTML = `
     <div class="assistant-overlay-backdrop"></div>
     <div class="assistant-overlay-container">
@@ -302,7 +349,7 @@ export async function openAssistant(): Promise<void> {
         <button class="assistant-close-btn" id="assistant-close-btn">&times;</button>
       </div>
       <div class="assistant-overlay-content">
-        ${renderAssistantPage('')}
+        ${renderAssistantPage("")}
       </div>
     </div>
   `
@@ -316,28 +363,29 @@ export async function openAssistant(): Promise<void> {
   setUiUtilsOverlayElement(overlayElement)
 
   // Close button handler
-  const closeBtn = overlayElement.querySelector('#assistant-close-btn')
-  closeBtn?.addEventListener('click', () => {
+  const closeBtn = overlayElement.querySelector("#assistant-close-btn")
+  closeBtn?.addEventListener("click", () => {
     closeAssistant()
   })
 
   // Backdrop click handler
-  const backdrop = overlayElement.querySelector('.assistant-overlay-backdrop')
-  backdrop?.addEventListener('click', () => {
+  const backdrop = overlayElement.querySelector(".assistant-overlay-backdrop")
+  backdrop?.addEventListener("click", () => {
     closeAssistant()
   })
 
   // ESC key handler
-  document.addEventListener('keydown', handleEscClose)
+  document.addEventListener("keydown", handleEscClose)
 
   // Apply theme
-  const theme = await storage.get('theme') || 'light'
-  overlayHost.setAttribute('data-theme', theme)
+  const theme = (await storage.get("theme")) || "light"
+  overlayHost.setAttribute("data-theme", theme)
 
   // Watch for theme changes
   storage.watch({
     theme: (change) => {
-      if (overlayHost) overlayHost.setAttribute('data-theme', change.newValue || 'light')
+      if (overlayHost)
+        overlayHost.setAttribute("data-theme", change.newValue || "light")
     }
   })
 
@@ -349,10 +397,10 @@ export async function openAssistant(): Promise<void> {
 }
 
 function handleEscClose(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
+  if (e.key === "Escape") {
     if (isAssistantOpen()) {
       closeAssistant()
-      document.removeEventListener('keydown', handleEscClose)
+      document.removeEventListener("keydown", handleEscClose)
     }
   }
 }
@@ -360,5 +408,8 @@ function handleEscClose(e: KeyboardEvent): void {
 // Re-export from handlers for backward compatibility
 export { initAssistant, switchCourse, renderMessages }
 export { setupSettingsHandlers, setupChatHandlers }
-export { renderChatMessage, renderAttachmentCard } from '../assistant/components/assistantPageHelpers'
-export { hydrateFlashcardBubbles } from '../assistant/components/flashcardRenderer'
+export {
+  renderChatMessage,
+  renderAttachmentCard
+} from "../assistant/components/assistantPageHelpers"
+export { hydrateFlashcardBubbles } from "../assistant/components/flashcardRenderer"

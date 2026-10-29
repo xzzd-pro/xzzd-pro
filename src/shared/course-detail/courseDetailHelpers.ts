@@ -1,38 +1,50 @@
 // lib/courseDetailHelpers.ts - Shared helpers for all course detail pages
 
-import { renderHeader, setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "../layout"
-import { courseDetailIcons } from "../layout/icons"
-import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
+import {
+  createMyCoursesPayload,
+  fetchMyCoursesResponse
+} from "@/shared/api/myCoursesApi"
 import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
+
+import {
+  renderHeader,
+  setupAvatarUpload,
+  setupHelpModal,
+  setupSidebarToggle,
+  setupThemeToggle
+} from "../layout"
+import { courseDetailIcons } from "../layout/icons"
 
 // Extract course ID from URL
 export function getCourseIdFromUrl(): string | null {
-  const pathname = window.location.pathname;
-  const courseMatch = pathname.match(/\/course\/(\d+)/);
-  return courseMatch ? courseMatch[1] : null;
+  const pathname = window.location.pathname
+  const courseMatch = pathname.match(/\/course\/(\d+)/)
+  return courseMatch ? courseMatch[1] : null
 }
 
 // Extract activity ID from URL hash
 export function getActivityIdFromUrl(): string | null {
-  const hash = window.location.hash;
-  const activityMatch = hash.match(/#\/(?:exam\/)?(\d+)/);
-  return activityMatch ? activityMatch[1] : null;
+  const hash = window.location.hash
+  const activityMatch = hash.match(/#\/(?:exam\/)?(\d+)/)
+  return activityMatch ? activityMatch[1] : null
 }
 
 // Get course name from API
 export async function getCourseName(): Promise<string> {
   try {
-    const courseId = getCourseIdFromUrl();
-    if (!courseId) return '课程';
+    const courseId = getCourseIdFromUrl()
+    if (!courseId) return "课程"
 
-    const response = await fetch(`https://courses.zju.edu.cn/api/courses/${courseId}`);
-    if (!response.ok) return '课程';
+    const response = await fetch(
+      `https://courses.zju.edu.cn/api/courses/${courseId}`
+    )
+    if (!response.ok) return "课程"
 
-    const data = await response.json();
-    return data.display_name || '课程';
+    const data = await response.json()
+    return data.display_name || "课程"
   } catch (error) {
-    console.error('XZZDPRO: 获取课程名称时出错', error);
-    return '课程';
+    console.error("XZZDPRO: 获取课程名称时出错", error)
+    return "课程"
   }
 }
 
@@ -41,70 +53,78 @@ export async function getUserId(): Promise<string | null> {
   try {
     const coursesResponse = await fetchMyCoursesResponse(
       createMyCoursesPayload()
-    );
+    )
 
     if (!coursesResponse.ok) {
-      console.error('XZZDPRO: 获取课程列表失败');
-      return null;
+      console.error("XZZDPRO: 获取课程列表失败")
+      return null
     }
 
-    const coursesData = await coursesResponse.json();
+    const coursesData = await coursesResponse.json()
     if (!coursesData.courses || coursesData.courses.length === 0) {
-      console.error('XZZDPRO: 没有找到任何课程');
-      return null;
+      console.error("XZZDPRO: 没有找到任何课程")
+      return null
     }
 
     // Iterate through all courses until we find a valid userId
     for (const course of coursesData.courses) {
-      const courseId = course.id;
+      const courseId = course.id
       try {
         const activityResponse = await fetch(
           `https://courses.zju.edu.cn/api/course/${courseId}/activity-reads-for-user`
-        );
+        )
 
-        if (!activityResponse.ok) continue;
+        if (!activityResponse.ok) continue
 
-        const activityData = await activityResponse.json();
-        if (!activityData.activity_reads || activityData.activity_reads.length === 0) continue;
+        const activityData = await activityResponse.json()
+        if (
+          !activityData.activity_reads ||
+          activityData.activity_reads.length === 0
+        )
+          continue
 
-        const firstActivity = activityData.activity_reads[0];
-        const userId = firstActivity.created_by_id || firstActivity.created_for_id;
+        const firstActivity = activityData.activity_reads[0]
+        const userId =
+          firstActivity.created_by_id || firstActivity.created_for_id
 
         if (userId) {
-          console.log('XZZDPRO: 成功提取到用户ID', userId);
-          return String(userId);
+          console.log("XZZDPRO: 成功提取到用户ID", userId)
+          return String(userId)
         }
       } catch (error) {
-        console.warn(`XZZDPRO: 处理课程 ${courseId} 时发生异常`, error);
+        console.warn(`XZZDPRO: 处理课程 ${courseId} 时发生异常`, error)
       }
     }
 
-    console.error('XZZDPRO: 遍历所有课程均无法提取有效用户ID');
-    return null;
+    console.error("XZZDPRO: 遍历所有课程均无法提取有效用户ID")
+    return null
   } catch (error) {
-    console.error('XZZDPRO: 获取用户ID时出错', error);
-    return null;
+    console.error("XZZDPRO: 获取用户ID时出错", error)
+    return null
   }
 }
 
 // Detect if activity is courseware or homework by checking API
-export async function detectActivityType(activityId: string, userId: string): Promise<'courseware' | 'homework' | 'unknown'> {
+export async function detectActivityType(
+  activityId: string,
+  userId: string
+): Promise<"courseware" | "homework" | "unknown"> {
   try {
     const response = await fetch(
       `https://courses.zju.edu.cn/api/activities/${activityId}/students/${userId}/homework-score`
-    );
+    )
 
-    const data = await response.json();
+    const data = await response.json()
 
     // If returns "未找到资源" message, it's a courseware page
-    if (data.message && data.message.includes('未找到资源')) {
-      return 'courseware';
+    if (data.message && data.message.includes("未找到资源")) {
+      return "courseware"
     }
 
-    return 'homework';
+    return "homework"
   } catch (error) {
-    console.error('XZZDPRO: 检测活动类型时出错', error);
-    return 'unknown';
+    console.error("XZZDPRO: 检测活动类型时出错", error)
+    return "unknown"
   }
 }
 
@@ -114,36 +134,39 @@ export async function detectActivityType(activityId: string, userId: string): Pr
  * @param currentPage - The current active page
  * @returns HTML string for the sidebar
  */
-export function renderCourseDetailSidebar(courseId: string, currentPage: string): string {
+export function renderCourseDetailSidebar(
+  courseId: string,
+  currentPage: string
+): string {
   return `
     <nav class="xzzdpro-sidebar">
       <div class="sidebar-section">
         <ul class="sidebar-nav">
-          <li class="nav-item ${currentPage === 'overview' ? 'active' : ''}">
+          <li class="nav-item ${currentPage === "overview" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/content#/" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.overview}</span>
               <span class="nav-text">课程概览</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'materials' ? 'active' : ''}">
+          <li class="nav-item ${currentPage === "materials" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/courseware#/" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.courseware}</span>
               <span class="nav-text">课件下载</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'homework' ? 'active' : ''}">
+          <li class="nav-item ${currentPage === "homework" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/homework#/" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.homework}</span>
               <span class="nav-text">作业提交</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'quiz' ? 'active' : ''}">
+          <li class="nav-item ${currentPage === "quiz" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/exam" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.quiz}</span>
               <span class="nav-text">小测</span>
             </a>
           </li>
-          <li class="nav-item ${currentPage === 'grades' ? 'active' : ''}">
+          <li class="nav-item ${currentPage === "grades" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/course/${courseId}/score#/" class="nav-link">
               <span class="nav-icon">${courseDetailIcons.grades}</span>
               <span class="nav-text">成绩</span>
@@ -163,7 +186,7 @@ export function renderCourseDetailSidebar(courseId: string, currentPage: string)
         </button>
       </div>
     </nav>
-  `;
+  `
 }
 
 /**
@@ -182,15 +205,20 @@ export function renderCourseDetailPage(
   pageTitle: string,
   contentHtml: string
 ): string {
-  const header = renderHeader({ showUsername: false });
-  const sidebar = renderCourseDetailSidebar(courseId, currentPage);
-  const escapeText = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const header = renderHeader({ showUsername: false })
+  const sidebar = renderCourseDetailSidebar(courseId, currentPage)
+  const escapeText = (value: string) =>
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
   const descriptions: Record<string, string> = {
-    materials: '按章节浏览课程资料，预览或下载所需文件。',
-    homework: '查看作业要求、提交记录与批改结果。',
-    grades: '查看课程公布的成绩与各项学习记录。',
-    overview: '了解课程信息、任课教师与课程介绍。'
-  };
+    materials: "按章节浏览课程资料，预览或下载所需文件。",
+    homework: "查看作业要求、提交记录与批改结果。",
+    grades: "查看课程公布的成绩与各项学习记录。",
+    overview: "了解课程信息、任课教师与课程介绍。"
+  }
 
   return `
     ${header}
@@ -205,7 +233,7 @@ export function renderCourseDetailPage(
             <span class="course-detail-course-name">${escapeText(courseName)}</span>
           </nav>
           <h1>${escapeText(pageTitle)}</h1>
-          ${descriptions[currentPage] ? `<p>${descriptions[currentPage]}</p>` : ''}
+          ${descriptions[currentPage] ? `<p>${descriptions[currentPage]}</p>` : ""}
         </header>
         <div class="widget-card content-card course-detail-panel">
           <div class="content-section active">
@@ -214,29 +242,29 @@ export function renderCourseDetailPage(
         </div>
       </div>
     </main>
-  `;
+  `
 }
 
 interface MountCourseDetailPageOptions {
-  currentPage: string;
-  pageTitle: string;
-  contentHtml: string;
-  courseName?: string;
+  currentPage: string
+  pageTitle: string
+  contentHtml: string
+  courseName?: string
 }
 
 interface MountedCourseDetailPage {
-  courseId: string;
-  root: HTMLElement;
-  titleElement: HTMLElement | null;
-  contentSection: HTMLElement | null;
-  getMountPoint: (id: string) => HTMLElement | null;
+  courseId: string
+  root: HTMLElement
+  titleElement: HTMLElement | null
+  contentSection: HTMLElement | null
+  getMountPoint: (id: string) => HTMLElement | null
 }
 
 function setupCourseDetailLayout(): void {
-  setupThemeToggle();
-  setupHelpModal();
-  setupAvatarUpload();
-  void setupSidebarToggle();
+  setupThemeToggle()
+  setupHelpModal()
+  setupAvatarUpload()
+  void setupSidebarToggle()
 }
 
 export async function mountCourseDetailPage({
@@ -245,19 +273,19 @@ export async function mountCourseDetailPage({
   contentHtml,
   courseName
 }: MountCourseDetailPageOptions): Promise<MountedCourseDetailPage | null> {
-  suppressAirChatbot();
+  suppressAirChatbot()
 
-  const courseId = getCourseIdFromUrl();
+  const courseId = getCourseIdFromUrl()
   if (!courseId) {
-    console.error('XZZDPRO: 无法提取课程ID');
-    return null;
+    console.error("XZZDPRO: 无法提取课程ID")
+    return null
   }
 
-  document.body.innerHTML = '';
-  const root = document.createElement('div');
-  root.className = 'xzzdpro-root xzzdpro';
+  document.body.innerHTML = ""
+  const root = document.createElement("div")
+  root.className = "xzzdpro-root xzzdpro"
 
-  const resolvedCourseName = courseName ?? (await getCourseName());
+  const resolvedCourseName = courseName ?? (await getCourseName())
 
   root.innerHTML = renderCourseDetailPage(
     courseId,
@@ -265,21 +293,26 @@ export async function mountCourseDetailPage({
     currentPage,
     pageTitle,
     contentHtml
-  );
+  )
 
-  document.body.appendChild(root);
-  document.body.classList.add('xzzdpro-body', 'xzzdpro');
+  document.body.appendChild(root)
+  document.body.classList.add("xzzdpro-body", "xzzdpro")
 
-  setupCourseDetailLayout();
+  setupCourseDetailLayout()
 
   return {
     courseId,
     root,
-    titleElement: root.querySelector('.course-detail-course-name'),
-    contentSection: document.querySelector('.content-section.active'),
+    titleElement: root.querySelector(".course-detail-course-name"),
+    contentSection: document.querySelector(".content-section.active"),
     getMountPoint: (id: string) => document.getElementById(id)
-  };
+  }
 }
 
 // Re-export setup functions from layoutHelpers for convenience
-export { setupThemeToggle, setupHelpModal, setupAvatarUpload, setupSidebarToggle } from "../layout";
+export {
+  setupThemeToggle,
+  setupHelpModal,
+  setupAvatarUpload,
+  setupSidebarToggle
+} from "../layout"

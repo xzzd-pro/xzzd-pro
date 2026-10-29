@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -77,8 +78,7 @@ function TodayCourseCard({ course }: { course: TodayCourse }) {
       className={cn(
         "block no-underline",
         course.link && course.link !== "#" && "cursor-pointer group"
-      )}
-    >
+      )}>
       <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/50">
         <CardHeader className="p-3 pb-1">
           <div className="flex items-center justify-between gap-2">
@@ -119,8 +119,7 @@ function AllCourseCard({ course }: { course: AllCourse }) {
       href={courseUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block no-underline"
-    >
+      className="block no-underline">
       <Card className="h-[100px] transition-all duration-200 hover:shadow-md hover:border-primary/50 group">
         <CardHeader className="p-3 pb-1">
           <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
@@ -158,7 +157,7 @@ export function CourseList({
   courses,
   variant,
   loading = false,
-  emptyMessage,
+  emptyMessage
 }: CourseListProps) {
   const defaultEmptyMessage =
     variant === "today" ? "今天没有课哦 ~" : "未找到符合条件的课程"
@@ -169,8 +168,7 @@ export function CourseList({
         className={cn(
           "space-y-3",
           variant === "all" && "grid grid-cols-1 md:grid-cols-2 gap-4 space-y-0"
-        )}
-      >
+        )}>
         {Array.from({ length: variant === "all" ? 4 : 3 }).map((_, i) => (
           <CourseCardSkeleton key={i} variant={variant} />
         ))}

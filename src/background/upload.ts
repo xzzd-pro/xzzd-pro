@@ -53,7 +53,9 @@ async function preRegisterUpload(
   }
 }
 
-function normalizeFileData(fileData: UploadFileRequest["fileData"]): Uint8Array {
+function normalizeFileData(
+  fileData: UploadFileRequest["fileData"]
+): Uint8Array {
   if (typeof fileData === "string") {
     const binary = atob(fileData)
     const bytes = new Uint8Array(binary.length)
@@ -191,7 +193,10 @@ function getContentType(fileName: string): string {
 export async function uploadHomeworkFile(
   request: UploadFileRequest
 ): Promise<UploadResponse> {
-  const preRegResult = await preRegisterUpload(request.fileName, request.fileSize)
+  const preRegResult = await preRegisterUpload(
+    request.fileName,
+    request.fileSize
+  )
   if (!preRegResult) {
     return {
       success: false,

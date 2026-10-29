@@ -1,16 +1,17 @@
+import { useEffect } from "react"
+
+import { useStorage } from "@plasmohq/storage/hook"
+
+import { loadBrandFont } from "@/lib/fontLoader"
+import { isNativePreviewPage } from "@/lib/nativePreview"
 import { storage } from "@/lib/storage"
 import {
   applyThemeToDocument,
   bootstrapStoredTheme,
   normalizeTheme
 } from "@/lib/themeDom"
-import { useEffect } from "react"
-
-import { useStorage } from "@plasmohq/storage/hook"
 
 import { useBeautifierInitialization } from "./useBeautifierInitialization"
-import { isNativePreviewPage } from "@/lib/nativePreview"
-import { loadBrandFont } from "@/lib/fontLoader"
 
 const nativePreview = isNativePreviewPage(window.location.href)
 if (nativePreview) {
@@ -73,7 +74,10 @@ export function createBeautifierInjector({
     })
 
     useEffect(() => {
-      if (nativePreview) { disableBeautification(); return }
+      if (nativePreview) {
+        disableBeautification()
+        return
+      }
       if (shouldSkip?.()) return
 
       if (isLoading) {

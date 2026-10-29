@@ -1,11 +1,13 @@
 import * as React from "react"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { ProcessedNotification } from "@/types"
+
+import { MARKABLE_FILTERS } from "../readState"
 import { FILTER_OPTIONS, FilterTabs, isFilterMarked } from "./FilterTabs"
 import { NotificationItem } from "./NotificationItem"
-import { Button } from "@/components/ui/button"
-import { MARKABLE_FILTERS } from "../readState"
-import type { ProcessedNotification } from "@/types"
 
 export interface NotificationCardProps {
   title: string
@@ -25,61 +27,73 @@ function filterNotifications(
   notifications: ProcessedNotification[],
   filterType: string
 ): ProcessedNotification[] {
-  if (filterType === 'all') return notifications
+  if (filterType === "all") return notifications
 
-  if (filterType === 'exam_will_start') {
-    return notifications.filter(n =>
-      n.type === 'exam_opened' ||
-      n.type === 'exam_will_start' ||
-      n.type === 'exam_submit_started'
+  if (filterType === "exam_will_start") {
+    return notifications.filter(
+      (n) =>
+        n.type === "exam_opened" ||
+        n.type === "exam_will_start" ||
+        n.type === "exam_submit_started"
     )
   }
 
-  if (filterType === 'homework_opened_for_submission') {
-    return notifications.filter(n =>
-      n.type === 'homework_opened_for_submission' ||
-      n.type === 'course_homework_make_up'
+  if (filterType === "homework_opened_for_submission") {
+    return notifications.filter(
+      (n) =>
+        n.type === "homework_opened_for_submission" ||
+        n.type === "course_homework_make_up"
     )
   }
 
-  if (filterType === 'others') {
+  if (filterType === "others") {
     const mainTypes = [
-      'activity_opened',
-      'homework_opened_for_submission',
-      'course_homework_make_up',
-      'homework_score_updated',
-      'exam_opened',
-      'exam_will_start',
-      'exam_submit_started'
+      "activity_opened",
+      "homework_opened_for_submission",
+      "course_homework_make_up",
+      "homework_score_updated",
+      "exam_opened",
+      "exam_will_start",
+      "exam_submit_started"
     ]
-    return notifications.filter(n => !mainTypes.includes(n.type))
+    return notifications.filter((n) => !mainTypes.includes(n.type))
   }
 
-  return notifications.filter(n => n.type === filterType)
+  return notifications.filter((n) => n.type === filterType)
 }
 
-function calculateCounts(notifications: ProcessedNotification[]): Record<string, number> {
+function calculateCounts(
+  notifications: ProcessedNotification[]
+): Record<string, number> {
   const mainTypes = [
-    'activity_opened',
-    'homework_opened_for_submission',
-    'course_homework_make_up',
-    'homework_score_updated',
-    'exam_opened',
-    'exam_will_start',
-    'exam_submit_started'
+    "activity_opened",
+    "homework_opened_for_submission",
+    "course_homework_make_up",
+    "homework_score_updated",
+    "exam_opened",
+    "exam_will_start",
+    "exam_submit_started"
   ]
 
   return {
     all: notifications.length,
-    activity_opened: notifications.filter(n => n.type === 'activity_opened').length,
-    homework_opened_for_submission: notifications.filter(n =>
-      n.type === 'homework_opened_for_submission' || n.type === 'course_homework_make_up'
+    activity_opened: notifications.filter((n) => n.type === "activity_opened")
+      .length,
+    homework_opened_for_submission: notifications.filter(
+      (n) =>
+        n.type === "homework_opened_for_submission" ||
+        n.type === "course_homework_make_up"
     ).length,
-    homework_score_updated: notifications.filter(n => n.type === 'homework_score_updated').length,
-    exam_will_start: notifications.filter(n =>
-      n.type === 'exam_opened' || n.type === 'exam_will_start' || n.type === 'exam_submit_started'
+    homework_score_updated: notifications.filter(
+      (n) => n.type === "homework_score_updated"
     ).length,
-    others: notifications.filter(n => !mainTypes.includes(n.type)).length,
+    exam_will_start: notifications.filter(
+      (n) =>
+        n.type === "exam_opened" ||
+        n.type === "exam_will_start" ||
+        n.type === "exam_submit_started"
+    ).length,
+    others: notifications.filter((n) => !mainTypes.includes(n.type)).length
   }
 }
 
@@ -121,12 +135,17 @@ export function NotificationCard({
   const filteredNotifications = filterNotifications(notifications, filter)
   const counts = calculateCounts(notifications)
   // The header action covers what is on screen: every category, or just the selected one.
-  const scope: readonly string[] = filter === 'all' ? MARKABLE_FILTERS : [filter]
-  const scopeLabel = FILTER_OPTIONS.find((option) => option.type === filter)?.label ?? ''
+  const scope: readonly string[] =
+    filter === "all" ? MARKABLE_FILTERS : [filter]
+  const scopeLabel =
+    FILTER_OPTIONS.find((option) => option.type === filter)?.label ?? ""
   // Same rule as the tab badges: a category still counts until it has been marked.
-  const hasUnmarked = scope.some((f) => (counts[f] || 0) > 0 && !isFilterMarked(f, tempReadTypes))
-  const markLabel = filter === 'all' ? '全部标为已读' : `将「${scopeLabel}」标为已读`
-  const doneLabel = filter === 'all' ? '已全部标为已读' : '已标为已读'
+  const hasUnmarked = scope.some(
+    (f) => (counts[f] || 0) > 0 && !isFilterMarked(f, tempReadTypes)
+  )
+  const markLabel =
+    filter === "all" ? "全部标为已读" : `将「${scopeLabel}」标为已读`
+  const doneLabel = filter === "all" ? "已全部标为已读" : "已标为已读"
 
   return (
     <Card className="flex flex-col min-h-0 overflow-hidden border-transparent">
@@ -134,7 +153,9 @@ export function NotificationCard({
         <CardTitle className="text-lg font-semibold">
           {title}
           {!isLoading && (
-            <span className="ml-2 font-normal text-muted-foreground tabular-nums">{notifications.length}</span>
+            <span className="ml-2 font-normal text-muted-foreground tabular-nums">
+              {notifications.length}
+            </span>
           )}
         </CardTitle>
         {onMarkRead && (
@@ -145,9 +166,16 @@ export function NotificationCard({
             size="sm"
             className="bg-transparent text-muted-foreground hover:bg-accent disabled:bg-transparent"
             disabled={isLoading || (!hasUnmarked && !onUndoMarkRead)}
-            onClick={hasUnmarked || !onUndoMarkRead ? () => onMarkRead(scope) : onUndoMarkRead}
-          >
-            {hasUnmarked || isLoading ? markLabel : onUndoMarkRead ? '撤销标为已读' : doneLabel}
+            onClick={
+              hasUnmarked || !onUndoMarkRead
+                ? () => onMarkRead(scope)
+                : onUndoMarkRead
+            }>
+            {hasUnmarked || isLoading
+              ? markLabel
+              : onUndoMarkRead
+                ? "撤销标为已读"
+                : doneLabel}
           </Button>
         )}
       </CardHeader>

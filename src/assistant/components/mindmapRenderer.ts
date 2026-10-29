@@ -1,6 +1,7 @@
-import type { MindmapData } from "../types/mindmap"
-import { Markmap } from "markmap-view"
 import { Transformer } from "markmap-lib"
+import { Markmap } from "markmap-view"
+
+import type { MindmapData } from "../types/mindmap"
 
 type MarkmapInstance = ReturnType<typeof Markmap.create>
 
@@ -48,11 +49,17 @@ function safeJson(data: unknown): string {
 }
 
 function sanitizeMarkdown(markdown: string): string {
-  return clampText(markdown).replace(/<[^>]*>/g, "").trim()
+  return clampText(markdown)
+    .replace(/<[^>]*>/g, "")
+    .trim()
 }
 
 function sanitizeTitle(title: string): string {
-  return clampText(title).replace(/[#*_`\[\]]/g, "").trim() || DEFAULT_TITLE
+  return (
+    clampText(title)
+      .replace(/[#*_`\[\]]/g, "")
+      .trim() || DEFAULT_TITLE
+  )
 }
 
 function normalizeMarkdown(data: MindmapData): string {
@@ -76,11 +83,21 @@ function extractTitle(data: MindmapData): string {
 
 function isLikelyMindmapMarkdown(markdown: string): boolean {
   const hasHeading = /^#{1,6}\s+\S/m.test(markdown)
-  const hasList = /^\s*[-*+]\s+\S/m.test(markdown) || /^\s*\d+\.\s+\S/m.test(markdown)
+  const hasList =
+    /^\s*[-*+]\s+\S/m.test(markdown) || /^\s*\d+\.\s+\S/m.test(markdown)
   return hasHeading || hasList
 }
 
-function renderIcon(name: "mindmap" | "fit" | "expand" | "collapse" | "rename" | "delete" | "chevron"): string {
+function renderIcon(
+  name:
+    | "mindmap"
+    | "fit"
+    | "expand"
+    | "collapse"
+    | "rename"
+    | "delete"
+    | "chevron"
+): string {
   if (name === "fit") {
     return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3H3v4h2V5h2V3zm14 0h-4v2h2v2h2V3zM5 17H3v4h4v-2H5v-2zm16 0h-2v2h-2v2h4v-4zM7 7h10v10H7V7z"/></svg>'
   }
@@ -102,7 +119,11 @@ function renderIcon(name: "mindmap" | "fit" | "expand" | "collapse" | "rename" |
   return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM5 11a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm14 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM12 16a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm-1-8v3H8v2h3v3h2v-3h3v-2h-3V8h-2Z"/></svg>'
 }
 
-function walkMindmap(node: MindmapNode, visitor: (current: MindmapNode, depth: number) => void, depth: number = 0): void {
+function walkMindmap(
+  node: MindmapNode,
+  visitor: (current: MindmapNode, depth: number) => void,
+  depth: number = 0
+): void {
   visitor(node, depth)
   for (const child of node.children || []) {
     walkMindmap(child, visitor, depth + 1)
@@ -115,12 +136,15 @@ function setMindmapFoldState(root: MindmapNode, folded: boolean): void {
     // Keep root expanded, fold/unfold descendants.
     node.payload = {
       ...payload,
-      fold: depth === 0 ? 0 : (folded ? 1 : 0)
+      fold: depth === 0 ? 0 : folded ? 1 : 0
     }
   })
 }
 
-async function updateMindmapByState(messageId: string, folded: boolean): Promise<void> {
+async function updateMindmapByState(
+  messageId: string,
+  folded: boolean
+): Promise<void> {
   const binding = mindmapBindings.get(messageId)
   if (!binding) return
   const root = binding.instance.state?.data
@@ -155,26 +179,30 @@ function setFallback(sessionEl: HTMLElement, title: string, message: string) {
 let globalMindmapMenuEventsBound = false
 
 function closeAllSwitcherMenus(exceptContainer?: HTMLElement): void {
-  document.querySelectorAll<HTMLElement>('.mindmap-switcher-container.open').forEach(container => {
-    if (exceptContainer && container === exceptContainer) return
-    container.classList.remove('open')
-    const toggle = container.querySelector<HTMLButtonElement>('[data-action="mindmap-switcher-toggle"]')
-    toggle?.setAttribute('aria-expanded', 'false')
-  })
+  document
+    .querySelectorAll<HTMLElement>(".mindmap-switcher-container.open")
+    .forEach((container) => {
+      if (exceptContainer && container === exceptContainer) return
+      container.classList.remove("open")
+      const toggle = container.querySelector<HTMLButtonElement>(
+        '[data-action="mindmap-switcher-toggle"]'
+      )
+      toggle?.setAttribute("aria-expanded", "false")
+    })
 }
 
 function bindGlobalMenuDismissEvents(): void {
   if (globalMindmapMenuEventsBound) return
   globalMindmapMenuEventsBound = true
 
-  document.addEventListener('click', (event) => {
+  document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement | null
-    if (target?.closest('.mindmap-switcher-container')) return
+    if (target?.closest(".mindmap-switcher-container")) return
     closeAllSwitcherMenus()
   })
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return
     closeAllSwitcherMenus()
   })
 }
@@ -182,77 +210,88 @@ function bindGlobalMenuDismissEvents(): void {
 function wireSessionEvents(sessionEl: HTMLElement, messageId: string) {
   if (sessionEl.dataset.eventsReady === "true") return
 
-  sessionEl.addEventListener('click', (event) => {
+  sessionEl.addEventListener("click", (event) => {
     const target = event.target as HTMLElement | null
-    const actionEl = target?.closest<HTMLElement>('[data-action]')
+    const actionEl = target?.closest<HTMLElement>("[data-action]")
     if (!actionEl || !sessionEl.contains(actionEl)) return
 
-    const action = actionEl.dataset.action || ''
+    const action = actionEl.dataset.action || ""
     if (!action) return
     event.stopPropagation()
 
-    if (action === 'mindmap-switcher-toggle') {
+    if (action === "mindmap-switcher-toggle") {
       event.preventDefault()
-      const container = actionEl.closest<HTMLElement>('.mindmap-switcher-container')
+      const container = actionEl.closest<HTMLElement>(
+        ".mindmap-switcher-container"
+      )
       if (!container) return
-      const shouldOpen = !container.classList.contains('open')
+      const shouldOpen = !container.classList.contains("open")
       closeAllSwitcherMenus(shouldOpen ? container : undefined)
-      container.classList.toggle('open', shouldOpen)
-      actionEl.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false')
+      container.classList.toggle("open", shouldOpen)
+      actionEl.setAttribute("aria-expanded", shouldOpen ? "true" : "false")
       return
     }
 
-    if (action === 'mindmap-select') {
+    if (action === "mindmap-select") {
       event.preventDefault()
-      const selectedId = actionEl.dataset.messageId || ''
+      const selectedId = actionEl.dataset.messageId || ""
       if (!selectedId) return
       closeAllSwitcherMenus()
       if (selectedId === messageId) return
-      window.dispatchEvent(new CustomEvent('xzzd:assistant-mindmap-select', {
-        detail: { messageId: selectedId }
-      }))
+      window.dispatchEvent(
+        new CustomEvent("xzzd:assistant-mindmap-select", {
+          detail: { messageId: selectedId }
+        })
+      )
       return
     }
 
-    if (action === 'mindmap-fit') {
+    if (action === "mindmap-fit") {
       const binding = mindmapBindings.get(messageId)
       binding?.instance.fit?.()
       return
     }
 
-    if (action === 'mindmap-expand-all') {
+    if (action === "mindmap-expand-all") {
       void updateMindmapByState(messageId, false)
       return
     }
 
-    if (action === 'mindmap-collapse-all') {
+    if (action === "mindmap-collapse-all") {
       void updateMindmapByState(messageId, true)
       return
     }
 
-    if (action === 'mindmap-rename') {
-      window.dispatchEvent(new CustomEvent('xzzd:assistant-mindmap-rename', {
-        detail: { messageId }
-      }))
+    if (action === "mindmap-rename") {
+      window.dispatchEvent(
+        new CustomEvent("xzzd:assistant-mindmap-rename", {
+          detail: { messageId }
+        })
+      )
       return
     }
 
-    if (action === 'mindmap-delete') {
-      window.dispatchEvent(new CustomEvent('xzzd:assistant-mindmap-delete', {
-        detail: { messageId }
-      }))
+    if (action === "mindmap-delete") {
+      window.dispatchEvent(
+        new CustomEvent("xzzd:assistant-mindmap-delete", {
+          detail: { messageId }
+        })
+      )
     }
   })
 
-  sessionEl.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape') return
+  sessionEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return
     closeAllSwitcherMenus()
   })
 
   sessionEl.dataset.eventsReady = "true"
 }
 
-export function renderMindmapTipBubble(data: MindmapData, messageId: string): string {
+export function renderMindmapTipBubble(
+  data: MindmapData,
+  messageId: string
+): string {
   const title = extractTitle(data)
   return `
     <div class="message assistant" id="${messageId}">
@@ -272,7 +311,11 @@ export function renderMindmapTipBubble(data: MindmapData, messageId: string): st
   `
 }
 
-export function renderMindmapBubble(data: MindmapData, messageId: string, options: MindmapRenderOptions = {}): string {
+export function renderMindmapBubble(
+  data: MindmapData,
+  messageId: string,
+  options: MindmapRenderOptions = {}
+): string {
   const title = extractTitle(data)
   const allOptions = options.options || [{ id: messageId, title }]
   const selectedId = options.activeId || messageId
@@ -280,15 +323,15 @@ export function renderMindmapBubble(data: MindmapData, messageId: string, option
     .map((item) => {
       const itemTitle = sanitizeTitle(item.title) || DEFAULT_TITLE
       const isActive = item.id === selectedId
-      const activeClass = isActive ? ' active' : ''
-      const selectedAttr = isActive ? ' aria-current="true"' : ''
+      const activeClass = isActive ? " active" : ""
+      const selectedAttr = isActive ? ' aria-current="true"' : ""
       return `
         <button type="button" class="mindmap-switcher-item${activeClass}" data-action="mindmap-select" data-message-id="${escapeHtml(item.id)}" role="menuitem"${selectedAttr}>
           <span class="mindmap-switcher-item-title">${escapeHtml(itemTitle)}</span>
         </button>
       `
     })
-    .join('')
+    .join("")
 
   return `
     <div class="message assistant" id="${messageId}">
@@ -343,18 +386,25 @@ export function renderMindmapBubble(data: MindmapData, messageId: string, option
   `
 }
 
-export async function hydrateMindmapBubbles(root: HTMLElement | Document = document): Promise<void> {
+export async function hydrateMindmapBubbles(
+  root: HTMLElement | Document = document
+): Promise<void> {
   cleanupDetachedBindings()
   bindGlobalMenuDismissEvents()
 
-  const sessions = Array.from(root.querySelectorAll<HTMLElement>(".mindmap-session")).filter(el => !el.dataset.ready)
+  const sessions = Array.from(
+    root.querySelectorAll<HTMLElement>(".mindmap-session")
+  ).filter((el) => !el.dataset.ready)
   if (!sessions.length) return
 
   let transformer: Transformer | null = null
 
   for (const sessionEl of sessions) {
-    const messageId = sessionEl.dataset.messageId || `mindmap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-    const dataScript = sessionEl.querySelector<HTMLScriptElement>(".mindmap-data")
+    const messageId =
+      sessionEl.dataset.messageId ||
+      `mindmap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const dataScript =
+      sessionEl.querySelector<HTMLScriptElement>(".mindmap-data")
     const svg = sessionEl.querySelector<SVGSVGElement>(".mindmap-canvas")
     wireSessionEvents(sessionEl, messageId)
 
@@ -396,12 +446,16 @@ export async function hydrateMindmapBubbles(root: HTMLElement | Document = docum
       }
 
       const transformed = transformer.transform(normalizedMarkdown)
-      const instance = Markmap.create(svg, {
-        autoFit: false,
-        duration: 250,
-        zoom: true,
-        pan: true
-      }, transformed.root)
+      const instance = Markmap.create(
+        svg,
+        {
+          autoFit: false,
+          duration: 250,
+          zoom: true,
+          pan: true
+        },
+        transformed.root
+      )
 
       mindmapBindings.set(messageId, { svg, instance })
       window.setTimeout(() => {

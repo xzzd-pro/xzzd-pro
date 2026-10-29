@@ -1,9 +1,12 @@
 const PLACEHOLDER_PREFIX = "@@MATH_NORM_"
 
-const INLINE_LATEX_COMMAND_SOURCE =
-  String.raw`\\(?:frac|sqrt|sum|int|prod|lim|log|ln|sin|cos|tan|cot|sec|csc|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|lambda|mu|nu|xi|pi|rho|sigma|tau|phi|chi|psi|omega|Delta|Gamma|Lambda|Pi|Sigma|Omega|partial|cdot|times|div|leq|geq|neq|approx|sim|infty|rightarrow|leftarrow|leftrightarrow|to|pm|mp|vec|hat|bar|overline|underline|nabla|forall|exists|in|notin)(?:\s*\{[^{}\n]+\}){0,3}(?:\s*[_^]\s*(?:\{[^{}\n]+\}|[A-Za-z0-9]+))*`
+const INLINE_LATEX_COMMAND_SOURCE = String.raw`\\(?:frac|sqrt|sum|int|prod|lim|log|ln|sin|cos|tan|cot|sec|csc|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|lambda|mu|nu|xi|pi|rho|sigma|tau|phi|chi|psi|omega|Delta|Gamma|Lambda|Pi|Sigma|Omega|partial|cdot|times|div|leq|geq|neq|approx|sim|infty|rightarrow|leftarrow|leftrightarrow|to|pm|mp|vec|hat|bar|overline|underline|nabla|forall|exists|in|notin)(?:\s*\{[^{}\n]+\}){0,3}(?:\s*[_^]\s*(?:\{[^{}\n]+\}|[A-Za-z0-9]+))*`
 
-function maskSegments(source: string, pattern: RegExp, segments: string[]): string {
+function maskSegments(
+  source: string,
+  pattern: RegExp,
+  segments: string[]
+): string {
   return source.replace(pattern, (match: string) => {
     const placeholder = `${PLACEHOLDER_PREFIX}${segments.length}@@`
     segments.push(match)
@@ -19,13 +22,19 @@ function restoreSegments(source: string, segments: string[]): string {
 }
 
 function normalizeEscapedDelimiters(text: string): string {
-  let normalized = text.replace(/\\\[\s*([\s\S]+?)\s*\\\]/g, (_, formula: string) => {
-    return `$$${formula.trim()}$$`
-  })
+  let normalized = text.replace(
+    /\\\[\s*([\s\S]+?)\s*\\\]/g,
+    (_, formula: string) => {
+      return `$$${formula.trim()}$$`
+    }
+  )
 
-  normalized = normalized.replace(/\\\(\s*([^\n]+?)\s*\\\)/g, (_, formula: string) => {
-    return `$${formula.trim()}$`
-  })
+  normalized = normalized.replace(
+    /\\\(\s*([^\n]+?)\s*\\\)/g,
+    (_, formula: string) => {
+      return `$${formula.trim()}$`
+    }
+  )
 
   return normalized
 }
@@ -47,15 +56,23 @@ function shouldWrapAsBlockMath(trimmedLine: string): boolean {
   const cjkCount = (trimmedLine.match(/[\u4e00-\u9fff]/g) || []).length
   const wordCount = (trimmedLine.match(/[A-Za-z]{2,}/g) || []).length
 
-  if (commandCount >= 1 && (operatorCount >= 1 || hasBraces) && cjkCount <= 4 && wordCount <= 12) {
+  if (
+    commandCount >= 1 &&
+    (operatorCount >= 1 || hasBraces) &&
+    cjkCount <= 4 &&
+    wordCount <= 12
+  ) {
     return true
   }
   if (commandCount >= 2 && cjkCount <= 2) {
     return true
   }
 
-  const looksLikeMathOnly = /^[A-Za-z0-9()[\]{}.,\s+\-*/^_=<>|:]+$/.test(trimmedLine)
-  if (!looksLikeMathOnly || cjkCount > 0 || wordCount > 6 || operatorCount < 1) return false
+  const looksLikeMathOnly = /^[A-Za-z0-9()[\]{}.,\s+\-*/^_=<>|:]+$/.test(
+    trimmedLine
+  )
+  if (!looksLikeMathOnly || cjkCount > 0 || wordCount > 6 || operatorCount < 1)
+    return false
 
   const signalCount = operatorCount + (trimmedLine.match(/\d/g) || []).length
   return signalCount >= 4
@@ -73,7 +90,8 @@ function wrapInlineLatexCommands(line: string): string {
     const end = start + value.length
     const prev = start > 0 ? line[start - 1] : ""
     const next = end < line.length ? line[end] : ""
-    const isBoundarySafe = !/[A-Za-z0-9\\]/.test(prev) && !/[A-Za-z0-9\\]/.test(next)
+    const isBoundarySafe =
+      !/[A-Za-z0-9\\]/.test(prev) && !/[A-Za-z0-9\\]/.test(next)
     const shouldWrap = isBoundarySafe && prev !== "$" && next !== "$"
 
     chunks.push(line.slice(cursor, start))

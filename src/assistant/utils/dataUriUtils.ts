@@ -1,7 +1,8 @@
-const IMAGE_DATA_URI_REGEX = /^data:image\/(png|jpe?g);base64,([A-Za-z0-9+/]+={0,2})$/i
+const IMAGE_DATA_URI_REGEX =
+  /^data:image\/(png|jpe?g);base64,([A-Za-z0-9+/]+={0,2})$/i
 
 export function isValidImageDataUri(value: string): boolean {
-  if (!value || typeof value !== 'string') return false
+  if (!value || typeof value !== "string") return false
   const match = value.match(IMAGE_DATA_URI_REGEX)
   if (!match) return false
   try {
@@ -27,15 +28,15 @@ export function getDataUriMimeType(value: string): string | null {
 export function estimateDataUriBytes(value: string): number {
   const base64 = extractBase64FromDataUri(value)
   if (!base64) return 0
-  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0
   return Math.floor(base64.length * 0.75) - padding
 }
 
 export function dataUriToBlob(value: string): Blob {
   const base64 = extractBase64FromDataUri(value)
-  const mimeType = getDataUriMimeType(value) || 'application/octet-stream'
+  const mimeType = getDataUriMimeType(value) || "application/octet-stream"
   if (!base64) {
-    throw new Error('Invalid data URI')
+    throw new Error("Invalid data URI")
   }
   const binary = atob(base64)
   const bytes = new Uint8Array(binary.length)

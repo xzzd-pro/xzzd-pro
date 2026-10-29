@@ -1,6 +1,6 @@
-import { dataUriToBlob } from './utils/dataUriUtils'
+import { dataUriToBlob } from "./utils/dataUriUtils"
 
-export type AttachmentPayloadType = 'text' | 'image' | 'pdf_blob'
+export type AttachmentPayloadType = "text" | "image" | "pdf_blob"
 
 export interface AttachmentPayloadRecord {
   id: string
@@ -13,14 +13,14 @@ export interface AttachmentPayloadRecord {
 
 // Payloads live in chrome.storage.local (extension origin). A content script's
 // indexedDB belongs to the host page's origin, where page scripts could read it.
-const RECORD_KEY_PREFIX = 'xzzdpro_payload:'
-const INDEX_KEY = 'xzzdpro_payload_index'
-const LEGACY_MIGRATED_KEY = 'xzzdpro_payload_legacy_migrated'
+const RECORD_KEY_PREFIX = "xzzdpro_payload:"
+const INDEX_KEY = "xzzdpro_payload_index"
+const LEGACY_MIGRATED_KEY = "xzzdpro_payload_legacy_migrated"
 
-const LEGACY_DB_NAME = 'xzzdpro_assistant_payloads'
-const LEGACY_STORE_NAME = 'payloads'
+const LEGACY_DB_NAME = "xzzdpro_assistant_payloads"
+const LEGACY_STORE_NAME = "payloads"
 
-type PayloadMeta = Omit<AttachmentPayloadRecord, 'id' | 'data'>
+type PayloadMeta = Omit<AttachmentPayloadRecord, "id" | "data">
 type PayloadIndex = Record<string, PayloadMeta>
 
 interface StoredPayload {
@@ -63,9 +63,14 @@ function blobToDataUri(blob: Blob): Promise<string> {
 }
 
 async function writeRecord(record: AttachmentPayloadRecord): Promise<void> {
-  const stored: StoredPayload = record.data instanceof Blob
-    ? { type: record.type, data: await blobToDataUri(record.data), blob: true }
-    : { type: record.type, data: record.data }
+  const stored: StoredPayload =
+    record.data instanceof Blob
+      ? {
+          type: record.type,
+          data: await blobToDataUri(record.data),
+          blob: true
+        }
+      : { type: record.type, data: record.data }
   await chrome.storage.local.set({ [recordKey(record.id)]: stored })
   await updateIndex((index) => {
     index[record.id] = {
@@ -85,16 +90,20 @@ function migrateLegacyPayloads(): Promise<void> {
   if (legacyMigration) return legacyMigration
   legacyMigration = (async () => {
     const flag = await chrome.storage.local.get(LEGACY_MIGRATED_KEY)
-    if (flag[LEGACY_MIGRATED_KEY] || typeof indexedDB === 'undefined') return
+    if (flag[LEGACY_MIGRATED_KEY] || typeof indexedDB === "undefined") return
 
-    const records = await readLegacyPayloads().catch(() => [] as AttachmentPayloadRecord[])
+    const records = await readLegacyPayloads().catch(
+      () => [] as AttachmentPayloadRecord[]
+    )
     for (const record of records) {
-      await writeRecord(record).catch((error) => console.warn('Failed to migrate payload', record.id, error))
+      await writeRecord(record).catch((error) =>
+        console.warn("Failed to migrate payload", record.id, error)
+      )
     }
     indexedDB.deleteDatabase(LEGACY_DB_NAME)
     await chrome.storage.local.set({ [LEGACY_MIGRATED_KEY]: true })
   })().catch((error) => {
-    console.warn('Legacy payload migration failed:', error)
+    console.warn("Legacy payload migration failed:", error)
   })
   return legacyMigration
 }
@@ -110,7 +119,10 @@ function readLegacyPayloads(): Promise<AttachmentPayloadRecord[]> {
         resolve([])
         return
       }
-      const getAll = db.transaction(LEGACY_STORE_NAME, 'readonly').objectStore(LEGACY_STORE_NAME).getAll()
+      const getAll = db
+        .transaction(LEGACY_STORE_NAME, "readonly")
+        .objectStore(LEGACY_STORE_NAME)
+        .getAll()
       getAll.onsuccess = () => {
         db.close()
         resolve((getAll.result as AttachmentPayloadRecord[]) || [])
@@ -123,22 +135,26 @@ function readLegacyPayloads(): Promise<AttachmentPayloadRecord[]> {
   })
 }
 
-export function createPayloadRef(prefix: string = 'payload'): string {
+export function createPayloadRef(prefix: string = "payload"): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-export function estimatePayloadBytes(data: AttachmentPayloadRecord['data']): number {
+export function estimatePayloadBytes(
+  data: AttachmentPayloadRecord["data"]
+): number {
   if (data instanceof Blob) return data.size
   if (Array.isArray(data)) {
     return data.reduce((sum, item) => sum + estimatePayloadBytes(item), 0)
   }
-  if (typeof data === 'string') {
+  if (typeof data === "string") {
     return new TextEncoder().encode(data).length
   }
   return 0
 }
 
-export async function putPayload(record: AttachmentPayloadRecord): Promise<void> {
+export async function putPayload(
+  record: AttachmentPayloadRecord
+): Promise<void> {
   await migrateLegacyPayloads()
   await writeRecord({
     ...record,
@@ -147,19 +163,27 @@ export async function putPayload(record: AttachmentPayloadRecord): Promise<void>
   })
 }
 
-export async function peekPayload(id: string): Promise<AttachmentPayloadRecord | null> {
+export async function peekPayload(
+  id: string
+): Promise<AttachmentPayloadRecord | null> {
   if (!id) return null
   try {
     await migrateLegacyPayloads()
     const key = recordKey(id)
-    const [result, index] = await Promise.all([chrome.storage.local.get(key), readIndex()])
+    const [result, index] = await Promise.all([
+      chrome.storage.local.get(key),
+      readIndex()
+    ])
     const stored = result[key] as StoredPayload | undefined
     if (!stored) return null
     const meta = index[id]
     return {
       id,
       type: stored.type,
-      data: stored.blob && typeof stored.data === 'string' ? dataUriToBlob(stored.data) : stored.data,
+      data:
+        stored.blob && typeof stored.data === "string"
+          ? dataUriToBlob(stored.data)
+          : stored.data,
       size: meta?.size ?? estimatePayloadBytes(stored.data),
       createdAt: meta?.createdAt ?? 0,
       lastAccessed: meta?.lastAccessed ?? 0
@@ -169,7 +193,9 @@ export async function peekPayload(id: string): Promise<AttachmentPayloadRecord |
   }
 }
 
-export async function getPayload(id: string): Promise<AttachmentPayloadRecord | null> {
+export async function getPayload(
+  id: string
+): Promise<AttachmentPayloadRecord | null> {
   if (!id) return null
   const record = await peekPayload(id)
   if (!record) return null
@@ -191,7 +217,9 @@ export async function deletePayload(id: string): Promise<void> {
   })
 }
 
-export async function gcPayloads(limitBytes: number): Promise<{ removed: string[]; totalBytes: number }>{
+export async function gcPayloads(
+  limitBytes: number
+): Promise<{ removed: string[]; totalBytes: number }> {
   await migrateLegacyPayloads()
   const index = await readIndex()
   const all = Object.entries(index).map(([id, meta]) => ({ id, ...meta }))
@@ -204,7 +232,9 @@ export async function gcPayloads(limitBytes: number): Promise<{ removed: string[
     return { removed: [], totalBytes: total }
   }
 
-  const sorted = [...all].sort((a, b) => (a.lastAccessed || 0) - (b.lastAccessed || 0))
+  const sorted = [...all].sort(
+    (a, b) => (a.lastAccessed || 0) - (b.lastAccessed || 0)
+  )
   const removed: string[] = []
   for (const record of sorted) {
     if (total <= limitBytes) break

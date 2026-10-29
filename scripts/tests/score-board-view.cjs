@@ -9,20 +9,33 @@ const { renderToStaticMarkup } = require("react-dom/server")
 const fixture = require("../preview/score-fixture.json")
 
 function load(relative) {
-  const filename = path.resolve(__dirname, "../../src/features/score-board/components", relative)
+  const filename = path.resolve(
+    __dirname,
+    "../../src/features/score-board/components",
+    relative
+  )
   const code = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 }
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.React,
+      target: ts.ScriptTarget.ES2020
+    }
   }).outputText
   const exports = {}
-  vm.runInNewContext(code, { exports, require(name) {
-    if (name === "react") return React
-    if (name === "./scoreBoardStyles") return load("scoreBoardStyles.ts")
-    throw new Error(`Unexpected view dependency: ${name}`)
-  } })
+  vm.runInNewContext(code, {
+    exports,
+    require(name) {
+      if (name === "react") return React
+      if (name === "./scoreBoardStyles") return load("scoreBoardStyles.ts")
+      throw new Error(`Unexpected view dependency: ${name}`)
+    }
+  })
   return exports
 }
 const { ScoreBoardView } = load("ScoreBoardView.tsx")
-function render(data) { return renderToStaticMarkup(React.createElement(ScoreBoardView, { data })) }
+function render(data) {
+  return renderToStaticMarkup(React.createElement(ScoreBoardView, { data }))
+}
 
 test("fixture renders published performance and server supplied homework without inventing a total", () => {
   const html = render(fixture)
@@ -51,14 +64,37 @@ test("zero remains a score and missing values stay unavailable", () => {
   data.homeworkScores.scores[1].score = ""
   const html = render(data)
   assert.match(html, /<strong>0<\/strong>/)
-  assert.equal((html.match(/class="score-board-value">0<\/span>/g) || []).length, 2)
-  assert.equal((html.match(/class="score-board-value">—<\/span>/g) || []).length, 3)
+  assert.equal(
+    (html.match(/class="score-board-value">0<\/span>/g) || []).length,
+    2
+  )
+  assert.equal(
+    (html.match(/class="score-board-value">—<\/span>/g) || []).length,
+    3
+  )
 })
 
 test("empty and unavailable responses render compact explicit states", () => {
-  const data = { announceSettings: null, performanceScore: null, customScoreItems: [], homeworkScores: null, examScores: null,
-    exams: [], forumScores: [], classroomScores: [], questionnaireScores: [], rollcalls: [] }
+  const data = {
+    announceSettings: null,
+    performanceScore: null,
+    customScoreItems: [],
+    homeworkScores: null,
+    examScores: null,
+    exams: [],
+    forumScores: [],
+    classroomScores: [],
+    questionnaireScores: [],
+    rollcalls: []
+  }
   const html = render(data)
-  for (const message of ["无法获取总成绩信息", "无法获取课堂表现信息", "暂无自定义成绩项", "暂无作业成绩", "暂无考勤记录"]) assert(html.includes(message))
+  for (const message of [
+    "无法获取总成绩信息",
+    "无法获取课堂表现信息",
+    "暂无自定义成绩项",
+    "暂无作业成绩",
+    "暂无考勤记录"
+  ])
+    assert(html.includes(message))
   assert.doesNotMatch(html, /undefined|NaN/)
 })

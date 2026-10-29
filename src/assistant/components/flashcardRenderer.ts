@@ -1,4 +1,4 @@
-import type { FlashcardData, Flashcard } from "../types/flashcard"
+import type { Flashcard, FlashcardData } from "../types/flashcard"
 import { normalizeMathDelimiters } from "../utils/mathUtils"
 
 type PackType = "favorite" | "fuzzy" | "mastered"
@@ -59,10 +59,13 @@ function formatWithLatex(text: string): string {
   const blockMath: string[] = []
   const inlineMath: string[] = []
 
-  let processed = normalizeMathDelimiters(clampText(text)).replace(/\$\$\s*([\s\S]+?)\s*\$\$/g, (_, formula: string) => {
-    blockMath.push(formula)
-    return `@@BLOCK_MATH_${blockMath.length - 1}@@`
-  })
+  let processed = normalizeMathDelimiters(clampText(text)).replace(
+    /\$\$\s*([\s\S]+?)\s*\$\$/g,
+    (_, formula: string) => {
+      blockMath.push(formula)
+      return `@@BLOCK_MATH_${blockMath.length - 1}@@`
+    }
+  )
 
   processed = processed.replace(/\$([^$\n]+?)\$/g, (_, formula: string) => {
     inlineMath.push(formula)
@@ -87,17 +90,25 @@ function formatWithLatex(text: string): string {
 }
 
 function renderClozeMasked(text: string): string {
-  return escapeHtml(text).replace(/{{\s*(.+?)\s*}}/g, '<span class="cloze-blank">_____</span>')
+  return escapeHtml(text).replace(
+    /{{\s*(.+?)\s*}}/g,
+    '<span class="cloze-blank">_____</span>'
+  )
 }
 
 function renderClozeHighlighted(text: string): string {
-  return escapeHtml(text).replace(/{{\s*(.+?)\s*}}/g, '<span class="cloze-highlight">$1</span>')
+  return escapeHtml(text).replace(
+    /{{\s*(.+?)\s*}}/g,
+    '<span class="cloze-highlight">$1</span>'
+  )
 }
 
 function detectTfCorrectness(back: string): "correct" | "wrong" {
   const normalized = back.trim().toLowerCase()
-  if (normalized.startsWith("true") || normalized.startsWith("正确")) return "correct"
-  if (normalized.startsWith("false") || normalized.startsWith("错误")) return "wrong"
+  if (normalized.startsWith("true") || normalized.startsWith("正确"))
+    return "correct"
+  if (normalized.startsWith("false") || normalized.startsWith("错误"))
+    return "wrong"
   return "correct"
 }
 
@@ -105,7 +116,9 @@ function safeJson(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c")
 }
 
-function renderIcon(name: "deck" | "dot" | "check" | "cross" | "think" | "bulb"): string {
+function renderIcon(
+  name: "deck" | "dot" | "check" | "cross" | "think" | "bulb"
+): string {
   if (name === "deck") {
     return '<svg class="icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm2 0v12h10V5H6zm13 3h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2v-1h2v1h9v-9h-1V8z"/></svg>'
   }
@@ -164,7 +177,7 @@ function loadPersistentStore(): PersistentFlashcardStore {
         mastered: Array.isArray(packs.mastered) ? packs.mastered : []
       },
       deletedIds: Array.isArray(parsed.deletedIds)
-        ? parsed.deletedIds.map(id => getBaseCardId(String(id)))
+        ? parsed.deletedIds.map((id) => getBaseCardId(String(id)))
         : []
     }
   } catch {
@@ -197,7 +210,7 @@ function loadArchivedSessionIds(): Set<string> {
     if (!raw) return new Set()
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return new Set()
-    return new Set(parsed.map(id => String(id)).filter(Boolean))
+    return new Set(parsed.map((id) => String(id)).filter(Boolean))
   } catch {
     return new Set()
   }
@@ -207,7 +220,10 @@ function saveArchivedSessionIds(ids: Set<string>) {
   try {
     const storage = globalThis.localStorage
     if (!storage) return
-    storage.setItem(FLASHCARD_ARCHIVED_SESSIONS_KEY, JSON.stringify(Array.from(ids)))
+    storage.setItem(
+      FLASHCARD_ARCHIVED_SESSIONS_KEY,
+      JSON.stringify(Array.from(ids))
+    )
   } catch {
     return
   }
@@ -220,7 +236,10 @@ function markSessionArchived(messageId: string) {
   saveArchivedSessionIds(ids)
 }
 
-export function renderFlashcardTipBubble(data: FlashcardData, messageId: string): string {
+export function renderFlashcardTipBubble(
+  data: FlashcardData,
+  messageId: string
+): string {
   return `
     <div class="message assistant" id="${messageId}">
       <div class="message-body">
@@ -239,7 +258,10 @@ export function renderFlashcardTipBubble(data: FlashcardData, messageId: string)
   `
 }
 
-export function renderFlashcardBubble(data: FlashcardData, messageId: string): string {
+export function renderFlashcardBubble(
+  data: FlashcardData,
+  messageId: string
+): string {
   return `
     <div class="message assistant" id="${messageId}">
       <div class="message-body">
@@ -320,7 +342,11 @@ function getCurrentCard(state: FlashcardSessionState): Flashcard | undefined {
   return state.queue[0]
 }
 
-function updateStatusCounts(state: FlashcardSessionState, cardId: string, quality: number) {
+function updateStatusCounts(
+  state: FlashcardSessionState,
+  cardId: string,
+  quality: number
+) {
   const prev = state.status.get(cardId)
   if (prev === 1) state.counts.red -= 1
   if (prev === 2) state.counts.yellow -= 1
@@ -339,8 +365,12 @@ function renderCardFaces(card: Flashcard) {
 
   if (card.type === "cloze") {
     const hasClozeInBack = /{{\s*.+?\s*}}/.test(card.back)
-    const highlightedAnswer = hasClozeInBack ? renderClozeHighlighted(card.back) : renderClozeHighlighted(card.front)
-    const extraAnswer = hasClozeInBack ? "" : `<div class="flashcard-cloze-extra">${safeBack}</div>`
+    const highlightedAnswer = hasClozeInBack
+      ? renderClozeHighlighted(card.back)
+      : renderClozeHighlighted(card.front)
+    const extraAnswer = hasClozeInBack
+      ? ""
+      : `<div class="flashcard-cloze-extra">${safeBack}</div>`
     return {
       front: `<div class="flashcard-hint">${renderIcon("think")}<span>填空题</span></div><div class="flashcard-question">${renderClozeMasked(card.front)}</div>`,
       back: `<div class="flashcard-hint">${renderIcon("check")}<span>参考答案</span></div><div class="flashcard-answer">${highlightedAnswer}</div>${extraAnswer}`,
@@ -350,7 +380,8 @@ function renderCardFaces(card: Flashcard) {
 
   if (card.type === "tf") {
     const correctness = detectTfCorrectness(card.back)
-    const resultIcon = correctness === "correct" ? renderIcon("check") : renderIcon("cross")
+    const resultIcon =
+      correctness === "correct" ? renderIcon("check") : renderIcon("cross")
     const toneClass = correctness === "correct" ? "ok" : "error"
     return {
       front: `<div class="flashcard-hint">${renderIcon("think")}<span>判断正误</span></div><div class="flashcard-question">${safeFront}</div>`,
@@ -367,7 +398,9 @@ function renderCardFaces(card: Flashcard) {
 }
 
 function setCardContent(sessionEl: HTMLElement, card: Flashcard | undefined) {
-  const frontEl = sessionEl.querySelector<HTMLElement>(".flashcard-front-content")
+  const frontEl = sessionEl.querySelector<HTMLElement>(
+    ".flashcard-front-content"
+  )
   const backEl = sessionEl.querySelector<HTMLElement>(".flashcard-back-content")
   const tagEl = sessionEl.querySelector<HTMLElement>(".flashcard-type-tag")
   const cardEl = sessionEl.querySelector<HTMLElement>(".flashcard-card")
@@ -390,18 +423,29 @@ function setCardContent(sessionEl: HTMLElement, card: Flashcard | undefined) {
 }
 
 function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
-  const remainingEl = sessionEl.querySelector<HTMLElement>(".flashcard-progress-value")
+  const remainingEl = sessionEl.querySelector<HTMLElement>(
+    ".flashcard-progress-value"
+  )
   const statsEl = sessionEl.querySelector<HTMLElement>(".flashcard-stats-value")
-  const topicTitleEl = sessionEl.querySelector<HTMLElement>(".flashcard-topic span")
+  const topicTitleEl = sessionEl.querySelector<HTMLElement>(
+    ".flashcard-topic span"
+  )
   const overlayEl = sessionEl.querySelector<HTMLElement>(".flashcard-overlay")
-  const overlayCounts = overlayEl?.querySelectorAll<HTMLElement>(".flashcard-stat .count")
-  const packBackgroundHintEl = sessionEl.querySelector<HTMLElement>(".flashcard-pack-background-hint")
-  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>(".flashcard-pack-btn")
+  const overlayCounts = overlayEl?.querySelectorAll<HTMLElement>(
+    ".flashcard-stat .count"
+  )
+  const packBackgroundHintEl = sessionEl.querySelector<HTMLElement>(
+    ".flashcard-pack-background-hint"
+  )
+  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    ".flashcard-pack-btn"
+  )
 
   if (topicTitleEl) topicTitleEl.textContent = state.currentTitle
 
   if (remainingEl) remainingEl.textContent = `剩余: ${state.queue.length} 张`
-  if (statsEl) statsEl.textContent = `不会 ${state.counts.red} · 模糊 ${state.counts.yellow} · 掌握 ${state.counts.green}`
+  if (statsEl)
+    statsEl.textContent = `不会 ${state.counts.red} · 模糊 ${state.counts.yellow} · 掌握 ${state.counts.green}`
 
   if (overlayCounts && overlayCounts.length === 3) {
     overlayCounts[0].textContent = String(state.counts.red)
@@ -426,7 +470,7 @@ function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
   }
 
   const shouldDisablePackSwitch = state.queue.length > 0
-  packButtons.forEach(btn => {
+  packButtons.forEach((btn) => {
     const isCurrent = btn.getAttribute("data-pack") === state.selectedPack
     btn.disabled = shouldDisablePackSwitch
     if (isCurrent) {
@@ -438,16 +482,23 @@ function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
 
   updateCardToolButtons(sessionEl, state)
 
-  const packCounts = sessionEl.querySelectorAll<HTMLElement>("[data-pack-count]")
-  packCounts.forEach(el => {
+  const packCounts =
+    sessionEl.querySelectorAll<HTMLElement>("[data-pack-count]")
+  packCounts.forEach((el) => {
     const pack = el.getAttribute("data-pack-count") as PackType | null
     if (!pack) return
     el.textContent = String(state.packs[pack].length)
   })
 
-  const overlayTitle = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-title")
-  const overlaySubtitle = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-subtitle")
-  const overlayActions = overlayEl?.querySelector<HTMLElement>(".flashcard-overlay-actions")
+  const overlayTitle = overlayEl?.querySelector<HTMLElement>(
+    ".flashcard-overlay-title"
+  )
+  const overlaySubtitle = overlayEl?.querySelector<HTMLElement>(
+    ".flashcard-overlay-subtitle"
+  )
+  const overlayActions = overlayEl?.querySelector<HTMLElement>(
+    ".flashcard-overlay-actions"
+  )
 
   if (!overlayTitle || !overlaySubtitle || !overlayActions) return
 
@@ -468,7 +519,10 @@ function updateProgress(sessionEl: HTMLElement, state: FlashcardSessionState) {
   overlayActions.style.display = "grid"
 }
 
-function createState(data: FlashcardData, messageId: string): FlashcardSessionState {
+function createState(
+  data: FlashcardData,
+  messageId: string
+): FlashcardSessionState {
   const archivedSessionIds = loadArchivedSessionIds()
   const isArchivedSession = !!messageId && archivedSessionIds.has(messageId)
 
@@ -491,11 +545,17 @@ function createState(data: FlashcardData, messageId: string): FlashcardSessionSt
   }
 }
 
-function upsertPackEntry(state: FlashcardSessionState, pack: PackType, card: Flashcard) {
+function upsertPackEntry(
+  state: FlashcardSessionState,
+  pack: PackType,
+  card: Flashcard
+) {
   const baseId = getBaseCardId(card.id)
   if (state.deletedIds.has(baseId)) return
   const normalizedCard: Flashcard = { ...card, id: baseId }
-  const withoutCurrent = state.packs[pack].filter(entry => getBaseCardId(entry.card.id) !== baseId)
+  const withoutCurrent = state.packs[pack].filter(
+    (entry) => getBaseCardId(entry.card.id) !== baseId
+  )
   withoutCurrent.push({ card: normalizedCard, addedAt: Date.now() })
   withoutCurrent.sort((a, b) => b.addedAt - a.addedAt)
   state.packs[pack] = withoutCurrent
@@ -504,49 +564,64 @@ function upsertPackEntry(state: FlashcardSessionState, pack: PackType, card: Fla
 
 function removeFromAllPacks(state: FlashcardSessionState, cardId: string) {
   const baseId = getBaseCardId(cardId)
-  state.packs.favorite = state.packs.favorite.filter(entry => getBaseCardId(entry.card.id) !== baseId)
-  state.packs.fuzzy = state.packs.fuzzy.filter(entry => getBaseCardId(entry.card.id) !== baseId)
-  state.packs.mastered = state.packs.mastered.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+  state.packs.favorite = state.packs.favorite.filter(
+    (entry) => getBaseCardId(entry.card.id) !== baseId
+  )
+  state.packs.fuzzy = state.packs.fuzzy.filter(
+    (entry) => getBaseCardId(entry.card.id) !== baseId
+  )
+  state.packs.mastered = state.packs.mastered.filter(
+    (entry) => getBaseCardId(entry.card.id) !== baseId
+  )
 }
 
 function isCurrentCardFavorited(state: FlashcardSessionState): boolean {
   const current = getCurrentCard(state)
   if (!current) return false
   const currentBaseId = getBaseCardId(current.id)
-  return state.packs.favorite.some(entry => getBaseCardId(entry.card.id) === currentBaseId)
+  return state.packs.favorite.some(
+    (entry) => getBaseCardId(entry.card.id) === currentBaseId
+  )
 }
 
-function updateCardToolButtons(sessionEl: HTMLElement, state: FlashcardSessionState) {
+function updateCardToolButtons(
+  sessionEl: HTMLElement,
+  state: FlashcardSessionState
+) {
   const current = getCurrentCard(state)
-  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="favorite-card"]')
-  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="delete-card"]')
+  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    '[data-action="favorite-card"]'
+  )
+  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    '[data-action="delete-card"]'
+  )
 
   if (!current) {
-    favoriteButtons.forEach(btn => {
+    favoriteButtons.forEach((btn) => {
       btn.textContent = "收藏"
       btn.classList.remove("is-favorited")
       btn.disabled = true
     })
-    deleteButtons.forEach(btn => {
+    deleteButtons.forEach((btn) => {
       btn.disabled = true
     })
     return
   }
 
   const favorited = isCurrentCardFavorited(state)
-  favoriteButtons.forEach(btn => {
+  favoriteButtons.forEach((btn) => {
     btn.textContent = favorited ? "已收藏" : "收藏"
     btn.classList.toggle("is-favorited", favorited)
     btn.disabled = false
   })
-  deleteButtons.forEach(btn => {
+  deleteButtons.forEach((btn) => {
     btn.disabled = false
   })
 }
 
 function saveCurrentSessionToPacks(state: FlashcardSessionState) {
   const cardById = new Map<string, Flashcard>()
-  state.original.forEach(card => {
+  state.original.forEach((card) => {
     cardById.set(card.id, card)
   })
 
@@ -565,7 +640,10 @@ function saveCurrentSessionToPacks(state: FlashcardSessionState) {
   persistState(state)
 }
 
-function drawRandomCardsFromPack(state: FlashcardSessionState, pack: PackType): Flashcard[] {
+function drawRandomCardsFromPack(
+  state: FlashcardSessionState,
+  pack: PackType
+): Flashcard[] {
   const source = state.packs[pack]
   if (!source.length) return []
 
@@ -584,7 +662,10 @@ function drawRandomCardsFromPack(state: FlashcardSessionState, pack: PackType): 
   if (shuffled.length >= drawCount) {
     for (let i = 0; i < drawCount; i++) {
       const card = shuffled[i].card
-      result.push({ ...card, id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}` })
+      result.push({
+        ...card,
+        id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}`
+      })
     }
     return result
   }
@@ -592,13 +673,20 @@ function drawRandomCardsFromPack(state: FlashcardSessionState, pack: PackType): 
   for (let i = 0; i < drawCount; i++) {
     const randomEntry = source[Math.floor(Math.random() * source.length)]
     const card = randomEntry.card
-    result.push({ ...card, id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}` })
+    result.push({
+      ...card,
+      id: `${getBaseCardId(card.id)}${DRAW_ID_SEPARATOR}${now}-${i}`
+    })
   }
 
   return result
 }
 
-function handleMark(sessionEl: HTMLElement, state: FlashcardSessionState, quality: number) {
+function handleMark(
+  sessionEl: HTMLElement,
+  state: FlashcardSessionState,
+  quality: number
+) {
   const current = getCurrentCard(state)
   if (!current) return
 
@@ -623,15 +711,20 @@ function restartSession(sessionEl: HTMLElement, state: FlashcardSessionState) {
   updateProgress(sessionEl, state)
 }
 
-function deleteCurrentCard(sessionEl: HTMLElement, state: FlashcardSessionState) {
+function deleteCurrentCard(
+  sessionEl: HTMLElement,
+  state: FlashcardSessionState
+) {
   const current = getCurrentCard(state)
   if (!current) return
 
   const baseId = getBaseCardId(current.id)
 
-  state.queue = state.queue.filter(card => getBaseCardId(card.id) !== baseId)
-  state.original = state.original.filter(card => getBaseCardId(card.id) !== baseId)
-  Array.from(state.status.keys()).forEach(id => {
+  state.queue = state.queue.filter((card) => getBaseCardId(card.id) !== baseId)
+  state.original = state.original.filter(
+    (card) => getBaseCardId(card.id) !== baseId
+  )
+  Array.from(state.status.keys()).forEach((id) => {
     if (getBaseCardId(id) === baseId) state.status.delete(id)
   })
   state.deletedIds.add(baseId)
@@ -647,10 +740,14 @@ function favoriteCurrentCard(state: FlashcardSessionState) {
   if (!current) return
 
   const baseId = getBaseCardId(current.id)
-  const isFavorited = state.packs.favorite.some(entry => getBaseCardId(entry.card.id) === baseId)
+  const isFavorited = state.packs.favorite.some(
+    (entry) => getBaseCardId(entry.card.id) === baseId
+  )
 
   if (isFavorited) {
-    state.packs.favorite = state.packs.favorite.filter(entry => getBaseCardId(entry.card.id) !== baseId)
+    state.packs.favorite = state.packs.favorite.filter(
+      (entry) => getBaseCardId(entry.card.id) !== baseId
+    )
     persistState(state)
     return
   }
@@ -658,20 +755,26 @@ function favoriteCurrentCard(state: FlashcardSessionState) {
   upsertPackEntry(state, "favorite", current)
 }
 
-function selectPack(sessionEl: HTMLElement, state: FlashcardSessionState, pack: PackType) {
+function selectPack(
+  sessionEl: HTMLElement,
+  state: FlashcardSessionState,
+  pack: PackType
+) {
   if (state.queue.length > 0 && pack !== state.selectedPack) {
     updateProgress(sessionEl, state)
     return
   }
 
   state.selectedPack = pack
-  sessionEl.querySelectorAll<HTMLButtonElement>(".flashcard-pack-btn").forEach(btn => {
-    if (btn.getAttribute("data-pack") === pack) {
-      btn.classList.add("active")
-    } else {
-      btn.classList.remove("active")
-    }
-  })
+  sessionEl
+    .querySelectorAll<HTMLButtonElement>(".flashcard-pack-btn")
+    .forEach((btn) => {
+      if (btn.getAttribute("data-pack") === pack) {
+        btn.classList.add("active")
+      } else {
+        btn.classList.remove("active")
+      }
+    })
 
   if (state.queue.length > 0) {
     updateProgress(sessionEl, state)
@@ -695,25 +798,42 @@ function selectPack(sessionEl: HTMLElement, state: FlashcardSessionState, pack: 
   updateProgress(sessionEl, state)
 }
 
-function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState, messageId: string) {
+function wireEvents(
+  sessionEl: HTMLElement,
+  state: FlashcardSessionState,
+  messageId: string
+) {
   const cardEl = sessionEl.querySelector<HTMLElement>(".flashcard-card")
-  const actionButtons = sessionEl.querySelectorAll<HTMLButtonElement>('.flashcard-actions [data-quality]')
-  const restartBtn = sessionEl.querySelector<HTMLButtonElement>('[data-action="restart"]')
-  const savePackBtn = sessionEl.querySelector<HTMLButtonElement>('[data-action="save-pack"]')
-  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="favorite-card"]')
-  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>('[data-action="delete-card"]')
-  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>('.flashcard-pack-btn[data-pack]')
+  const actionButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    ".flashcard-actions [data-quality]"
+  )
+  const restartBtn = sessionEl.querySelector<HTMLButtonElement>(
+    '[data-action="restart"]'
+  )
+  const savePackBtn = sessionEl.querySelector<HTMLButtonElement>(
+    '[data-action="save-pack"]'
+  )
+  const favoriteButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    '[data-action="favorite-card"]'
+  )
+  const deleteButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    '[data-action="delete-card"]'
+  )
+  const packButtons = sessionEl.querySelectorAll<HTMLButtonElement>(
+    ".flashcard-pack-btn[data-pack]"
+  )
 
   if (cardEl) {
     cardEl.addEventListener("click", () => {
       if (state.queue.length === 0) return
       cardEl.classList.toggle("flipped")
-      const side = cardEl.getAttribute("data-side") === "front" ? "back" : "front"
+      const side =
+        cardEl.getAttribute("data-side") === "front" ? "back" : "front"
       cardEl.setAttribute("data-side", side)
     })
   }
 
-  actionButtons.forEach(btn => {
+  actionButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation()
       const quality = Number(btn.getAttribute("data-quality"))
@@ -738,7 +858,7 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState, messag
     })
   }
 
-  favoriteButtons.forEach(favoriteBtn => {
+  favoriteButtons.forEach((favoriteBtn) => {
     favoriteBtn.addEventListener("click", (e) => {
       e.stopPropagation()
       favoriteCurrentCard(state)
@@ -746,14 +866,14 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState, messag
     })
   })
 
-  deleteButtons.forEach(deleteBtn => {
+  deleteButtons.forEach((deleteBtn) => {
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation()
       deleteCurrentCard(sessionEl, state)
     })
   })
 
-  packButtons.forEach(btn => {
+  packButtons.forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation()
       if (btn.disabled) return
@@ -764,12 +884,17 @@ function wireEvents(sessionEl: HTMLElement, state: FlashcardSessionState, messag
   })
 }
 
-export function hydrateFlashcardBubbles(root: HTMLElement | Document = document): void {
-  const sessions = Array.from(root.querySelectorAll<HTMLElement>(".flashcard-session")).filter(el => !el.dataset.ready)
+export function hydrateFlashcardBubbles(
+  root: HTMLElement | Document = document
+): void {
+  const sessions = Array.from(
+    root.querySelectorAll<HTMLElement>(".flashcard-session")
+  ).filter((el) => !el.dataset.ready)
 
-  sessions.forEach(sessionEl => {
+  sessions.forEach((sessionEl) => {
     const messageId = sessionEl.dataset.messageId || ""
-    const dataScript = sessionEl.querySelector<HTMLScriptElement>(".flashcard-data")
+    const dataScript =
+      sessionEl.querySelector<HTMLScriptElement>(".flashcard-data")
     if (!dataScript) return
 
     let data: FlashcardData | null = null
@@ -780,9 +905,10 @@ export function hydrateFlashcardBubbles(root: HTMLElement | Document = document)
     }
     if (!data || !Array.isArray(data.cards) || data.cards.length === 0) return
 
-    const state = messageId && flashcardSessionStore.has(messageId)
-      ? flashcardSessionStore.get(messageId)!
-      : createState(data, messageId)
+    const state =
+      messageId && flashcardSessionStore.has(messageId)
+        ? flashcardSessionStore.get(messageId)!
+        : createState(data, messageId)
 
     if (messageId && !flashcardSessionStore.has(messageId)) {
       flashcardSessionStore.set(messageId, state)

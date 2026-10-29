@@ -2012,4 +2012,4 @@ button, input, select, textarea, label {
   font-weight: 500;
 }
 
-`;
+`

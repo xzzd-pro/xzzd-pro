@@ -1,4 +1,6 @@
+import { ChevronDown } from "lucide-react"
 import * as React from "react"
+
 import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader } from "@/components/ui/card"
 import {
@@ -7,9 +9,8 @@ import {
   CollapsibleTrigger
 } from "@/components/ui/collapsible"
 import { Skeleton } from "@/components/ui/skeleton"
-import { getUserId } from "@/shared/course-detail/courseDetailHelpers"
 import { cn } from "@/lib/utils"
-import { ChevronDown } from "lucide-react"
+import { getUserId } from "@/shared/course-detail/courseDetailHelpers"
 import type {
   HomeworkActivity,
   HomeworkApiResponse,
@@ -17,9 +18,12 @@ import type {
   HomeworkScoresResponse,
   ProcessedHomework
 } from "@/types"
+
 import { HomeworkContent } from "./HomeworkContent"
 
-async function fetchHomeworkList(courseId: string): Promise<HomeworkActivity[]> {
+async function fetchHomeworkList(
+  courseId: string
+): Promise<HomeworkActivity[]> {
   try {
     const response = await fetch(
       `https://courses.zju.edu.cn/api/courses/${courseId}/homework-activities?conditions=%7B%22itemsSortBy%22:%7B%22predicate%22:%22module%22,%22reverse%22:false%7D%7D&page=1&page_size=100&reloadPage=false`
@@ -168,8 +172,7 @@ function getDeadlineInfo(
 
   const paddedHours = String(hoursLeft).padStart(2, "0")
   const paddedMinutes = String(minutesLeft).padStart(2, "0")
-  const timeText =
-    `\u5269\u4f59 ${daysLeft}\u5929${paddedHours}\u5c0f\u65f6${paddedMinutes}\u5206\u949f`
+  const timeText = `\u5269\u4f59 ${daysLeft}\u5929${paddedHours}\u5c0f\u65f6${paddedMinutes}\u5206\u949f`
 
   if (diff <= 3 * 24 * 60 * 60 * 1000) {
     return { variant: "urgent", text: timeText }
@@ -266,7 +269,9 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
             )
         )
       } catch (err) {
-        setError("\u52a0\u8f7d\u4f5c\u4e1a\u5217\u8868\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5")
+        setError(
+          "\u52a0\u8f7d\u4f5c\u4e1a\u5217\u8868\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5"
+        )
         console.error("XZZDPRO: failed to load homework data", err)
       } finally {
         setIsLoading(false)
@@ -281,7 +286,9 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
   }
 
   if (error) {
-    return <p className="py-10 text-center text-base text-destructive">{error}</p>
+    return (
+      <p className="py-10 text-center text-base text-destructive">{error}</p>
+    )
   }
 
   if (homeworks.length === 0) {
@@ -332,8 +339,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
               "overflow-hidden border border-transparent bg-card shadow-sm transition-all duration-200",
               "hover:border-primary/30 hover:shadow-md",
               homework.canSubmit && "hover:-translate-y-0.5"
-            )}
-          >
+            )}>
             <Collapsible
               open={isOpen}
               onOpenChange={(open) =>
@@ -355,11 +361,11 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                         variant={homework.isClosed ? "secondary" : "outline"}
                         className={cn(
                           "border-transparent text-xs",
-                          homework.canSubmit && "border-primary/20 bg-primary/10 text-primary",
+                          homework.canSubmit &&
+                            "border-primary/20 bg-primary/10 text-primary",
                           homework.isNotStarted &&
                             "border-warning/25 bg-warning/10 text-warning"
-                        )}
-                      >
+                        )}>
                         {statusText}
                       </Badge>
                       <Badge
@@ -369,9 +375,10 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                           homework.submitted
                             ? "border-success/25 bg-success/10 text-success"
                             : "border-warning/25 bg-warning/10 text-warning"
-                        )}
-                      >
-                        {homework.submitted ? "\u5df2\u63d0\u4ea4" : "\u672a\u63d0\u4ea4"}
+                        )}>
+                        {homework.submitted
+                          ? "\u5df2\u63d0\u4ea4"
+                          : "\u672a\u63d0\u4ea4"}
                       </Badge>
                     </div>
                   </div>
@@ -392,8 +399,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                           homework.isReviewed
                             ? "border border-success/25 bg-success/10 text-success"
                             : "bg-muted text-muted-foreground"
-                        )}
-                      >
+                        )}>
                         {homework.isReviewed
                           ? "\u5df2\u6279\u6539"
                           : "\u672a\u6279\u6539"}

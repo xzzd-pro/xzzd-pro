@@ -33,7 +33,7 @@
 .resize-handle-right::before,
 .resize-handle-horizontal::after,
 .resize-handle-vertical::after {
-  content: '';
+  content: "";
   position: absolute;
   background-color: hsl(var(--primary));
   opacity: 0;
@@ -174,7 +174,7 @@
   color: #b91c1c;
 }
 
-[data-theme='dark'] .home-summary-alert {
+[data-theme="dark"] .home-summary-alert {
   color: #fca5a5;
 }
 

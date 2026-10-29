@@ -1,45 +1,50 @@
 import type { PlasmoCSConfig } from "plasmo"
-import { useStorage } from "@plasmohq/storage/hook"
 import { useEffect } from "react"
+
+import { useStorage } from "@plasmohq/storage/hook"
+
 import { mountAirPage } from "@/features/air/airPageBeautifier"
+import { loadBrandFont } from "@/lib/fontLoader"
 import { storage } from "@/lib/storage"
 import { useBeautifierInitialization } from "@/shared/contentScripts/useBeautifierInitialization"
-import { loadBrandFont } from "@/lib/fontLoader"
 
 export const config: PlasmoCSConfig = {
-    matches: ["https://courses.zju.edu.cn/air*"],
-    css: ["../styles/global.css"],
-    run_at: "document_end"
+  matches: ["https://courses.zju.edu.cn/air*"],
+  css: ["../styles/global.css"],
+  run_at: "document_end"
 }
 
 void loadBrandFont()
 
 const AirPageInjector = () => {
-    const [beautifyEnabled, , { isLoading }] = useStorage({
-        key: "beautify-enabled",
-        instance: storage
-    }, true)
+  const [beautifyEnabled, , { isLoading }] = useStorage(
+    {
+      key: "beautify-enabled",
+      instance: storage
+    },
+    true
+  )
 
-    useBeautifierInitialization({
-        pageName: "Air Page",
-        beautify: mountAirPage,
-        enabled: !isLoading && beautifyEnabled !== false,
-        waitForDom: true
-    })
+  useBeautifierInitialization({
+    pageName: "Air Page",
+    beautify: mountAirPage,
+    enabled: !isLoading && beautifyEnabled !== false,
+    waitForDom: true
+  })
 
-    useEffect(() => {
-        if (isLoading) return
+  useEffect(() => {
+    if (isLoading) return
 
-        if (beautifyEnabled === false) {
-            console.log('XZZDPRO: beautification is disabled')
-            document.body?.classList.add('xzzdpro-disabled')
-            return
-        }
+    if (beautifyEnabled === false) {
+      console.log("XZZDPRO: beautification is disabled")
+      document.body?.classList.add("xzzdpro-disabled")
+      return
+    }
 
-        document.body?.classList.remove('xzzdpro-disabled')
-    }, [beautifyEnabled, isLoading])
+    document.body?.classList.remove("xzzdpro-disabled")
+  }, [beautifyEnabled, isLoading])
 
-    return null
+  return null
 }
 
 export default AirPageInjector

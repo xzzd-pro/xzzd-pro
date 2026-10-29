@@ -1,20 +1,23 @@
-import { escapeHtml } from "@/lib/html"
-import { createThemeToggle } from "./ThemeToggle"
-import { createRoot } from "react-dom/client"
 import React from "react"
-import { AvatarUpload } from "@/components/ui/avatar-upload"
-import { bindLayoutControl } from "./bindings"
+import { createRoot } from "react-dom/client"
 
-const LOGO_SRC = 'https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272';
+import { AvatarUpload } from "@/components/ui/avatar-upload"
+import { escapeHtml } from "@/lib/html"
+
+import { bindLayoutControl } from "./bindings"
+import { createThemeToggle } from "./ThemeToggle"
+
+const LOGO_SRC =
+  "https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272"
 
 interface HeaderOptions {
-  username?: string;
-  showUsername?: boolean;
+  username?: string
+  showUsername?: boolean
 }
 
 export function renderHeader(options: HeaderOptions = {}): string {
-  const { username = '', showUsername = true } = options;
-  const themeToggle = createThemeToggle();
+  const { username = "", showUsername = true } = options
+  const themeToggle = createThemeToggle()
 
   return `
     <header class="xzzdpro-header">
@@ -28,7 +31,7 @@ export function renderHeader(options: HeaderOptions = {}): string {
         ${themeToggle.renderHTML()}
         <div class="user-profile">
           <div id="user-avatar-container" class="user-avatar-container"></div>
-          ${showUsername && username ? `<span class="username">${escapeHtml(username)}</span>` : ''}
+          ${showUsername && username ? `<span class="username">${escapeHtml(username)}</span>` : ""}
         </div>
       </div>
     </header>
@@ -54,12 +57,12 @@ export function renderHeader(options: HeaderOptions = {}): string {
         </div>
       </div>
     </div>
-  `;
+  `
 }
 
 export function setupThemeToggle(): void {
-  const themeToggle = createThemeToggle();
-  themeToggle.setup();
+  const themeToggle = createThemeToggle()
+  themeToggle.setup()
 }
 
 /**
@@ -67,49 +70,67 @@ export function setupThemeToggle(): void {
  * Should be called after the header HTML is added to the DOM
  */
 export function setupHelpModal(): void {
-  const helpBtn = document.getElementById('help-btn');
-  const modal = document.getElementById('help-modal');
-  const closeBtn = document.getElementById('modal-close');
+  const helpBtn = document.getElementById("help-btn")
+  const modal = document.getElementById("help-modal")
+  const closeBtn = document.getElementById("modal-close")
 
-  if (!helpBtn || !modal || !closeBtn) return;
-  const binding = bindLayoutControl('help-modal', modal);
-  if (!binding) return;
-  const { signal } = binding;
+  if (!helpBtn || !modal || !closeBtn) return
+  const binding = bindLayoutControl("help-modal", modal)
+  if (!binding) return
+  const { signal } = binding
 
-  helpBtn.addEventListener('click', () => {
-    modal.classList.add('active');
-  }, { signal });
+  helpBtn.addEventListener(
+    "click",
+    () => {
+      modal.classList.add("active")
+    },
+    { signal }
+  )
 
-  closeBtn.addEventListener('click', () => {
-    modal.classList.remove('active');
-  }, { signal });
+  closeBtn.addEventListener(
+    "click",
+    () => {
+      modal.classList.remove("active")
+    },
+    { signal }
+  )
 
   // 点击遮罩层关闭
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.classList.remove('active');
-    }
-  }, { signal });
+  modal.addEventListener(
+    "click",
+    (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("active")
+      }
+    },
+    { signal }
+  )
 
   // ESC 键关闭
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('active')) {
-      modal.classList.remove('active');
-    }
-  }, { signal });
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key === "Escape" && modal.classList.contains("active")) {
+        modal.classList.remove("active")
+      }
+    },
+    { signal }
+  )
 }
 
 export function setupAvatarUpload(): void {
-  const container = document.getElementById('user-avatar-container');
-  if (!container) return;
-  const binding = bindLayoutControl('avatar', container);
-  if (!binding) return;
+  const container = document.getElementById("user-avatar-container")
+  if (!container) return
+  const binding = bindLayoutControl("avatar", container)
+  if (!binding) return
 
-  const root = createRoot(container);
-  binding.onCleanup(() => root.unmount());
-  root.render(React.createElement(AvatarUpload, {
-    size: 'lg',
-    fallback: 'U',
-    className: 'user-avatar'
-  }));
+  const root = createRoot(container)
+  binding.onCleanup(() => root.unmount())
+  root.render(
+    React.createElement(AvatarUpload, {
+      size: "lg",
+      fallback: "U",
+      className: "user-avatar"
+    })
+  )
 }

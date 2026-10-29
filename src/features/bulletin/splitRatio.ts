@@ -10,9 +10,11 @@ export const SPLIT_HANDLE_WIDTH = 24
 export function clampSplitRatio(value: unknown): number {
   // Number(null) and Number("") are 0, which would collapse the column; treat them as missing.
   const ratio =
-    typeof value === "number" ? value
-    : typeof value === "string" && value.trim() !== "" ? Number(value)
-    : NaN
+    typeof value === "number"
+      ? value
+      : typeof value === "string" && value.trim() !== ""
+        ? Number(value)
+        : NaN
   if (!Number.isFinite(ratio)) return SPLIT_DEFAULT
   return Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, ratio))
 }
@@ -28,11 +30,16 @@ export function ratioFromPointer(
 ): number {
   const available = container.width - handleWidth
   if (available <= 0) return SPLIT_DEFAULT
-  return clampSplitRatio((clientX - container.left - handleWidth / 2) / available)
+  return clampSplitRatio(
+    (clientX - container.left - handleWidth / 2) / available
+  )
 }
 
 /** `grid-template-columns` value; minmax(0, …) keeps long titles from widening a column. */
-export function splitColumns(ratio: number, handleWidth = SPLIT_HANDLE_WIDTH): string {
+export function splitColumns(
+  ratio: number,
+  handleWidth = SPLIT_HANDLE_WIDTH
+): string {
   const left = clampSplitRatio(ratio)
   return `minmax(0, ${left}fr) ${handleWidth}px minmax(0, ${1 - left}fr)`
 }

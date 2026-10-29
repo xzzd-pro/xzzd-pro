@@ -1,8 +1,8 @@
 # Dependencies are installed explicitly; running a script must not replace them.
 verifyDepsBeforeRun: false
 onlyBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
+  - "@parcel/watcher"
+  - "@swc/core"
   - esbuild
   - lmdb
   - msgpackr-extract

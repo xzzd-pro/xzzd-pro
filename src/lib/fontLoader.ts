@@ -25,11 +25,15 @@ export function loadBrandFont(): Promise<void> {
     return Promise.resolve()
   }
 
-  const face = new FontFace(FONT_FAMILY, `url("${fontUrl}") format("${FONT_FORMAT}")`, {
-    style: "normal",
-    weight: "normal",
-    display: "swap"
-  })
+  const face = new FontFace(
+    FONT_FAMILY,
+    `url("${fontUrl}") format("${FONT_FORMAT}")`,
+    {
+      style: "normal",
+      weight: "normal",
+      display: "swap"
+    }
+  )
   document.fonts.add(face)
   registered = true
   return Promise.resolve()

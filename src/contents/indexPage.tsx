@@ -1,7 +1,7 @@
-import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
 
 import { indexPageBeautifier } from "@/features/home/indexPageBeautifier"
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 
 export const config: PlasmoCSConfig = {
   matches: [

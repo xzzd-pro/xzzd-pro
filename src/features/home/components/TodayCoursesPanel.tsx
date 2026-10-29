@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { CourseList, type TodayCourse } from "@/components/ui/course-list"
 
 interface TodayCoursesPanelProps {
@@ -8,7 +9,7 @@ interface TodayCoursesPanelProps {
 
 export function TodayCoursesPanel({
   courses,
-  loading = false,
+  loading = false
 }: TodayCoursesPanelProps) {
   return (
     <CourseList

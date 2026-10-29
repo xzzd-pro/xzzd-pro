@@ -1,13 +1,13 @@
-import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
 
+import { coursewareBeautifier } from "@/features/courseware/coursewareBeautifier"
+import { homeworkBeautifier } from "@/features/homework/homeworkBeautifier"
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import {
   detectActivityType,
   getActivityIdFromUrl,
   getUserId
 } from "@/shared/course-detail/courseDetailHelpers"
-import { coursewareBeautifier } from "@/features/courseware/coursewareBeautifier"
-import { homeworkBeautifier } from "@/features/homework/homeworkBeautifier"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/learning-activity*"],

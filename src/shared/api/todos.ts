@@ -6,7 +6,7 @@ export const TODO_TYPE_NAMES: Record<string, string> = {
   exam: "考试",
   evaluation: "评教",
   questionnaire: "问卷",
-  vote: "投票",
+  vote: "投票"
 }
 
 export function todoActivityUrl(item: ApiTodoData): string {

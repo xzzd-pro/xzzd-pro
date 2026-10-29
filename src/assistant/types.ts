@@ -2,97 +2,97 @@ import type { FlashcardData } from "./types/flashcard"
 import type { MindmapData } from "./types/mindmap"
 
 export type Provider =
-    | 'openai'
-    | 'anthropic'
-    | 'google'
-    | 'openrouter'
-    | 'siliconflow'
-    | 'qwen'
-    | 'deepseek'
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "openrouter"
+  | "siliconflow"
+  | "qwen"
+  | "deepseek"
 
 export interface ProviderConfig {
-    apiKey: string
-    baseUrl?: string
-    model: string
+  apiKey: string
+  baseUrl?: string
+  model: string
 }
 
 export interface AssistantSettings {
-    provider: Provider
-    configs: Partial<Record<Provider, ProviderConfig>>
+  provider: Provider
+  configs: Partial<Record<Provider, ProviderConfig>>
 }
 
 export interface Attachment {
-    type: 'image' | 'text' | 'pdf'
-    content: string | string[]
-    name: string
-    originalData?: string  // Original file as base64 data URI (for recall)
-    payloadRef?: string
+  type: "image" | "text" | "pdf"
+  content: string | string[]
+  name: string
+  originalData?: string // Original file as base64 data URI (for recall)
+  payloadRef?: string
 }
 
 export interface AssistantUploadHistoryItem {
-    id: string
-    courseId: string
-    name: string
-    size: number
-    mimeType: string
-    sourceType: 'assistant_upload'
-    createdAt: number
-    updatedAt: number
-    payloadRef: string
-    fingerprint: string
-    status?: 'ready' | 'missing' | 'session_only'
+  id: string
+  courseId: string
+  name: string
+  size: number
+  mimeType: string
+  sourceType: "assistant_upload"
+  createdAt: number
+  updatedAt: number
+  payloadRef: string
+  fingerprint: string
+  status?: "ready" | "missing" | "session_only"
 }
 
 export interface ChatMessage {
-    id: string
-    role: 'user' | 'assistant'
-    content: string
-    timestamp: number
-    attachments?: Attachment[]
-    flashcards?: FlashcardData
-    mindmap?: MindmapData
+  id: string
+  role: "user" | "assistant"
+  content: string
+  timestamp: number
+  attachments?: Attachment[]
+  flashcards?: FlashcardData
+  mindmap?: MindmapData
 }
 
 export interface ChatSession {
-    courseId: string
-    courseName: string
-    messages: ChatMessage[]
-    updatedAt: number
+  courseId: string
+  courseName: string
+  messages: ChatMessage[]
+  updatedAt: number
 }
 
 export interface MaterialFile {
-    id: number
-    name: string
-    size: number
-    downloadUrl: string
+  id: number
+  name: string
+  size: number
+  downloadUrl: string
 }
 
 export interface MaterialSummary {
-    id: number
-    title: string
-    description?: string
-    files?: MaterialFile[]
+  id: number
+  title: string
+  description?: string
+  files?: MaterialFile[]
 }
 
 export interface HomeworkSummary {
-    id: number
-    title: string
-    requirement?: string
-    deadline?: string
+  id: number
+  title: string
+  requirement?: string
+  deadline?: string
 }
 
 export interface CourseContext {
-    courseId: string
-    courseName: string
-    materials: MaterialSummary[]
-    homeworks: HomeworkSummary[]
+  courseId: string
+  courseName: string
+  materials: MaterialSummary[]
+  homeworks: HomeworkSummary[]
 }
 
 export interface CourseInfo {
-    id: number
-    name: string
-    displayName: string
-    instructors: string[]
+  id: number
+  name: string
+  displayName: string
+  instructors: string[]
 }
 
 export type { FlashcardData } from "./types/flashcard"

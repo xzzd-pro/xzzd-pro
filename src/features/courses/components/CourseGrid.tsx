@@ -1,4 +1,5 @@
 import * as React from "react"
+
 import { CourseList, type AllCourse } from "@/components/ui/course-list"
 
 interface CourseGridProps {

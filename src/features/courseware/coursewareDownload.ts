@@ -1,5 +1,7 @@
 import { zipSync, type Zippable } from "fflate"
+
 import { sendToBackground } from "@plasmohq/messaging"
+
 import type { ProcessedCoursewareFile } from "@/types"
 
 export interface CoursewareZipEntry {
@@ -64,8 +66,24 @@ function buildZipPath(
 // Office documents, PDFs, archives and media are already compressed;
 // deflating them again costs main-thread time and saves almost nothing.
 const STORE_ONLY_EXTENSIONS = new Set([
-  "pdf", "docx", "pptx", "xlsx", "zip", "rar", "7z", "gz",
-  "jpg", "jpeg", "png", "gif", "webp", "mp3", "mp4", "mov", "avi", "mkv"
+  "pdf",
+  "docx",
+  "pptx",
+  "xlsx",
+  "zip",
+  "rar",
+  "7z",
+  "gz",
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "mp3",
+  "mp4",
+  "mov",
+  "avi",
+  "mkv"
 ])
 
 function compressionLevelFor(path: string): 0 | 6 {

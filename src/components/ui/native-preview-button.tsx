@@ -1,9 +1,16 @@
-import * as React from "react"
 import { Eye, Loader2 } from "lucide-react"
+import * as React from "react"
+
 import { Button } from "@/components/ui/button"
 import { fetchNativePreviewUrl } from "@/lib/nativePreview"
 
-export function NativePreviewButton({ fileUrl, activityUrl }: { fileUrl: string; activityUrl: string }) {
+export function NativePreviewButton({
+  fileUrl,
+  activityUrl
+}: {
+  fileUrl: string
+  activityUrl: string
+}) {
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState("")
   const inFlight = React.useRef(false)
@@ -25,7 +32,9 @@ export function NativePreviewButton({ fileUrl, activityUrl }: { fileUrl: string;
       if (!tab.closed) tab.location.replace(url)
     } catch (cause) {
       if (!tab.closed) tab.close()
-      setError(cause instanceof Error ? cause.message : "申请原生预览失败，请重试。")
+      setError(
+        cause instanceof Error ? cause.message : "申请原生预览失败，请重试。"
+      )
     } finally {
       inFlight.current = false
       setPending(false)
@@ -34,14 +43,31 @@ export function NativePreviewButton({ fileUrl, activityUrl }: { fileUrl: string;
 
   return (
     <div className="flex max-w-xs flex-col items-end gap-1">
-      <Button size="sm" variant="ghost" className="gap-1.5 bg-transparent text-foreground" disabled={pending} onClick={openPreview}>
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="gap-1.5 bg-transparent text-foreground"
+        disabled={pending}
+        onClick={openPreview}>
+        {pending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Eye className="h-4 w-4" />
+        )}
         <span>{pending ? "正在打开…" : "原生预览"}</span>
       </Button>
-      {error && <div role="alert" className="text-xs text-muted-foreground">
-        {error}{" "}
-        <a className="underline" href={activityUrl} target="_blank" rel="noopener noreferrer">打开原生页面</a>
-      </div>}
+      {error && (
+        <div role="alert" className="text-xs text-muted-foreground">
+          {error}{" "}
+          <a
+            className="underline"
+            href={activityUrl}
+            target="_blank"
+            rel="noopener noreferrer">
+            打开原生页面
+          </a>
+        </div>
+      )}
     </div>
   )
 }

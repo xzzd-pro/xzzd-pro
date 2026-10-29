@@ -126,9 +126,7 @@ function getSubmissionTimestamp(submission: HomeworkSubmission): number {
 }
 
 function getUploadKey(upload: SubmissionUpload): string {
-  return upload.id
-    ? `id:${upload.id}`
-    : `file:${upload.name}:${upload.size}`
+  return upload.id ? `id:${upload.id}` : `file:${upload.name}:${upload.size}`
 }
 
 function dedupeUploads(uploads: SubmissionUpload[]): SubmissionUpload[] {

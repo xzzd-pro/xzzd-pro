@@ -1,74 +1,76 @@
-
+import { createAssistantHost } from "@/assistant/assistantBeautifier"
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import {
   renderHeader,
   renderSidebar,
-  setupThemeToggle,
+  setupAvatarUpload,
   setupHelpModal,
   setupSidebarToggle,
-  setupAvatarUpload
+  setupThemeToggle
 } from "@/shared/layout"
-import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
-import { setupResizeHandlers, applySavedLayout } from "@/shared/layout/resizeHandlers";
-import { createAssistantHost } from "@/assistant/assistantBeautifier";
+import {
+  applySavedLayout,
+  setupResizeHandlers
+} from "@/shared/layout/resizeHandlers"
 
 export async function mountAirPage() {
   // 1. Clear existing body content and reset styles
-  document.body.innerHTML = '';
-  document.body.style.margin = '0';
-  document.body.style.padding = '0';
-  document.body.style.height = '100vh';
-  document.body.style.overflow = 'hidden';
+  document.body.innerHTML = ""
+  document.body.style.margin = "0"
+  document.body.style.padding = "0"
+  document.body.style.height = "100vh"
+  document.body.style.overflow = "hidden"
 
   // 2. Render standard layout skeleton
   // Using the same structure as standard pages
-  const root = document.createElement('div');
-  root.id = 'xzzdpro-root';
-  root.className = 'xzzdpro-root xzzdpro';
+  const root = document.createElement("div")
+  root.id = "xzzdpro-root"
+  root.className = "xzzdpro-root xzzdpro"
   root.innerHTML = `
-    ${renderHeader({ username: '', showUsername: false })}
-    ${renderSidebar({ currentPage: 'assistant' })}
+    ${renderHeader({ username: "", showUsername: false })}
+    ${renderSidebar({ currentPage: "assistant" })}
     
     <main class="xzzdpro-main">
       <div class="content-area" id="main-content-area" style="overflow: hidden; display: flex; flex-direction: column; height: 100%;">
         <!-- Assistant Host will be injected here -->
       </div>
     </main>
-  `;
+  `
 
-  document.body.appendChild(root);
-  document.body.classList.add('xzzdpro-body', 'xzzdpro');
-  document.documentElement.classList.add('xzzdpro');
+  document.body.appendChild(root)
+  document.body.classList.add("xzzdpro-body", "xzzdpro")
+  document.documentElement.classList.add("xzzdpro")
 
-  console.log('XZZDPRO: Air Page Layout rendered');
+  console.log("XZZDPRO: Air Page Layout rendered")
 
   // 3. Mount Assistant Host into Content Area
-  const contentArea = document.getElementById('main-content-area');
+  const contentArea = document.getElementById("main-content-area")
   if (contentArea) {
     try {
-      const assistantHost = await createAssistantHost();
-      contentArea.appendChild(assistantHost);
-      console.log('XZZDPRO: Assistant Host embedded into Air Page');
+      const assistantHost = await createAssistantHost()
+      contentArea.appendChild(assistantHost)
+      console.log("XZZDPRO: Assistant Host embedded into Air Page")
     } catch (error) {
-      console.error('XZZDPRO: Failed to embed assistant', error);
-      const message = document.createElement('div');
-      message.style.cssText = 'padding: 20px; color: red;';
-      message.textContent = `Failed to load assistant: ${String(error)}`;
-      contentArea.replaceChildren(message);
+      console.error("XZZDPRO: Failed to embed assistant", error)
+      const message = document.createElement("div")
+      message.style.cssText = "padding: 20px; color: red;"
+      message.textContent = `Failed to load assistant: ${String(error)}`
+      contentArea.replaceChildren(message)
     }
   }
 
   // 4. Initialize standard layout interactions
-  setupThemeToggle();
-  setupHelpModal();
-  setupAvatarUpload();
-  setupSidebarToggle();
-  setupAssistantNavigation();
+  setupThemeToggle()
+  setupHelpModal()
+  setupAvatarUpload()
+  setupSidebarToggle()
+  setupAssistantNavigation()
 
   // 5. Initialize resize handlers
   // Use requestAnimationFrame to ensure DOM is ready
   requestAnimationFrame(() => {
     void applySavedLayout()
     setupResizeHandlers()
-    console.log('XZZDPRO: Air Page Logic Initialized')
+    console.log("XZZDPRO: Air Page Logic Initialized")
   })
 }

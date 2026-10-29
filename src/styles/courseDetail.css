@@ -52,7 +52,9 @@
   text-underline-offset: 4px;
 }
 
-.course-detail-course-name { overflow-wrap: anywhere; }
+.course-detail-course-name {
+  overflow-wrap: anywhere;
+}
 
 .course-detail-heading h1 {
   margin: 4px 0 0;
@@ -80,7 +82,9 @@
   box-shadow: none;
 }
 
-.course-detail-panel > .content-section { min-width: 0; }
+.course-detail-panel > .content-section {
+  min-width: 0;
+}
 
 .course-detail-list-meta {
   display: flex;
@@ -93,8 +97,13 @@
 }
 
 @media (max-width: 768px) {
-  .course-detail-main .course-detail-content { padding: 24px 16px 32px; gap: 20px; }
-  .course-detail-heading { padding-bottom: 20px; }
+  .course-detail-main .course-detail-content {
+    padding: 24px 16px 32px;
+    gap: 20px;
+  }
+  .course-detail-heading {
+    padding-bottom: 20px;
+  }
 }
 
 /* Hide original page content before beautification */
@@ -278,7 +287,8 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -652,7 +662,12 @@ a.overview-row-main:hover .overview-row-title {
 
 /* --- skeleton loading styles --- */
 .skeleton-item {
-  background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--border)) 50%, hsl(var(--muted)) 75%);
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--border)) 50%,
+    hsl(var(--muted)) 75%
+  );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.5s infinite;
   border-radius: 4px;
@@ -701,4 +716,3 @@ a.overview-row-main:hover .overview-row-title {
 .skeleton-line.short {
   width: 60%;
 }
-

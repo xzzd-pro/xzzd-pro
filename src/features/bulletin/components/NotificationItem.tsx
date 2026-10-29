@@ -1,28 +1,29 @@
 import * as React from "react"
-import { Card, CardHeader, CardContent } from "@/components/ui/card"
+
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import type { ProcessedNotification } from "@/types"
 
 const NOTIFICATION_TYPE_NAMES: Record<string, string> = {
-  'activity_opened': '新文件发布',
-  'homework_opened_for_submission': '新作业发布',
-  'course_homework_make_up': '补交作业',
-  'homework_score_updated': '作业成绩发布',
-  'exam_opened': '测验已开放',
-  'exam_will_start': '测验即将开始',
-  'exam_submit_started': '测验已开始',
-  'activity_expiring': '即将截止',
-  'course_opened': '课程开放',
-  'course_closed': '课程结束',
-  'course_updated': '课程更新',
-  'announcement_published': '课程公告',
-  'forum_topic_created': '讨论区新话题',
-  'forum_reply_created': '讨论区回复',
-  'rollcall_started': '点名开始',
-  'rollcall_ended': '点名结束',
-  'grade_published': '成绩发布',
-  'certificate_issued': '证书发放'
+  activity_opened: "新文件发布",
+  homework_opened_for_submission: "新作业发布",
+  course_homework_make_up: "补交作业",
+  homework_score_updated: "作业成绩发布",
+  exam_opened: "测验已开放",
+  exam_will_start: "测验即将开始",
+  exam_submit_started: "测验已开始",
+  activity_expiring: "即将截止",
+  course_opened: "课程开放",
+  course_closed: "课程结束",
+  course_updated: "课程更新",
+  announcement_published: "课程公告",
+  forum_topic_created: "讨论区新话题",
+  forum_reply_created: "讨论区回复",
+  rollcall_started: "点名开始",
+  rollcall_ended: "点名结束",
+  grade_published: "成绩发布",
+  certificate_issued: "证书发放"
 }
 
 export interface NotificationItemProps {
@@ -30,29 +31,31 @@ export interface NotificationItemProps {
 }
 
 function getScoreStyles(score: string | undefined): string {
-  if (score === undefined || score === null) return ''
+  if (score === undefined || score === null) return ""
   const numScore = parseFloat(score)
-  if (isNaN(numScore)) return ''
+  if (isNaN(numScore)) return ""
 
-  if (numScore >= 90) return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
-  if (numScore >= 80) return 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-  if (numScore >= 70) return 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400'
-  if (numScore >= 60) return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400'
-  return 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400'
+  if (numScore >= 90)
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+  if (numScore >= 80)
+    return "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+  if (numScore >= 70)
+    return "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400"
+  if (numScore >= 60)
+    return "bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400"
+  return "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-  const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || '通知'
+  const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || "通知"
   const scoreStyles = getScoreStyles(notification.score)
-  const hasScore = notification.score !== undefined && notification.score !== null
+  const hasScore =
+    notification.score !== undefined && notification.score !== null
 
   return (
     <a
       href={notification.link}
-      className={cn(
-        "block no-underline cursor-pointer group"
-      )}
-    >
+      className={cn("block no-underline cursor-pointer group")}>
       <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/50">
         <CardHeader className="p-3 pb-1">
           <div className="flex justify-between items-center gap-2">
@@ -74,7 +77,9 @@ export function NotificationItem({ notification }: NotificationItemProps) {
                 {notification.courseName}
               </span>
               {hasScore && (
-                <Badge variant="outline" className={cn("text-xs font-semibold shrink-0", scoreStyles)}>
+                <Badge
+                  variant="outline"
+                  className={cn("text-xs font-semibold shrink-0", scoreStyles)}>
                   {notification.score}分
                 </Badge>
               )}

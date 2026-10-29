@@ -1,27 +1,31 @@
 // lib/coursePageBeautifier
 
-import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 import * as React from "react"
 import { createRoot, type Root } from "react-dom/client"
+
+import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
+import { CoursePage } from "@/features/courses/components/CoursePage"
+import {
+  createMyCoursesPayload,
+  fetchMyCoursesResponse
+} from "@/shared/api/myCoursesApi"
+import { suppressAirChatbot } from "@/shared/contentScripts/pageLifecycle"
 import {
   renderHeader,
   renderSidebar,
-  setupThemeToggle,
+  setupAvatarUpload,
   setupHelpModal,
   setupSidebarToggle,
-  setupAvatarUpload,
+  setupThemeToggle
 } from "@/shared/layout"
-import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
-import { CoursePage } from "@/features/courses/components/CoursePage"
-import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import type { ApiCourseData } from "@/types"
+
 import type { CourseFilters } from "./courseFilters"
 
 const $ = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
 const $$ = (selector: string): NodeListOf<HTMLElement> =>
   document.querySelectorAll(selector)
-
 
 // React root for course page
 let coursePageRoot: Root | null = null
@@ -76,9 +80,7 @@ function renderCoursePageReact(
   if (!coursePageRoot) {
     coursePageRoot = createRoot(container)
   }
-  coursePageRoot.render(
-    <CoursePage courses={courses} loading={loading} />
-  )
+  coursePageRoot.render(<CoursePage courses={courses} loading={loading} />)
 }
 
 async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
@@ -101,7 +103,8 @@ async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
     !container.isConnected ||
     container !== coursePageContainer ||
     container !== $(".course-page-container")
-  ) return
+  )
+    return
 
   renderCoursePageReact(container, courses, false)
 }

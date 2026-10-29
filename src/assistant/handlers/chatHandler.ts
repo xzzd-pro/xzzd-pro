@@ -1,33 +1,68 @@
 /**
  * Chat Handler - Manages chat interactions, message sending, and flashcard generation
  */
-import { escapeHtml } from '@/lib/html'
-import { renderChatMessage, renderAttachmentCard } from '../components/assistantPageHelpers'
-import { createChatMessage, saveChatHistory, appendAssistantUploadHistory, getAssistantUploadHistory, buildUploadHistoryKey, UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT, UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT } from '../storage'
-import { buildCourseContext } from '../services/courseDataService'
-import { streamChat, formatErrorMessage } from '../services/chatService'
-import { convertPdfToImages, extractPdfText } from '../services/fileService'
-import { PROVIDER_DEFAULTS } from '../config'
-import { FLASHCARD_GENERATION_PROMPT } from '../types/flashcard'
-import { MINDMAP_GENERATION_PROMPT } from '../types/mindmap'
-import { readFileAsBase64, readFileAsText } from '../utils/fileUtils'
-import { hashArrayBuffer } from '../utils/hashUtils'
-import { createPayloadRef, estimatePayloadBytes, getPayload, gcPayloads, putPayload } from '../attachmentPayloadStore'
-import { isValidImageDataUri } from '../utils/dataUriUtils'
-import {
-  showStatus,
-  scrollToBottom,
-  renderMessages,
-  setActiveToolTab,
-  setActiveMindmapMessageId,
-  openAssistantPrompt,
-  openAssistantConfirm
-} from '../utils/uiUtils'
-import { filterContextBySelectedMaterials, getCurrentSettings, getCurrentCourseId, getCurrentCourseName, getSelectedCourseMaterials, getMaterialSelectionKey } from './courseHandler'
-import type { ChatMessage, Attachment, ProviderConfig, FlashcardData, MindmapData, CourseContext, Provider, MaterialFile, AssistantUploadHistoryItem } from '../types'
+import { escapeHtml } from "@/lib/html"
 
-type ChatMode = 'chat' | 'flashcard' | 'mindmap'
-type MaterialLoadStatus = 'pending' | 'ready' | 'failed'
+import {
+  createPayloadRef,
+  estimatePayloadBytes,
+  gcPayloads,
+  getPayload,
+  putPayload
+} from "../attachmentPayloadStore"
+import {
+  renderAttachmentCard,
+  renderChatMessage
+} from "../components/assistantPageHelpers"
+import { PROVIDER_DEFAULTS } from "../config"
+import { formatErrorMessage, streamChat } from "../services/chatService"
+import { buildCourseContext } from "../services/courseDataService"
+import { convertPdfToImages, extractPdfText } from "../services/fileService"
+import {
+  appendAssistantUploadHistory,
+  buildUploadHistoryKey,
+  createChatMessage,
+  getAssistantUploadHistory,
+  saveChatHistory,
+  UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT,
+  UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT
+} from "../storage"
+import type {
+  AssistantUploadHistoryItem,
+  Attachment,
+  ChatMessage,
+  CourseContext,
+  FlashcardData,
+  MaterialFile,
+  MindmapData,
+  Provider,
+  ProviderConfig
+} from "../types"
+import { FLASHCARD_GENERATION_PROMPT } from "../types/flashcard"
+import { MINDMAP_GENERATION_PROMPT } from "../types/mindmap"
+import { isValidImageDataUri } from "../utils/dataUriUtils"
+import { readFileAsBase64, readFileAsText } from "../utils/fileUtils"
+import { hashArrayBuffer } from "../utils/hashUtils"
+import {
+  openAssistantConfirm,
+  openAssistantPrompt,
+  renderMessages,
+  scrollToBottom,
+  setActiveMindmapMessageId,
+  setActiveToolTab,
+  showStatus
+} from "../utils/uiUtils"
+import {
+  filterContextBySelectedMaterials,
+  getCurrentCourseId,
+  getCurrentCourseName,
+  getCurrentSettings,
+  getMaterialSelectionKey,
+  getSelectedCourseMaterials
+} from "./courseHandler"
+
+type ChatMode = "chat" | "flashcard" | "mindmap"
+type MaterialLoadStatus = "pending" | "ready" | "failed"
 
 interface MaterialLoadState {
   status: MaterialLoadStatus
@@ -49,7 +84,7 @@ interface LoadingIndicatorHandle {
   receivingStartedAt: number | null
   timerId: number | null
   expanded: boolean
-  phase: 'waiting' | 'receiving' | 'stopped'
+  phase: "waiting" | "receiving" | "stopped"
   bufferedText: string
   frozenWaitingElapsedMs?: number
   frozenReceivingElapsedMs?: number
@@ -72,20 +107,29 @@ const TOOL_PRIMARY_HISTORY_WINDOW = 10
 const TOOL_RETRY_HISTORY_WINDOW = 4
 const TOOL_PARSE_RAW_MAX_CHARS = 3000
 const LOADING_TIMER_INTERVAL_MS = 1000
-const LOADING_STATUS_WAITING = '正在等待回复'
-const LOADING_STATUS_RECEIVING = '正在接收回复'
-const LOADING_STATUS_STOPPED = '已手动停止'
+const LOADING_STATUS_WAITING = "正在等待回复"
+const LOADING_STATUS_RECEIVING = "正在接收回复"
+const LOADING_STATUS_STOPPED = "已手动停止"
 
 // State
 let overlayElement: HTMLElement | null = null
 let isGenerating = false
-let currentMode: ChatMode = 'chat'
+let currentMode: ChatMode = "chat"
 let isFlashcardSplitView = false
 let isSplitTransitioning = false
 let messages: ChatMessage[] = []
 let pendingAttachments: File[] = []
 const materialLoadStates = new Map<string, MaterialLoadState>()
-const selectedHistoryUploads = new Map<string, { id: string; name: string; mimeType: string; payloadRef: string; status?: 'ready' | 'missing' | 'session_only' }>()
+const selectedHistoryUploads = new Map<
+  string,
+  {
+    id: string
+    name: string
+    mimeType: string
+    payloadRef: string
+    status?: "ready" | "missing" | "session_only"
+  }
+>()
 let activeRun: ActiveRunState | null = null
 let runCounter = 0
 
@@ -121,7 +165,7 @@ export function getIsGenerating(): boolean {
 }
 
 export function getIsFlashcardMode(): boolean {
-  return currentMode === 'flashcard'
+  return currentMode === "flashcard"
 }
 
 export function getIsFlashcardSplitView(): boolean {
@@ -150,31 +194,52 @@ export function setPendingAttachments(files: File[]): void {
 
 export function cleanupChatHandlers(): void {
   if (externalSplitToggleHandler) {
-    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-toggle-flashcard",
+      externalSplitToggleHandler
+    )
     externalSplitToggleHandler = null
   }
   if (externalClearHistoryHandler) {
-    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+    window.removeEventListener(
+      "xzzd:assistant-clear-history",
+      externalClearHistoryHandler
+    )
     externalClearHistoryHandler = null
   }
   if (externalMaterialToggleHandler) {
-    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-material-toggle",
+      externalMaterialToggleHandler
+    )
     externalMaterialToggleHandler = null
   }
   if (externalMindmapSelectHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-select",
+      externalMindmapSelectHandler
+    )
     externalMindmapSelectHandler = null
   }
   if (externalMindmapRenameHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-rename",
+      externalMindmapRenameHandler
+    )
     externalMindmapRenameHandler = null
   }
   if (externalMindmapDeleteHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-delete",
+      externalMindmapDeleteHandler
+    )
     externalMindmapDeleteHandler = null
   }
   if (externalCourseChangedHandler) {
-    window.removeEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
+    window.removeEventListener(
+      "xzzd:assistant-course-changed",
+      externalCourseChangedHandler
+    )
     externalCourseChangedHandler = null
   }
   if (activeRun) {
@@ -185,23 +250,27 @@ export function cleanupChatHandlers(): void {
 }
 
 export function adjustTextareaHeight(el: HTMLTextAreaElement): void {
-  el.style.height = 'auto'
-  el.style.height = (el.scrollHeight) + 'px'
+  el.style.height = "auto"
+  el.style.height = el.scrollHeight + "px"
 }
 
 function buildFlashcardPrompt(content: string): string {
   const selectedCount = getSelectedMaterialCount()
-  const userText = content || (selectedCount > 0
-    ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
-    : '请基于提供的材料生成闪卡。')
+  const userText =
+    content ||
+    (selectedCount > 0
+      ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成闪卡。`
+      : "请基于提供的材料生成闪卡。")
   return `${FLASHCARD_GENERATION_PROMPT}\n\n用户需求：${userText}`
 }
 
 function buildMindmapPrompt(content: string): string {
   const selectedCount = getSelectedMaterialCount()
-  const userText = content || (selectedCount > 0
-    ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成思维导图。`
-    : '请基于提供的材料生成思维导图。')
+  const userText =
+    content ||
+    (selectedCount > 0
+      ? `请基于我在侧边栏勾选的 ${selectedCount} 份课程资料生成思维导图。`
+      : "请基于提供的材料生成思维导图。")
   return `${MINDMAP_GENERATION_PROMPT}\n\n用户需求：${userText}`
 }
 
@@ -214,7 +283,11 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
   const missingNames: string[] = []
 
   for (const item of selectedHistoryUploads.values()) {
-    if (!item.payloadRef || item.status === 'missing' || item.status === 'session_only') {
+    if (
+      !item.payloadRef ||
+      item.status === "missing" ||
+      item.status === "session_only"
+    ) {
       missingNames.push(item.name)
       continue
     }
@@ -226,23 +299,26 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
         continue
       }
 
-      if (payload.type === 'text') {
+      if (payload.type === "text") {
         attachments.push({
-          type: 'text',
+          type: "text",
           name: item.name,
-          content: String(payload.data || ''),
+          content: String(payload.data || ""),
           payloadRef: item.payloadRef
         })
         continue
       }
 
-      if (payload.type === 'image') {
+      if (payload.type === "image") {
         if (Array.isArray(payload.data) && payload.data.length > 1) {
-          const images = payload.data.filter((img) => typeof img === 'string' && isValidImageDataUri(img))
+          const images = payload.data.filter(
+            (img) => typeof img === "string" && isValidImageDataUri(img)
+          )
           if (images.length > 0) {
-            const asPdf = item.mimeType === 'application/pdf' || images.length > 1
+            const asPdf =
+              item.mimeType === "application/pdf" || images.length > 1
             attachments.push({
-              type: asPdf ? 'pdf' : 'image',
+              type: asPdf ? "pdf" : "image",
               name: item.name,
               content: asPdf ? images : images[0],
               payloadRef: item.payloadRef
@@ -253,10 +329,12 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
           continue
         }
 
-        const imageData = Array.isArray(payload.data) ? payload.data[0] : payload.data
-        if (typeof imageData === 'string' && isValidImageDataUri(imageData)) {
+        const imageData = Array.isArray(payload.data)
+          ? payload.data[0]
+          : payload.data
+        if (typeof imageData === "string" && isValidImageDataUri(imageData)) {
           attachments.push({
-            type: 'image',
+            type: "image",
             name: item.name,
             content: imageData,
             payloadRef: item.payloadRef
@@ -267,12 +345,12 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
         continue
       }
 
-      if (payload.type === 'pdf_blob' && payload.data instanceof Blob) {
+      if (payload.type === "pdf_blob" && payload.data instanceof Blob) {
         try {
           const images = await convertPdfToImages(payload.data)
           if (images.length > 0) {
             attachments.push({
-              type: 'pdf',
+              type: "pdf",
               name: item.name,
               content: images,
               payloadRef: item.payloadRef
@@ -281,7 +359,7 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
             const text = await extractPdfText(payload.data)
             if (text) {
               attachments.push({
-                type: 'text',
+                type: "text",
                 name: item.name,
                 content: text,
                 payloadRef: item.payloadRef
@@ -291,18 +369,24 @@ async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
             }
           }
         } catch (error) {
-          console.error('[Assistant Debug] Failed to convert history PDF', error)
+          console.error(
+            "[Assistant Debug] Failed to convert history PDF",
+            error
+          )
           missingNames.push(item.name)
         }
       }
     } catch (error) {
-      console.error('[Assistant Debug] Failed to load history attachment', error)
+      console.error(
+        "[Assistant Debug] Failed to load history attachment",
+        error
+      )
       missingNames.push(item.name)
     }
   }
 
   if (missingNames.length > 0) {
-    showStatus(`历史资料载入失败：${missingNames.join('、')}`, 'error')
+    showStatus(`历史资料载入失败：${missingNames.join("、")}`, "error")
   }
 
   return attachments
@@ -315,17 +399,19 @@ function createUploadHistoryId(): string {
 function sanitizeModelOutput(raw: string): string {
   let cleaned = raw.trim()
 
-  cleaned = cleaned.replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "").trim()
+  cleaned = cleaned
+    .replace(/<\|(?:begin_of_box|end_of_box|file_separator|thought)\|>/g, "")
+    .trim()
 
-  if (cleaned.startsWith('```markdown')) {
+  if (cleaned.startsWith("```markdown")) {
     cleaned = cleaned.substring(11)
-  } else if (cleaned.startsWith('```md')) {
+  } else if (cleaned.startsWith("```md")) {
     cleaned = cleaned.substring(5)
-  } else if (cleaned.startsWith('```')) {
+  } else if (cleaned.startsWith("```")) {
     cleaned = cleaned.substring(3)
   }
 
-  if (cleaned.endsWith('```')) {
+  if (cleaned.endsWith("```")) {
     cleaned = cleaned.substring(0, cleaned.length - 3)
   }
 
@@ -334,7 +420,7 @@ function sanitizeModelOutput(raw: string): string {
 
 function parseFlashcardResponse(raw: string): FlashcardData | null {
   const sanitizeInvalidJsonBackslashes = (input: string): string => {
-    let output = ''
+    let output = ""
     let inString = false
     let escaped = false
 
@@ -353,14 +439,23 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
         continue
       }
 
-      if (ch === '\\') {
+      if (ch === "\\") {
         const next = input[i + 1]
-        const validEscape = next === '"' || next === '\\' || next === '/' || next === 'b' || next === 'f' || next === 'n' || next === 'r' || next === 't' || next === 'u'
+        const validEscape =
+          next === '"' ||
+          next === "\\" ||
+          next === "/" ||
+          next === "b" ||
+          next === "f" ||
+          next === "n" ||
+          next === "r" ||
+          next === "t" ||
+          next === "u"
         if (validEscape) {
           output += ch
           escaped = true
         } else {
-          output += '\\\\'
+          output += "\\\\"
         }
         continue
       }
@@ -375,25 +470,28 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
     return output
   }
 
-  console.log('XZZDPRO: Raw flashcard response:', raw.substring(0, 200))
+  console.log("XZZDPRO: Raw flashcard response:", raw.substring(0, 200))
 
   let cleaned = sanitizeModelOutput(raw)
 
-  if (cleaned.startsWith('json')) {
+  if (cleaned.startsWith("json")) {
     cleaned = cleaned.substring(4).trim()
-  } else if (cleaned.startsWith('```json')) {
+  } else if (cleaned.startsWith("```json")) {
     cleaned = cleaned.substring(7)
   }
 
   cleaned = cleaned.trim()
-  console.log('XZZDPRO: Cleaned flashcard response:', cleaned.substring(0, 200))
+  console.log("XZZDPRO: Cleaned flashcard response:", cleaned.substring(0, 200))
 
   try {
     const parsed = JSON.parse(cleaned) as FlashcardData
-    console.log('XZZDPRO: Parsed flashcard data:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+    console.log("XZZDPRO: Parsed flashcard data:", {
+      topic: parsed.topic,
+      cardCount: parsed.cards?.length
+    })
 
     if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
-      console.error('XZZDPRO: Invalid flashcard data structure')
+      console.error("XZZDPRO: Invalid flashcard data structure")
       return null
     }
     return parsed
@@ -401,15 +499,29 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
     const sanitized = sanitizeInvalidJsonBackslashes(cleaned)
     try {
       const parsed = JSON.parse(sanitized) as FlashcardData
-      console.log('XZZDPRO: Parsed flashcard data after backslash sanitization:', { topic: parsed.topic, cardCount: parsed.cards?.length })
+      console.log(
+        "XZZDPRO: Parsed flashcard data after backslash sanitization:",
+        { topic: parsed.topic, cardCount: parsed.cards?.length }
+      )
 
-      if (!parsed || !Array.isArray(parsed.cards) || parsed.cards.length === 0) {
-        console.error('XZZDPRO: Invalid flashcard data structure after sanitization')
+      if (
+        !parsed ||
+        !Array.isArray(parsed.cards) ||
+        parsed.cards.length === 0
+      ) {
+        console.error(
+          "XZZDPRO: Invalid flashcard data structure after sanitization"
+        )
         return null
       }
       return parsed
     } catch (sanitizeErr) {
-      console.error('XZZDPRO: Failed to parse flashcard JSON:', sanitizeErr, '\nContent:', cleaned.substring(0, 500))
+      console.error(
+        "XZZDPRO: Failed to parse flashcard JSON:",
+        sanitizeErr,
+        "\nContent:",
+        cleaned.substring(0, 500)
+      )
       return null
     }
   }
@@ -417,7 +529,7 @@ function parseFlashcardResponse(raw: string): FlashcardData | null {
 
 function parseMindmapResponse(raw: string): MindmapData | null {
   const cleaned = sanitizeModelOutput(raw)
-    .replace(/<[^>]*>/g, '')
+    .replace(/<[^>]*>/g, "")
     .trim()
 
   if (!cleaned) {
@@ -425,24 +537,30 @@ function parseMindmapResponse(raw: string): MindmapData | null {
   }
 
   const hasHeading = /^#{1,6}\s+\S/m.test(cleaned)
-  const hasList = /^\s*[-*+]\s+\S/m.test(cleaned) || /^\s*\d+\.\s+\S/m.test(cleaned)
+  const hasList =
+    /^\s*[-*+]\s+\S/m.test(cleaned) || /^\s*\d+\.\s+\S/m.test(cleaned)
   if (!hasHeading && !hasList) {
     return null
   }
 
   const titleFromHeading = cleaned.match(/^#{1,6}\s+(.+)$/m)?.[1]?.trim()
-  const title = (titleFromHeading || '学习导图').replace(/[#*_`\[\]]/g, '').trim() || '学习导图'
+  const title =
+    (titleFromHeading || "学习导图").replace(/[#*_`\[\]]/g, "").trim() ||
+    "学习导图"
   const markdown = hasHeading ? cleaned : `# ${title}\n\n${cleaned}`
 
   return {
     title,
     markdown,
-    version: 'v1'
+    version: "v1"
   }
 }
 
-function updateMindmapMarkdownTitle(markdown: string, newTitle: string): string {
-  const cleaned = (markdown || '').trim()
+function updateMindmapMarkdownTitle(
+  markdown: string,
+  newTitle: string
+): string {
+  const cleaned = (markdown || "").trim()
   if (!cleaned) {
     return `# ${newTitle}`
   }
@@ -456,43 +574,53 @@ function updateMindmapMarkdownTitle(markdown: string, newTitle: string): string 
 
 function formatElapsed(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0')
-  const seconds = (totalSeconds % 60).toString().padStart(2, '0')
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, "0")
+  const seconds = (totalSeconds % 60).toString().padStart(2, "0")
   return `${minutes}:${seconds}`
 }
 
 function getWaitingElapsedMs(handle: LoadingIndicatorHandle): number {
-  return handle.frozenWaitingElapsedMs ?? (Date.now() - handle.waitingStartedAt)
+  return handle.frozenWaitingElapsedMs ?? Date.now() - handle.waitingStartedAt
 }
 
 function getReceivingElapsedMs(handle: LoadingIndicatorHandle): number {
   if (!handle.receivingStartedAt) {
     return handle.frozenReceivingElapsedMs ?? 0
   }
-  return handle.frozenReceivingElapsedMs ?? (Date.now() - handle.receivingStartedAt)
+  return (
+    handle.frozenReceivingElapsedMs ?? Date.now() - handle.receivingStartedAt
+  )
 }
 
 function updateLoadingStatusText(handle: LoadingIndicatorHandle): void {
   const waitingText = formatElapsed(getWaitingElapsedMs(handle))
   const receivingText = formatElapsed(getReceivingElapsedMs(handle))
-  if (handle.phase === 'waiting') {
+  if (handle.phase === "waiting") {
     handle.statusEl.textContent = `${LOADING_STATUS_WAITING}（等待 ${waitingText}）`
     return
   }
-  if (handle.phase === 'receiving') {
+  if (handle.phase === "receiving") {
     handle.statusEl.textContent = `${LOADING_STATUS_RECEIVING}（接收 ${receivingText}，等待 ${waitingText}）`
     return
   }
   handle.statusEl.textContent = `${LOADING_STATUS_STOPPED}（接收 ${receivingText}，等待 ${waitingText}）`
 }
 
-function setLoadingExpanded(handle: LoadingIndicatorHandle, expanded: boolean): void {
+function setLoadingExpanded(
+  handle: LoadingIndicatorHandle,
+  expanded: boolean
+): void {
   handle.expanded = expanded
-  handle.previewWrap.style.display = expanded ? 'block' : 'none'
-  handle.toggleBtn.textContent = expanded ? '收起预览' : '展开预览'
+  handle.previewWrap.style.display = expanded ? "block" : "none"
+  handle.toggleBtn.textContent = expanded ? "收起预览" : "展开预览"
 }
 
-function appendLoadingPreviewChunk(handle: LoadingIndicatorHandle, chunk: string): void {
+function appendLoadingPreviewChunk(
+  handle: LoadingIndicatorHandle,
+  chunk: string
+): void {
   if (!chunk) return
   handle.bufferedText += chunk
   handle.previewEl.textContent = handle.bufferedText
@@ -501,28 +629,34 @@ function appendLoadingPreviewChunk(handle: LoadingIndicatorHandle, chunk: string
   }
 }
 
-function setLoadingPhase(handle: LoadingIndicatorHandle, phase: LoadingIndicatorHandle['phase']): void {
+function setLoadingPhase(
+  handle: LoadingIndicatorHandle,
+  phase: LoadingIndicatorHandle["phase"]
+): void {
   const previousPhase = handle.phase
-  if (phase === 'receiving' && !handle.receivingStartedAt) {
+  if (phase === "receiving" && !handle.receivingStartedAt) {
     if (handle.frozenWaitingElapsedMs === undefined) {
       handle.frozenWaitingElapsedMs = Date.now() - handle.waitingStartedAt
     }
     handle.receivingStartedAt = Date.now()
   }
   handle.phase = phase
-  if (phase === 'waiting') {
+  if (phase === "waiting") {
     handle.toggleBtn.disabled = true
-    handle.toggleBtn.title = '收到内容后可展开预览'
+    handle.toggleBtn.title = "收到内容后可展开预览"
     setLoadingExpanded(handle, false)
-  } else if (phase === 'receiving') {
+  } else if (phase === "receiving") {
     handle.toggleBtn.disabled = false
-    handle.toggleBtn.title = ''
+    handle.toggleBtn.title = ""
   } else {
     handle.toggleBtn.disabled = false
   }
   updateLoadingStatusText(handle)
   if (previousPhase !== phase) {
-    console.debug('XZZDPRO: stream phase transition', { from: previousPhase, to: phase })
+    console.debug("XZZDPRO: stream phase transition", {
+      from: previousPhase,
+      to: phase
+    })
   }
 }
 
@@ -531,7 +665,9 @@ function freezeLoadingTimer(handle: LoadingIndicatorHandle): void {
     handle.frozenWaitingElapsedMs = Date.now() - handle.waitingStartedAt
   }
   if (handle.frozenReceivingElapsedMs === undefined) {
-    handle.frozenReceivingElapsedMs = handle.receivingStartedAt ? Date.now() - handle.receivingStartedAt : 0
+    handle.frozenReceivingElapsedMs = handle.receivingStartedAt
+      ? Date.now() - handle.receivingStartedAt
+      : 0
   }
   if (handle.timerId !== null) {
     window.clearInterval(handle.timerId)
@@ -539,14 +675,21 @@ function freezeLoadingTimer(handle: LoadingIndicatorHandle): void {
   }
 }
 
-function finalizeLoadingIndicator(handle: LoadingIndicatorHandle, remove = true): void {
+function finalizeLoadingIndicator(
+  handle: LoadingIndicatorHandle,
+  remove = true
+): void {
   freezeLoadingTimer(handle)
   if (remove) {
     handle.root.remove()
   }
 }
 
-function createActiveRun(mode: ChatMode, assistantMsgId: string, loading: LoadingIndicatorHandle): ActiveRunState {
+function createActiveRun(
+  mode: ChatMode,
+  assistantMsgId: string,
+  loading: LoadingIndicatorHandle
+): ActiveRunState {
   if (activeRun) {
     stopRun(activeRun, false)
     clearActiveRun(activeRun)
@@ -575,7 +718,7 @@ function stopRun(run: ActiveRunState, stoppedByUser = true): void {
   run.stoppedByUser = stoppedByUser
   run.controller.abort()
   run.loading.stopBtn.disabled = true
-  setLoadingPhase(run.loading, 'stopped')
+  setLoadingPhase(run.loading, "stopped")
   freezeLoadingTimer(run.loading)
 }
 
@@ -586,8 +729,8 @@ function clearActiveRun(run: ActiveRunState): void {
 }
 
 function trimRawModelOutput(raw: string): string {
-  const content = sanitizeModelOutput(raw || '').trim()
-  if (!content) return ''
+  const content = sanitizeModelOutput(raw || "").trim()
+  if (!content) return ""
   if (content.length <= TOOL_PARSE_RAW_MAX_CHARS) {
     return content
   }
@@ -609,7 +752,7 @@ function buildToolMessagesWithWindow(
 ): ChatMessage[] {
   const history = historyWindow > 0 ? baseMessages.slice(-historyWindow) : []
   return history.map((msg, idx, arr) => {
-    if (idx === arr.length - 1 && msg.role === 'user') {
+    if (idx === arr.length - 1 && msg.role === "user") {
       return { ...msg, content: promptContent }
     }
     return msg
@@ -617,12 +760,10 @@ function buildToolMessagesWithWindow(
 }
 
 function buildToolRetryContext(context: CourseContext): CourseContext {
-  const trimmedMaterials = context.materials
-    .slice(0, 3)
-    .map((material) => ({
-      ...material,
-      files: (material.files || []).slice(0, 2)
-    }))
+  const trimmedMaterials = context.materials.slice(0, 3).map((material) => ({
+    ...material,
+    files: (material.files || []).slice(0, 2)
+  }))
   return {
     ...context,
     materials: trimmedMaterials
@@ -640,14 +781,24 @@ async function streamToolResponseWithTimeout(options: {
   onChunk?: (chunk: string) => void
   onFirstChunk?: () => void
 }): Promise<string> {
-  const { messages, context, provider, config, timeoutMs, signal, onProgress, onChunk, onFirstChunk } = options
-  let fullResponse = ''
+  const {
+    messages,
+    context,
+    provider,
+    config,
+    timeoutMs,
+    signal,
+    onProgress,
+    onChunk,
+    onFirstChunk
+  } = options
+  let fullResponse = ""
   let settled = false
   let hasFirstChunk = false
 
   await new Promise<void>((resolve, reject) => {
     if (signal?.aborted) {
-      reject(new Error('STREAM_ABORTED'))
+      reject(new Error("STREAM_ABORTED"))
       return
     }
 
@@ -662,19 +813,19 @@ async function streamToolResponseWithTimeout(options: {
       if (settled) return
       settled = true
       clearTimer()
-      signal?.removeEventListener('abort', abortListener)
-      reject(new Error('STREAM_ABORTED'))
+      signal?.removeEventListener("abort", abortListener)
+      reject(new Error("STREAM_ABORTED"))
     }
 
     timer = window.setTimeout(() => {
       if (settled) return
       if (hasFirstChunk) return
       settled = true
-      signal?.removeEventListener('abort', abortListener)
+      signal?.removeEventListener("abort", abortListener)
       reject(new Error(`TOOL_TIMEOUT:${timeoutMs}`))
     }, timeoutMs)
 
-    signal?.addEventListener('abort', abortListener, { once: true })
+    signal?.addEventListener("abort", abortListener, { once: true })
 
     void streamChat({
       messages,
@@ -699,35 +850,37 @@ async function streamToolResponseWithTimeout(options: {
         fullResponse += chunk
         onChunk?.(chunk)
       }
-    }).then(() => {
-      if (settled) return
-      settled = true
-      clearTimer()
-      signal?.removeEventListener('abort', abortListener)
-      resolve()
-    }).catch((error) => {
-      if (settled) return
-      settled = true
-      clearTimer()
-      signal?.removeEventListener('abort', abortListener)
-      reject(error)
     })
+      .then(() => {
+        if (settled) return
+        settled = true
+        clearTimer()
+        signal?.removeEventListener("abort", abortListener)
+        resolve()
+      })
+      .catch((error) => {
+        if (settled) return
+        settled = true
+        clearTimer()
+        signal?.removeEventListener("abort", abortListener)
+        reject(error)
+      })
   })
 
   return fullResponse
 }
 
 function isToolTimeoutError(error: unknown): boolean {
-  return error instanceof Error && error.message.startsWith('TOOL_TIMEOUT:')
+  return error instanceof Error && error.message.startsWith("TOOL_TIMEOUT:")
 }
 
 function isStreamAbortError(error: unknown): boolean {
-  return error instanceof Error && error.message === 'STREAM_ABORTED'
+  return error instanceof Error && error.message === "STREAM_ABORTED"
 }
 
 function setMaterialLoadState(
   selectionKey: string,
-  next: Omit<MaterialLoadState, 'updatedAt'>
+  next: Omit<MaterialLoadState, "updatedAt">
 ): void {
   materialLoadStates.set(selectionKey, {
     ...next,
@@ -735,16 +888,20 @@ function setMaterialLoadState(
   })
 }
 
-function startSelectedMaterialPreload(selectionKey: string, file: MaterialFile, materialTitle: string): void {
+function startSelectedMaterialPreload(
+  selectionKey: string,
+  file: MaterialFile,
+  materialTitle: string
+): void {
   let preloadPromise!: Promise<void>
   preloadPromise = (async () => {
     try {
-      const { preloadSelectedMaterial } = await import('./courseHandler')
+      const { preloadSelectedMaterial } = await import("./courseHandler")
       await preloadSelectedMaterial(file, materialTitle)
       const current = materialLoadStates.get(selectionKey)
       if (!current || current.promise !== preloadPromise) return
       setMaterialLoadState(selectionKey, {
-        status: 'ready',
+        status: "ready",
         fileName: file.name
       })
     } catch (error) {
@@ -752,17 +909,17 @@ function startSelectedMaterialPreload(selectionKey: string, file: MaterialFile, 
       if (!current || current.promise !== preloadPromise) return
       const errorMsg = error instanceof Error ? error.message : String(error)
       setMaterialLoadState(selectionKey, {
-        status: 'failed',
+        status: "failed",
         fileName: file.name,
         error: errorMsg
       })
-      showStatus(`读取失败: ${file.name}`, 'error')
-      console.error('Failed to preload selected material:', error)
+      showStatus(`读取失败: ${file.name}`, "error")
+      console.error("Failed to preload selected material:", error)
     }
   })()
 
   setMaterialLoadState(selectionKey, {
-    status: 'pending',
+    status: "pending",
     fileName: file.name,
     promise: preloadPromise
   })
@@ -774,62 +931,91 @@ async function waitForSelectedMaterialsReady(): Promise<void> {
 
   const pendingEntries = Array.from(selected.keys())
     .map((key) => [key, materialLoadStates.get(key)] as const)
-    .filter(([, state]) => state?.status === 'pending' && !!state.promise)
+    .filter(([, state]) => state?.status === "pending" && !!state.promise)
 
   if (pendingEntries.length === 0) {
     return
   }
 
-  showStatus(`正在等待 ${pendingEntries.length} 份资料完成解析...`, 'info')
+  showStatus(`正在等待 ${pendingEntries.length} 份资料完成解析...`, "info")
   await Promise.race([
-    Promise.allSettled(pendingEntries.map(([, state]) => state!.promise as Promise<void>)).then(() => undefined),
-    new Promise<void>((resolve) => window.setTimeout(resolve, MATERIAL_PRELOAD_WAIT_TIMEOUT_MS))
+    Promise.allSettled(
+      pendingEntries.map(([, state]) => state!.promise as Promise<void>)
+    ).then(() => undefined),
+    new Promise<void>((resolve) =>
+      window.setTimeout(resolve, MATERIAL_PRELOAD_WAIT_TIMEOUT_MS)
+    )
   ])
 
   const selectedStates = Array.from(selected.keys())
     .map((key) => materialLoadStates.get(key))
     .filter((state): state is MaterialLoadState => !!state)
 
-  const stillPending = selectedStates.filter((state) => state.status === 'pending').map((state) => state.fileName)
+  const stillPending = selectedStates
+    .filter((state) => state.status === "pending")
+    .map((state) => state.fileName)
   if (stillPending.length > 0) {
-    showStatus(`部分资料仍在解析，先继续生成：${stillPending.slice(0, 2).join('、')}${stillPending.length > 2 ? ' 等' : ''}`, 'info')
+    showStatus(
+      `部分资料仍在解析，先继续生成：${stillPending.slice(0, 2).join("、")}${stillPending.length > 2 ? " 等" : ""}`,
+      "info"
+    )
   }
 
   const failed = selectedStates
-    .filter((state) => state.status === 'failed')
+    .filter((state) => state.status === "failed")
     .map((state) => state.fileName)
   if (failed.length > 0) {
-    showStatus(`以下资料解析失败：${failed.slice(0, 2).join('、')}${failed.length > 2 ? ' 等' : ''}`, 'error')
+    showStatus(
+      `以下资料解析失败：${failed.slice(0, 2).join("、")}${failed.length > 2 ? " 等" : ""}`,
+      "error"
+    )
   }
 }
 
 export function setupChatHandlers(): void {
-  console.log('XZZDPRO: setupChatHandlers called')
-  const input = overlayElement?.querySelector('#chat-input') as HTMLTextAreaElement
-  const sendBtn = overlayElement?.querySelector('#send-btn') as HTMLButtonElement
-  const flashcardSendBtn = overlayElement?.querySelector('#flashcard-send-btn') as HTMLButtonElement
-  const mindmapSendBtn = overlayElement?.querySelector('#mindmap-send-btn') as HTMLButtonElement
-  const flashcardModeBtn = overlayElement?.querySelector('#flashcard-mode-btn') as HTMLButtonElement
-  const mindmapModeBtn = overlayElement?.querySelector('#mindmap-mode-btn') as HTMLButtonElement
-  const chatAreaEl = overlayElement?.querySelector('.chat-area') as HTMLElement
-  const attachBtn = overlayElement?.querySelector('#attach-btn') as HTMLButtonElement
-  const fileInput = overlayElement?.querySelector('#file-input') as HTMLInputElement
-  const sidebarSplitToggleBtn = document.getElementById('nav-assistant-flashcard-toggle') as HTMLButtonElement | null
-
+  console.log("XZZDPRO: setupChatHandlers called")
+  const input = overlayElement?.querySelector(
+    "#chat-input"
+  ) as HTMLTextAreaElement
+  const sendBtn = overlayElement?.querySelector(
+    "#send-btn"
+  ) as HTMLButtonElement
+  const flashcardSendBtn = overlayElement?.querySelector(
+    "#flashcard-send-btn"
+  ) as HTMLButtonElement
+  const mindmapSendBtn = overlayElement?.querySelector(
+    "#mindmap-send-btn"
+  ) as HTMLButtonElement
+  const flashcardModeBtn = overlayElement?.querySelector(
+    "#flashcard-mode-btn"
+  ) as HTMLButtonElement
+  const mindmapModeBtn = overlayElement?.querySelector(
+    "#mindmap-mode-btn"
+  ) as HTMLButtonElement
+  const chatAreaEl = overlayElement?.querySelector(".chat-area") as HTMLElement
+  const attachBtn = overlayElement?.querySelector(
+    "#attach-btn"
+  ) as HTMLButtonElement
+  const fileInput = overlayElement?.querySelector(
+    "#file-input"
+  ) as HTMLInputElement
+  const sidebarSplitToggleBtn = document.getElementById(
+    "nav-assistant-flashcard-toggle"
+  ) as HTMLButtonElement | null
 
   const updateSplitUI = () => {
     if (!chatAreaEl) return
 
     if (isFlashcardSplitView) {
-      chatAreaEl.classList.add('split-open')
-      chatAreaEl.classList.remove('split-collapsing')
-      sidebarSplitToggleBtn?.classList.add('active')
-      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '收起闪卡面板'
+      chatAreaEl.classList.add("split-open")
+      chatAreaEl.classList.remove("split-collapsing")
+      sidebarSplitToggleBtn?.classList.add("active")
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = "收起闪卡面板"
     } else {
-      chatAreaEl.classList.remove('split-open')
-      chatAreaEl.classList.remove('split-collapsing')
-      sidebarSplitToggleBtn?.classList.remove('active')
-      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+      chatAreaEl.classList.remove("split-open")
+      chatAreaEl.classList.remove("split-collapsing")
+      sidebarSplitToggleBtn?.classList.remove("active")
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = "展开闪卡面板"
     }
   }
 
@@ -839,15 +1025,15 @@ export function setupChatHandlers(): void {
     if (isFlashcardSplitView) {
       isSplitTransitioning = true
       if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = true
-      sidebarSplitToggleBtn?.classList.remove('active')
-      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = '展开闪卡面板'
+      sidebarSplitToggleBtn?.classList.remove("active")
+      if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.title = "展开闪卡面板"
 
-      chatAreaEl.classList.add('split-collapsing')
+      chatAreaEl.classList.add("split-collapsing")
 
       window.setTimeout(() => {
         isFlashcardSplitView = false
-        chatAreaEl.classList.remove('split-open')
-        chatAreaEl.classList.remove('split-collapsing')
+        chatAreaEl.classList.remove("split-open")
+        chatAreaEl.classList.remove("split-collapsing")
         isSplitTransitioning = false
         if (sidebarSplitToggleBtn) sidebarSplitToggleBtn.disabled = false
         renderMessages(messages, overlayElement)
@@ -864,7 +1050,7 @@ export function setupChatHandlers(): void {
     const activeCourseId = getCurrentCourseId()
     const activeCourseName = getCurrentCourseName()
     if (!activeCourseId) return
-    if (confirm('确认要清空当前课程的聊天记录吗？')) {
+    if (confirm("确认要清空当前课程的聊天记录吗？")) {
       messages = []
       renderMessages(messages, overlayElement)
       await safeSaveChatHistory(activeCourseId, activeCourseName, [])
@@ -873,49 +1059,61 @@ export function setupChatHandlers(): void {
 
   const updateModeUI = () => {
     if (!input) return
-    const chatPlaceholder = '问问学习助理'
-    const flashcardPlaceholder = '生成闪卡：输入要点或上传课件'
-    const mindmapPlaceholder = '生成思维导图：输入主题或上传课件'
+    const chatPlaceholder = "问问学习助理"
+    const flashcardPlaceholder = "生成闪卡：输入要点或上传课件"
+    const mindmapPlaceholder = "生成思维导图：输入主题或上传课件"
     const activeCourseId = getCurrentCourseId()
 
-    if (currentMode === 'flashcard') {
-      flashcardModeBtn?.classList.add('active')
-      mindmapModeBtn?.classList.remove('active')
-      flashcardModeBtn?.setAttribute('title', '当前为闪卡模式，点击切换到聊天模式')
-      mindmapModeBtn?.setAttribute('title', '切换到导图模式')
-      setActiveToolTab('flashcard', overlayElement)
+    if (currentMode === "flashcard") {
+      flashcardModeBtn?.classList.add("active")
+      mindmapModeBtn?.classList.remove("active")
+      flashcardModeBtn?.setAttribute(
+        "title",
+        "当前为闪卡模式，点击切换到聊天模式"
+      )
+      mindmapModeBtn?.setAttribute("title", "切换到导图模式")
+      setActiveToolTab("flashcard", overlayElement)
       if (flashcardSendBtn) {
-        flashcardSendBtn.style.display = ''
+        flashcardSendBtn.style.display = ""
         flashcardSendBtn.disabled = !activeCourseId || isGenerating
       }
-      if (mindmapSendBtn) mindmapSendBtn.style.display = 'none'
-      if (sendBtn) sendBtn.style.display = 'none'
+      if (mindmapSendBtn) mindmapSendBtn.style.display = "none"
+      if (sendBtn) sendBtn.style.display = "none"
       input.placeholder = flashcardPlaceholder
       return
     }
 
-    if (currentMode === 'mindmap') {
-      flashcardModeBtn?.classList.remove('active')
-      mindmapModeBtn?.classList.add('active')
-      flashcardModeBtn?.setAttribute('title', '切换到闪卡模式')
-      mindmapModeBtn?.setAttribute('title', '当前为导图模式，点击切换到聊天模式')
-      setActiveToolTab('mindmap', overlayElement)
-      if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
+    if (currentMode === "mindmap") {
+      flashcardModeBtn?.classList.remove("active")
+      mindmapModeBtn?.classList.add("active")
+      flashcardModeBtn?.setAttribute("title", "切换到闪卡模式")
+      mindmapModeBtn?.setAttribute(
+        "title",
+        "当前为导图模式，点击切换到聊天模式"
+      )
+      setActiveToolTab("mindmap", overlayElement)
+      if (flashcardSendBtn) flashcardSendBtn.style.display = "none"
       if (mindmapSendBtn) {
-        mindmapSendBtn.style.display = ''
+        mindmapSendBtn.style.display = ""
         mindmapSendBtn.disabled = !activeCourseId || isGenerating
       }
-      if (sendBtn) sendBtn.style.display = 'none'
+      if (sendBtn) sendBtn.style.display = "none"
       input.placeholder = mindmapPlaceholder
     } else {
-      flashcardModeBtn?.classList.remove('active')
-      mindmapModeBtn?.classList.remove('active')
-      flashcardModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到闪卡模式')
-      mindmapModeBtn?.setAttribute('title', '当前为聊天模式，点击切换到导图模式')
-      if (flashcardSendBtn) flashcardSendBtn.style.display = 'none'
-      if (mindmapSendBtn) mindmapSendBtn.style.display = 'none'
+      flashcardModeBtn?.classList.remove("active")
+      mindmapModeBtn?.classList.remove("active")
+      flashcardModeBtn?.setAttribute(
+        "title",
+        "当前为聊天模式，点击切换到闪卡模式"
+      )
+      mindmapModeBtn?.setAttribute(
+        "title",
+        "当前为聊天模式，点击切换到导图模式"
+      )
+      if (flashcardSendBtn) flashcardSendBtn.style.display = "none"
+      if (mindmapSendBtn) mindmapSendBtn.style.display = "none"
       if (sendBtn) {
-        sendBtn.style.display = ''
+        sendBtn.style.display = ""
         sendBtn.disabled = !activeCourseId || isGenerating
       }
       input.placeholder = chatPlaceholder
@@ -923,23 +1121,38 @@ export function setupChatHandlers(): void {
   }
 
   if (externalSplitToggleHandler) {
-    window.removeEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-toggle-flashcard",
+      externalSplitToggleHandler
+    )
   }
   externalSplitToggleHandler = () => {
     toggleSplitView()
   }
-  window.addEventListener('xzzd:assistant-toggle-flashcard', externalSplitToggleHandler)
+  window.addEventListener(
+    "xzzd:assistant-toggle-flashcard",
+    externalSplitToggleHandler
+  )
 
   if (externalClearHistoryHandler) {
-    window.removeEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+    window.removeEventListener(
+      "xzzd:assistant-clear-history",
+      externalClearHistoryHandler
+    )
   }
   externalClearHistoryHandler = () => {
     void clearCurrentHistory()
   }
-  window.addEventListener('xzzd:assistant-clear-history', externalClearHistoryHandler)
+  window.addEventListener(
+    "xzzd:assistant-clear-history",
+    externalClearHistoryHandler
+  )
 
   if (externalCourseChangedHandler) {
-    window.removeEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
+    window.removeEventListener(
+      "xzzd:assistant-course-changed",
+      externalCourseChangedHandler
+    )
   }
   externalCourseChangedHandler = () => {
     if (activeRun) {
@@ -949,7 +1162,10 @@ export function setupChatHandlers(): void {
     materialLoadStates.clear()
     selectedHistoryUploads.clear()
   }
-  window.addEventListener('xzzd:assistant-course-changed', externalCourseChangedHandler)
+  window.addEventListener(
+    "xzzd:assistant-course-changed",
+    externalCourseChangedHandler
+  )
 
   const persistCurrentMessages = async () => {
     const activeCourseId = getCurrentCourseId()
@@ -958,44 +1174,59 @@ export function setupChatHandlers(): void {
   }
 
   if (externalMindmapSelectHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-select",
+      externalMindmapSelectHandler
+    )
   }
   externalMindmapSelectHandler = (event: Event) => {
     const customEvent = event as CustomEvent<{ messageId?: string }>
-    const messageId = customEvent.detail?.messageId || ''
+    const messageId = customEvent.detail?.messageId || ""
     if (!messageId) return
-    const exists = messages.some(msg => msg.id === messageId && !!msg.mindmap)
+    const exists = messages.some((msg) => msg.id === messageId && !!msg.mindmap)
     if (!exists) return
     setActiveMindmapMessageId(messageId)
     renderMessages(messages, overlayElement)
   }
-  window.addEventListener('xzzd:assistant-mindmap-select', externalMindmapSelectHandler)
+  window.addEventListener(
+    "xzzd:assistant-mindmap-select",
+    externalMindmapSelectHandler
+  )
 
   if (externalMindmapRenameHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-rename",
+      externalMindmapRenameHandler
+    )
   }
   externalMindmapRenameHandler = (event: Event) => {
     void (async () => {
       const customEvent = event as CustomEvent<{ messageId?: string }>
-      const messageId = customEvent.detail?.messageId || ''
+      const messageId = customEvent.detail?.messageId || ""
       if (!messageId) return
-      const messageIndex = messages.findIndex(msg => msg.id === messageId && !!msg.mindmap)
+      const messageIndex = messages.findIndex(
+        (msg) => msg.id === messageId && !!msg.mindmap
+      )
       if (messageIndex === -1) return
 
       const targetMessage = messages[messageIndex]
-      const currentTitle = (targetMessage.mindmap?.title || '学习导图').trim() || '学习导图'
-      const inputTitle = await openAssistantPrompt({
-        title: '修改导图标题',
-        value: currentTitle,
-        placeholder: '请输入新的导图标题',
-        confirmText: '保存',
-        maxLength: 60
-      }, overlayElement)
+      const currentTitle =
+        (targetMessage.mindmap?.title || "学习导图").trim() || "学习导图"
+      const inputTitle = await openAssistantPrompt(
+        {
+          title: "修改导图标题",
+          value: currentTitle,
+          placeholder: "请输入新的导图标题",
+          confirmText: "保存",
+          maxLength: 60
+        },
+        overlayElement
+      )
       if (inputTitle === null) return
 
       const nextTitle = inputTitle.trim()
       if (!nextTitle) {
-        showStatus('标题不能为空', 'error')
+        showStatus("标题不能为空", "error")
         return
       }
 
@@ -1004,50 +1235,71 @@ export function setupChatHandlers(): void {
       targetMessage.mindmap = {
         ...targetMessage.mindmap,
         title: normalizedTitle,
-        markdown: updateMindmapMarkdownTitle(targetMessage.mindmap.markdown, normalizedTitle)
+        markdown: updateMindmapMarkdownTitle(
+          targetMessage.mindmap.markdown,
+          normalizedTitle
+        )
       }
 
       setActiveMindmapMessageId(messageId)
       renderMessages(messages, overlayElement)
       void persistCurrentMessages()
-      showStatus('导图标题已更新', 'success')
+      showStatus("导图标题已更新", "success")
     })()
   }
-  window.addEventListener('xzzd:assistant-mindmap-rename', externalMindmapRenameHandler)
+  window.addEventListener(
+    "xzzd:assistant-mindmap-rename",
+    externalMindmapRenameHandler
+  )
 
   if (externalMindmapDeleteHandler) {
-    window.removeEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+    window.removeEventListener(
+      "xzzd:assistant-mindmap-delete",
+      externalMindmapDeleteHandler
+    )
   }
   externalMindmapDeleteHandler = (event: Event) => {
     void (async () => {
       const customEvent = event as CustomEvent<{ messageId?: string }>
-      const messageId = customEvent.detail?.messageId || ''
+      const messageId = customEvent.detail?.messageId || ""
       if (!messageId) return
-      const messageIndex = messages.findIndex(msg => msg.id === messageId && !!msg.mindmap)
+      const messageIndex = messages.findIndex(
+        (msg) => msg.id === messageId && !!msg.mindmap
+      )
       if (messageIndex === -1) return
 
-      const confirmed = await openAssistantConfirm({
-        title: '删除思维导图',
-        message: '删除后将同步从当前课程聊天历史中移除，确认继续吗？',
-        confirmText: '删除',
-        danger: true
-      }, overlayElement)
+      const confirmed = await openAssistantConfirm(
+        {
+          title: "删除思维导图",
+          message: "删除后将同步从当前课程聊天历史中移除，确认继续吗？",
+          confirmText: "删除",
+          danger: true
+        },
+        overlayElement
+      )
       if (!confirmed) return
 
-      messages = messages.filter(msg => msg.id !== messageId)
+      messages = messages.filter((msg) => msg.id !== messageId)
       setActiveMindmapMessageId(null)
       renderMessages(messages, overlayElement)
       void persistCurrentMessages()
-      showStatus('导图已删除', 'success')
+      showStatus("导图已删除", "success")
     })()
   }
-  window.addEventListener('xzzd:assistant-mindmap-delete', externalMindmapDeleteHandler)
+  window.addEventListener(
+    "xzzd:assistant-mindmap-delete",
+    externalMindmapDeleteHandler
+  )
 
-  const previewArea = overlayElement?.querySelector('#file-preview-area') as HTMLElement
-  const plusMenu = overlayElement?.querySelector('#plus-menu') as HTMLElement
-  const menuUploadBtn = overlayElement?.querySelector('#menu-upload-btn') as HTMLButtonElement
+  const previewArea = overlayElement?.querySelector(
+    "#file-preview-area"
+  ) as HTMLElement
+  const plusMenu = overlayElement?.querySelector("#plus-menu") as HTMLElement
+  const menuUploadBtn = overlayElement?.querySelector(
+    "#menu-upload-btn"
+  ) as HTMLButtonElement
 
-  console.log('XZZDPRO: Elements found:', {
+  console.log("XZZDPRO: Elements found:", {
     input: !!input,
     attachBtn: !!attachBtn,
     plusMenu: !!plusMenu,
@@ -1057,44 +1309,50 @@ export function setupChatHandlers(): void {
   updateModeUI()
   updateSplitUI()
 
-  flashcardModeBtn?.addEventListener('click', () => {
-    currentMode = currentMode === 'flashcard' ? 'chat' : 'flashcard'
+  flashcardModeBtn?.addEventListener("click", () => {
+    currentMode = currentMode === "flashcard" ? "chat" : "flashcard"
     updateModeUI()
   })
 
-  mindmapModeBtn?.addEventListener('click', () => {
-    currentMode = currentMode === 'mindmap' ? 'chat' : 'mindmap'
+  mindmapModeBtn?.addEventListener("click", () => {
+    currentMode = currentMode === "mindmap" ? "chat" : "mindmap"
     updateModeUI()
   })
 
   // Attach Button (Toggle Menu)
   if (attachBtn) {
-    attachBtn.addEventListener('click', (e) => {
-      console.log('XZZDPRO: attachBtn clicked')
+    attachBtn.addEventListener("click", (e) => {
+      console.log("XZZDPRO: attachBtn clicked")
       e.stopPropagation()
       e.preventDefault()
       if (plusMenu) {
-        const isVisible = plusMenu.style.display !== 'none'
-        plusMenu.style.display = isVisible ? 'none' : 'block'
-        console.log('XZZDPRO: plusMenu toggled, new display:', plusMenu.style.display)
+        const isVisible = plusMenu.style.display !== "none"
+        plusMenu.style.display = isVisible ? "none" : "block"
+        console.log(
+          "XZZDPRO: plusMenu toggled, new display:",
+          plusMenu.style.display
+        )
       } else {
-        console.error('XZZDPRO: plusMenu not found when clicking attachBtn')
+        console.error("XZZDPRO: plusMenu not found when clicking attachBtn")
       }
     })
   } else {
-    console.error('XZZDPRO: attachBtn not found in setupChatHandlers')
+    console.error("XZZDPRO: attachBtn not found in setupChatHandlers")
   }
 
   // Menu Upload Item
-  menuUploadBtn?.addEventListener('click', (e) => {
-    console.log('XZZDPRO: menuUploadBtn clicked')
+  menuUploadBtn?.addEventListener("click", (e) => {
+    console.log("XZZDPRO: menuUploadBtn clicked")
     e.stopPropagation()
     fileInput?.click()
-    if (plusMenu) plusMenu.style.display = 'none'
+    if (plusMenu) plusMenu.style.display = "none"
   })
 
   if (externalMaterialToggleHandler) {
-    window.removeEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+    window.removeEventListener(
+      "xzzd:assistant-material-toggle",
+      externalMaterialToggleHandler
+    )
   }
   externalMaterialToggleHandler = async (event: Event) => {
     const customEvent = event as CustomEvent<{
@@ -1106,11 +1364,11 @@ export function setupChatHandlers(): void {
         size: number
         downloadUrl: string
         materialTitle?: string
-        sourceType?: 'courseware' | 'history_upload'
+        sourceType?: "courseware" | "history_upload"
         historyId?: string
         historyPayloadRef?: string
         historyMimeType?: string
-        historyStatus?: 'ready' | 'missing' | 'session_only'
+        historyStatus?: "ready" | "missing" | "session_only"
       }
     }>
     const courseId = customEvent.detail?.courseId
@@ -1118,23 +1376,32 @@ export function setupChatHandlers(): void {
     const file = customEvent.detail?.file
 
     const activeCourseId = getCurrentCourseId()
-    if (!courseId || !activeCourseId || courseId !== activeCourseId || !file?.downloadUrl) return
+    if (
+      !courseId ||
+      !activeCourseId ||
+      courseId !== activeCourseId ||
+      !file?.downloadUrl
+    )
+      return
 
     const selectedCourseMaterials = getSelectedCourseMaterials()
-    const materialTitle = file.materialTitle || '课程资料'
+    const materialTitle = file.materialTitle || "课程资料"
     const selectionKey = getMaterialSelectionKey(file.downloadUrl)
     if (!selectionKey) return
 
-    if (file.sourceType === 'history_upload') {
+    if (file.sourceType === "history_upload") {
       if (!file.historyId || !file.historyPayloadRef) {
         if (checked) {
-          showStatus(`历史资料缺少可用内容: ${file.name}`, 'error')
+          showStatus(`历史资料缺少可用内容: ${file.name}`, "error")
         }
         return
       }
-      if (file.historyStatus === 'missing' || file.historyStatus === 'session_only') {
+      if (
+        file.historyStatus === "missing" ||
+        file.historyStatus === "session_only"
+      ) {
         if (checked) {
-          showStatus(`历史资料暂不可用: ${file.name}`, 'error')
+          showStatus(`历史资料暂不可用: ${file.name}`, "error")
         }
         return
       }
@@ -1142,7 +1409,7 @@ export function setupChatHandlers(): void {
         selectedHistoryUploads.set(selectionKey, {
           id: file.historyId,
           name: file.name,
-          mimeType: file.historyMimeType || '',
+          mimeType: file.historyMimeType || "",
           payloadRef: file.historyPayloadRef,
           status: file.historyStatus
         })
@@ -1155,7 +1422,7 @@ export function setupChatHandlers(): void {
     if (checked) {
       const normalizedFileId = Number(file.id)
       if (!Number.isFinite(normalizedFileId)) {
-        showStatus(`资料 ID 无效: ${file.name}`, 'error')
+        showStatus(`资料 ID 无效: ${file.name}`, "error")
         return
       }
       const normalizedFile = {
@@ -1175,25 +1442,28 @@ export function setupChatHandlers(): void {
     selectedCourseMaterials.delete(selectionKey)
     materialLoadStates.delete(selectionKey)
   }
-  window.addEventListener('xzzd:assistant-material-toggle', externalMaterialToggleHandler)
+  window.addEventListener(
+    "xzzd:assistant-material-toggle",
+    externalMaterialToggleHandler
+  )
 
   // Close menu when clicking outside
-  document.addEventListener('click', (e) => {
-    if (plusMenu && plusMenu.style.display !== 'none') {
+  document.addEventListener("click", (e) => {
+    if (plusMenu && plusMenu.style.display !== "none") {
       const target = e.composedPath()[0] as HTMLElement
-      if (!target.closest('.plus-menu-container')) {
-        plusMenu.style.display = 'none'
+      if (!target.closest(".plus-menu-container")) {
+        plusMenu.style.display = "none"
       }
     }
   })
 
   // File Input Change
-  fileInput?.addEventListener('change', (e) => {
+  fileInput?.addEventListener("change", (e) => {
     const files = Array.from((e.target as HTMLInputElement).files || [])
     if (files.length > 0) {
       pendingAttachments = [...pendingAttachments, ...files]
       renderPreviews()
-      fileInput.value = ''
+      fileInput.value = ""
     }
   })
 
@@ -1201,35 +1471,41 @@ export function setupChatHandlers(): void {
     if (!previewArea) return
 
     if (pendingAttachments.length === 0) {
-      previewArea.style.display = 'none'
-      previewArea.innerHTML = ''
+      previewArea.style.display = "none"
+      previewArea.innerHTML = ""
       return
     }
 
-    previewArea.style.display = 'flex'
-    previewArea.innerHTML = pendingAttachments.map((file, index) => {
-      const isImage = file.type.startsWith('image/')
-      let innerContent = ''
+    previewArea.style.display = "flex"
+    previewArea.innerHTML = pendingAttachments
+      .map((file, index) => {
+        const isImage = file.type.startsWith("image/")
+        let innerContent = ""
 
-      if (isImage) {
-        const url = URL.createObjectURL(file)
-        innerContent = `<img src="${url}" class="preview-thumbnail" />`
-      } else {
-        innerContent = renderAttachmentCard(file.name, file.type)
-      }
+        if (isImage) {
+          const url = URL.createObjectURL(file)
+          innerContent = `<img src="${url}" class="preview-thumbnail" />`
+        } else {
+          innerContent = renderAttachmentCard(file.name, file.type)
+        }
 
-      const dataAttr = isImage ? `data-filename="${escapeHtml(file.name)}"` : ''
+        const dataAttr = isImage
+          ? `data-filename="${escapeHtml(file.name)}"`
+          : ""
 
-      return `
+        return `
         <div class="preview-wrapper" ${dataAttr}>
             ${innerContent}
             <button class="remove-attachment-btn" data-index="${index}">×</button>
         </div>`
-    }).join('')
+      })
+      .join("")
 
-    previewArea.querySelectorAll('.remove-attachment-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const index = parseInt((e.target as HTMLElement).getAttribute('data-index') || '-1')
+    previewArea.querySelectorAll(".remove-attachment-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const index = parseInt(
+          (e.target as HTMLElement).getAttribute("data-index") || "-1"
+        )
         if (index > -1) {
           pendingAttachments = pendingAttachments.filter((_, i) => i !== index)
           renderPreviews()
@@ -1240,142 +1516,187 @@ export function setupChatHandlers(): void {
 
   // Use Capture Phase on Root Overlay to ensure we catch all clicks for copy/recall buttons
   if (overlayElement) {
-    overlayElement.addEventListener('click', async (e) => {
-      const target = e.target as HTMLElement
-      const composedPath = e.composedPath ? e.composedPath() : []
+    overlayElement.addEventListener(
+      "click",
+      async (e) => {
+        const target = e.target as HTMLElement
+        const composedPath = e.composedPath ? e.composedPath() : []
 
-      const findInPath = (selector: string) => {
-        for (const node of composedPath) {
-          if (node instanceof HTMLElement && node.matches(selector)) return node
-        }
-        return target.closest(selector)
-      }
-
-      const copyBtn = findInPath('.copy-msg-btn') as HTMLElement
-      const recallBtn = findInPath('.recall-btn') as HTMLElement
-
-      if (copyBtn || recallBtn) {
-        console.log('[Assistant Debug] Action Button Detected!', { copyBtn, recallBtn })
-        e.stopPropagation()
-        e.stopImmediatePropagation()
-      }
-
-      // Copy Button Logic
-      if (copyBtn) {
-        console.log('[Assistant Debug] Executing Copy...')
-        const messageEl = copyBtn.closest('.message')
-        const msgId = messageEl?.getAttribute('id')
-
-        if (msgId) {
-          try {
-            const originalMsg = messages.find(m => m.id === msgId)
-            const textToCopy = originalMsg?.content?.trim() || ''
-
-            if (textToCopy) {
-              await navigator.clipboard.writeText(textToCopy)
-              showStatus('已复制', 'success')
-            }
-          } catch (err) {
-            console.error('[Assistant Debug] Copy failed:', err)
-            showStatus('复制失败', 'error')
+        const findInPath = (selector: string) => {
+          for (const node of composedPath) {
+            if (node instanceof HTMLElement && node.matches(selector))
+              return node
           }
+          return target.closest(selector)
         }
-        return
-      }
 
-      // Recall Button Logic
-      if (recallBtn) {
-        console.log('[Assistant Debug] Executing Recall...')
-        const msgId = recallBtn.getAttribute('data-id')
-        if (!msgId) return
+        const copyBtn = findInPath(".copy-msg-btn") as HTMLElement
+        const recallBtn = findInPath(".recall-btn") as HTMLElement
 
-        const index = messages.findIndex(m => m.id === msgId)
-        if (index === -1) return
+        if (copyBtn || recallBtn) {
+          console.log("[Assistant Debug] Action Button Detected!", {
+            copyBtn,
+            recallBtn
+          })
+          e.stopPropagation()
+          e.stopImmediatePropagation()
+        }
 
-        if (confirm('确定要撤回此消息并重新编辑吗？')) {
-          const msg = messages[index]
+        // Copy Button Logic
+        if (copyBtn) {
+          console.log("[Assistant Debug] Executing Copy...")
+          const messageEl = copyBtn.closest(".message")
+          const msgId = messageEl?.getAttribute("id")
 
-          // 1. Restore Content
-          if (input) {
-            input.value = msg.content
-            input.disabled = false
-            adjustTextareaHeight(input)
-          }
-
-          // 2. Restore Attachments
-          if (msg.attachments && msg.attachments.length > 0) {
-            showStatus('正在恢复附件...', 'info')
+          if (msgId) {
             try {
-              const restoredFiles: File[] = []
-              for (const att of msg.attachments) {
-                let file: File | null = null
+              const originalMsg = messages.find((m) => m.id === msgId)
+              const textToCopy = originalMsg?.content?.trim() || ""
 
-                if (att.originalData && att.originalData.startsWith('data:')) {
-                  const res = await fetch(att.originalData)
-                  const blob = await res.blob()
-                  const mimeType = att.type === 'pdf'
-                    ? 'application/pdf'
-                    : att.type === 'image'
-                      ? blob.type || 'image/png'
-                      : 'text/plain'
-                  file = new File([blob], att.name, { type: mimeType })
-                } else if (att.payloadRef) {
-                  const payload = await getPayload(att.payloadRef)
-                  if (payload?.type === 'pdf_blob' && payload.data instanceof Blob) {
-                    file = new File([payload.data], att.name, { type: 'application/pdf' })
-                  } else if (payload?.type === 'image') {
-                    const imageData = Array.isArray(payload.data) ? payload.data[0] : payload.data
-                    if (typeof imageData === 'string' && imageData.startsWith('data:')) {
-                      const res = await fetch(imageData)
-                      const blob = await res.blob()
-                      file = new File([blob], att.name, { type: blob.type || 'image/png' })
-                    }
-                  } else if (payload?.type === 'text') {
-                    const textBlob = new Blob([String(payload.data || '')], { type: 'text/plain' })
-                    file = new File([textBlob], att.name, { type: 'text/plain' })
-                  }
-                } else {
-                  const dataToRestore = Array.isArray(att.content) ? att.content[0] : att.content
-                  if (typeof dataToRestore === 'string' && dataToRestore.startsWith('data:')) {
-                    const res = await fetch(dataToRestore)
-                    const blob = await res.blob()
-                    const mimeType = att.type === 'pdf'
-                      ? 'application/pdf'
-                      : att.type === 'image'
-                        ? blob.type || 'image/png'
-                        : 'text/plain'
-                    file = new File([blob], att.name, { type: mimeType })
-                  } else if (att.type === 'text') {
-                    const textBlob = new Blob([String(att.content || '')], { type: 'text/plain' })
-                    file = new File([textBlob], att.name, { type: 'text/plain' })
-                  }
-                }
-
-                if (file) {
-                  restoredFiles.push(file)
-                }
+              if (textToCopy) {
+                await navigator.clipboard.writeText(textToCopy)
+                showStatus("已复制", "success")
               }
-              pendingAttachments = restoredFiles
-              renderPreviews()
-              showStatus(`已恢复 ${restoredFiles.length} 个附件`, 'success')
             } catch (err) {
-              console.error('[Assistant Debug] Failed to restore attachments', err)
-              showStatus('附件恢复失败', 'error')
+              console.error("[Assistant Debug] Copy failed:", err)
+              showStatus("复制失败", "error")
             }
           }
+          return
+        }
 
-          messages = messages.slice(0, index)
-          renderMessages(messages, overlayElement)
-          const activeCourseId = getCurrentCourseId()
-          const activeCourseName = getCurrentCourseName()
-          if (activeCourseId) {
-            await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
+        // Recall Button Logic
+        if (recallBtn) {
+          console.log("[Assistant Debug] Executing Recall...")
+          const msgId = recallBtn.getAttribute("data-id")
+          if (!msgId) return
+
+          const index = messages.findIndex((m) => m.id === msgId)
+          if (index === -1) return
+
+          if (confirm("确定要撤回此消息并重新编辑吗？")) {
+            const msg = messages[index]
+
+            // 1. Restore Content
+            if (input) {
+              input.value = msg.content
+              input.disabled = false
+              adjustTextareaHeight(input)
+            }
+
+            // 2. Restore Attachments
+            if (msg.attachments && msg.attachments.length > 0) {
+              showStatus("正在恢复附件...", "info")
+              try {
+                const restoredFiles: File[] = []
+                for (const att of msg.attachments) {
+                  let file: File | null = null
+
+                  if (
+                    att.originalData &&
+                    att.originalData.startsWith("data:")
+                  ) {
+                    const res = await fetch(att.originalData)
+                    const blob = await res.blob()
+                    const mimeType =
+                      att.type === "pdf"
+                        ? "application/pdf"
+                        : att.type === "image"
+                          ? blob.type || "image/png"
+                          : "text/plain"
+                    file = new File([blob], att.name, { type: mimeType })
+                  } else if (att.payloadRef) {
+                    const payload = await getPayload(att.payloadRef)
+                    if (
+                      payload?.type === "pdf_blob" &&
+                      payload.data instanceof Blob
+                    ) {
+                      file = new File([payload.data], att.name, {
+                        type: "application/pdf"
+                      })
+                    } else if (payload?.type === "image") {
+                      const imageData = Array.isArray(payload.data)
+                        ? payload.data[0]
+                        : payload.data
+                      if (
+                        typeof imageData === "string" &&
+                        imageData.startsWith("data:")
+                      ) {
+                        const res = await fetch(imageData)
+                        const blob = await res.blob()
+                        file = new File([blob], att.name, {
+                          type: blob.type || "image/png"
+                        })
+                      }
+                    } else if (payload?.type === "text") {
+                      const textBlob = new Blob([String(payload.data || "")], {
+                        type: "text/plain"
+                      })
+                      file = new File([textBlob], att.name, {
+                        type: "text/plain"
+                      })
+                    }
+                  } else {
+                    const dataToRestore = Array.isArray(att.content)
+                      ? att.content[0]
+                      : att.content
+                    if (
+                      typeof dataToRestore === "string" &&
+                      dataToRestore.startsWith("data:")
+                    ) {
+                      const res = await fetch(dataToRestore)
+                      const blob = await res.blob()
+                      const mimeType =
+                        att.type === "pdf"
+                          ? "application/pdf"
+                          : att.type === "image"
+                            ? blob.type || "image/png"
+                            : "text/plain"
+                      file = new File([blob], att.name, { type: mimeType })
+                    } else if (att.type === "text") {
+                      const textBlob = new Blob([String(att.content || "")], {
+                        type: "text/plain"
+                      })
+                      file = new File([textBlob], att.name, {
+                        type: "text/plain"
+                      })
+                    }
+                  }
+
+                  if (file) {
+                    restoredFiles.push(file)
+                  }
+                }
+                pendingAttachments = restoredFiles
+                renderPreviews()
+                showStatus(`已恢复 ${restoredFiles.length} 个附件`, "success")
+              } catch (err) {
+                console.error(
+                  "[Assistant Debug] Failed to restore attachments",
+                  err
+                )
+                showStatus("附件恢复失败", "error")
+              }
+            }
+
+            messages = messages.slice(0, index)
+            renderMessages(messages, overlayElement)
+            const activeCourseId = getCurrentCourseId()
+            const activeCourseName = getCurrentCourseName()
+            if (activeCourseId) {
+              await safeSaveChatHistory(
+                activeCourseId,
+                activeCourseName,
+                messages
+              )
+            }
           }
         }
-      }
-    }, { capture: true })
+      },
+      { capture: true }
+    )
   } else {
-    console.error('[Assistant Debug] overlayElement not found!')
+    console.error("[Assistant Debug] overlayElement not found!")
   }
 
   const setInteractionDisabled = (disabled: boolean) => {
@@ -1383,7 +1704,8 @@ export function setupChatHandlers(): void {
     const activeCourseId = getCurrentCourseId()
     if (input) input.disabled = disabled
     if (sendBtn) sendBtn.disabled = disabled || !activeCourseId
-    if (flashcardSendBtn) flashcardSendBtn.disabled = disabled || !activeCourseId
+    if (flashcardSendBtn)
+      flashcardSendBtn.disabled = disabled || !activeCourseId
     if (mindmapSendBtn) mindmapSendBtn.disabled = disabled || !activeCourseId
     if (attachBtn) attachBtn.disabled = disabled
     updateModeUI()
@@ -1391,12 +1713,16 @@ export function setupChatHandlers(): void {
 
   const resetInput = () => {
     if (input) {
-      input.value = ''
+      input.value = ""
       adjustTextareaHeight(input)
     }
   }
 
-  const safeSaveChatHistory = async (courseId: string, courseName: string, messagesToSave: ChatMessage[]) => {
+  const safeSaveChatHistory = async (
+    courseId: string,
+    courseName: string,
+    messagesToSave: ChatMessage[]
+  ) => {
     if (!courseId) return
     try {
       await saveChatHistory(courseId, {
@@ -1406,22 +1732,31 @@ export function setupChatHandlers(): void {
         updatedAt: Date.now()
       })
     } catch (error) {
-      console.warn('XZZDPRO: 保存聊天记录失败', error)
+      console.warn("XZZDPRO: 保存聊天记录失败", error)
     }
   }
 
-  const processAttachments = async (courseId?: string): Promise<Attachment[]> => {
+  const processAttachments = async (
+    courseId?: string
+  ): Promise<Attachment[]> => {
     if (pendingAttachments.length === 0) return []
 
     const processedAttachments: Attachment[] = []
     const historyItems: AssistantUploadHistoryItem[] = []
-    const existingHistory = courseId ? await getAssistantUploadHistory(courseId) : []
+    const existingHistory = courseId
+      ? await getAssistantUploadHistory(courseId)
+      : []
     const existingByKey = new Map<string, AssistantUploadHistoryItem>()
 
     if (courseId) {
       for (const item of existingHistory) {
         if (!item.fingerprint) continue
-        const key = buildUploadHistoryKey(item.courseId, item.name, item.size, item.fingerprint)
+        const key = buildUploadHistoryKey(
+          item.courseId,
+          item.name,
+          item.size,
+          item.fingerprint
+        )
         existingByKey.set(key, item)
       }
     }
@@ -1430,64 +1765,67 @@ export function setupChatHandlers(): void {
       const now = Date.now()
       const arrayBuffer = await file.arrayBuffer()
       const fingerprint = await hashArrayBuffer(arrayBuffer)
-      const historyKey = courseId ? buildUploadHistoryKey(courseId, file.name, file.size, fingerprint) : ''
+      const historyKey = courseId
+        ? buildUploadHistoryKey(courseId, file.name, file.size, fingerprint)
+        : ""
       const existing = historyKey ? existingByKey.get(historyKey) : undefined
 
       let attachment: Attachment
       let payloadData: string | Blob | null = null
-      let payloadType: 'text' | 'image' | 'pdf_blob' | null = null
+      let payloadType: "text" | "image" | "pdf_blob" | null = null
 
-      if (file.type.startsWith('image/')) {
+      if (file.type.startsWith("image/")) {
         const base64 = await readFileAsBase64(file)
         if (!isValidImageDataUri(base64)) {
-          showStatus(`图片格式不兼容，已忽略：${file.name}`, 'error')
+          showStatus(`图片格式不兼容，已忽略：${file.name}`, "error")
           continue
         }
         attachment = {
-          type: 'image',
+          type: "image",
           name: file.name,
           content: base64
         }
         payloadData = base64
-        payloadType = 'image'
-      } else if (file.type === 'application/pdf') {
+        payloadType = "image"
+      } else if (file.type === "application/pdf") {
         const originalBase64 = await readFileAsBase64(file)
-        const blob = new Blob([file], { type: 'application/pdf' })
+        const blob = new Blob([file], { type: "application/pdf" })
         let images: string[] = []
         try {
           images = await convertPdfToImages(blob)
         } catch (error) {
-          console.error('[Assistant Debug] PDF image conversion failed', error)
+          console.error("[Assistant Debug] PDF image conversion failed", error)
         }
 
         if (images.length === 0) {
           const text = await extractPdfText(blob)
           attachment = {
-            type: 'text',
+            type: "text",
             name: file.name,
-            content: text || `[文件 ${file.name}：PDF 未能转换为图片，已尝试文本解析]`
+            content:
+              text || `[文件 ${file.name}：PDF 未能转换为图片，已尝试文本解析]`
           }
           payloadData = blob
-          payloadType = 'pdf_blob'
+          payloadType = "pdf_blob"
         } else {
           attachment = {
-            type: 'pdf',
+            type: "pdf",
             name: file.name,
             content: images,
             originalData: originalBase64
           }
           payloadData = blob
-          payloadType = 'pdf_blob'
+          payloadType = "pdf_blob"
         }
       } else {
         const textContent = await readFileAsText(file)
         attachment = {
-          type: 'text',
+          type: "text",
           name: file.name,
           content: textContent
         }
         payloadData = textContent
-        payloadType = 'text'
+        payloadType = "text"
       }
 
       processedAttachments.push(attachment)
@@ -1495,11 +1833,18 @@ export function setupChatHandlers(): void {
       if (courseId) {
         const historyId = existing?.id || createUploadHistoryId()
         const createdAt = existing?.createdAt || now
-        const payloadRef = existing?.payloadRef || createPayloadRef('upl')
-        const mimeType = file.type || (attachment.type === 'text' ? 'text/plain' : attachment.type === 'image' ? 'image/png' : 'application/pdf')
+        const payloadRef = existing?.payloadRef || createPayloadRef("upl")
+        const mimeType =
+          file.type ||
+          (attachment.type === "text"
+            ? "text/plain"
+            : attachment.type === "image"
+              ? "image/png"
+              : "application/pdf")
 
-        let shouldSavePayload = !existing?.payloadRef || existing?.status === 'missing'
-        let fallbackStatus: AssistantUploadHistoryItem['status'] | null = null
+        let shouldSavePayload =
+          !existing?.payloadRef || existing?.status === "missing"
+        let fallbackStatus: AssistantUploadHistoryItem["status"] | null = null
         if (!payloadData || !payloadType) {
           shouldSavePayload = false
         }
@@ -1507,9 +1852,9 @@ export function setupChatHandlers(): void {
         if (shouldSavePayload) {
           const payloadSize = estimatePayloadBytes(payloadData as any)
           if (payloadSize > UPLOAD_PAYLOAD_SINGLE_BYTE_LIMIT) {
-            showStatus(`"${file.name}" 仅本次使用，不加入历史`, 'info')
+            showStatus(`"${file.name}" 仅本次使用，不加入历史`, "info")
             shouldSavePayload = false
-            fallbackStatus = 'session_only'
+            fallbackStatus = "session_only"
           } else {
             try {
               await putPayload({
@@ -1521,10 +1866,10 @@ export function setupChatHandlers(): void {
                 lastAccessed: now
               })
             } catch (error) {
-              console.warn('XZZDPRO: 保存附件失败', error)
-              showStatus(`"${file.name}" 仅本次使用，不加入历史`, 'info')
+              console.warn("XZZDPRO: 保存附件失败", error)
+              showStatus(`"${file.name}" 仅本次使用，不加入历史`, "info")
               shouldSavePayload = false
-              fallbackStatus = 'session_only'
+              fallbackStatus = "session_only"
             }
           }
         }
@@ -1537,12 +1882,12 @@ export function setupChatHandlers(): void {
             name: file.name,
             size: file.size,
             mimeType,
-            sourceType: 'assistant_upload',
+            sourceType: "assistant_upload",
             createdAt,
             updatedAt: now,
             payloadRef,
             fingerprint,
-            status: 'ready'
+            status: "ready"
           })
         } else if (fallbackStatus) {
           historyItems.push({
@@ -1551,10 +1896,10 @@ export function setupChatHandlers(): void {
             name: file.name,
             size: file.size,
             mimeType,
-            sourceType: 'assistant_upload',
+            sourceType: "assistant_upload",
             createdAt,
             updatedAt: now,
-            payloadRef: '',
+            payloadRef: "",
             fingerprint,
             status: fallbackStatus
           })
@@ -1577,20 +1922,22 @@ export function setupChatHandlers(): void {
         await appendAssistantUploadHistory(courseId, historyItems)
         await gcPayloads(UPLOAD_PAYLOAD_TOTAL_BYTE_LIMIT)
       } catch (error) {
-        console.error('XZZDPRO: 保存上传历史失败', error)
+        console.error("XZZDPRO: 保存上传历史失败", error)
       }
     }
 
     return processedAttachments
   }
 
-  const appendAssistantLoading = (assistantMsg: ChatMessage): LoadingIndicatorHandle | null => {
-    const container = overlayElement?.querySelector('#messages-container')
+  const appendAssistantLoading = (
+    assistantMsg: ChatMessage
+  ): LoadingIndicatorHandle | null => {
+    const container = overlayElement?.querySelector("#messages-container")
     if (!container) return null
 
-    const loadingDiv = document.createElement('div')
+    const loadingDiv = document.createElement("div")
     loadingDiv.id = `loading-${assistantMsg.id}`
-    loadingDiv.className = 'message assistant'
+    loadingDiv.className = "message assistant"
     loadingDiv.innerHTML = `
       <div class="message-body">
         <div class="stream-loading message-text">
@@ -1609,11 +1956,21 @@ export function setupChatHandlers(): void {
     `
     container.appendChild(loadingDiv)
 
-    const statusEl = loadingDiv.querySelector<HTMLElement>('[data-role="status"]')
-    const previewWrap = loadingDiv.querySelector<HTMLElement>('[data-role="preview-wrap"]')
-    const previewEl = loadingDiv.querySelector<HTMLElement>('[data-role="preview"]')
-    const toggleBtn = loadingDiv.querySelector<HTMLButtonElement>('[data-action="toggle-preview"]')
-    const stopBtn = loadingDiv.querySelector<HTMLButtonElement>('[data-action="stop-stream"]')
+    const statusEl = loadingDiv.querySelector<HTMLElement>(
+      '[data-role="status"]'
+    )
+    const previewWrap = loadingDiv.querySelector<HTMLElement>(
+      '[data-role="preview-wrap"]'
+    )
+    const previewEl = loadingDiv.querySelector<HTMLElement>(
+      '[data-role="preview"]'
+    )
+    const toggleBtn = loadingDiv.querySelector<HTMLButtonElement>(
+      '[data-action="toggle-preview"]'
+    )
+    const stopBtn = loadingDiv.querySelector<HTMLButtonElement>(
+      '[data-action="stop-stream"]'
+    )
 
     if (!statusEl || !previewWrap || !previewEl || !toggleBtn || !stopBtn) {
       loadingDiv.remove()
@@ -1632,22 +1989,22 @@ export function setupChatHandlers(): void {
       receivingStartedAt: null,
       timerId: null,
       expanded: false,
-      phase: 'waiting',
-      bufferedText: ''
+      phase: "waiting",
+      bufferedText: ""
     }
 
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener("click", () => {
       setLoadingExpanded(handle, !handle.expanded)
     })
 
-    stopBtn.addEventListener('click', () => {
+    stopBtn.addEventListener("click", () => {
       const run = activeRun
       if (!run || run.assistantMsgId !== assistantMsg.id) return
       stopRun(run, true)
-      showStatus('已停止输出，已保留当前内容', 'info')
+      showStatus("已停止输出，已保留当前内容", "info")
     })
 
-    setLoadingPhase(handle, 'waiting')
+    setLoadingPhase(handle, "waiting")
     handle.timerId = window.setInterval(() => {
       updateLoadingStatusText(handle)
     }, LOADING_TIMER_INTERVAL_MS)
@@ -1657,7 +2014,7 @@ export function setupChatHandlers(): void {
   }
 
   const sendChatMessage = async () => {
-    const content = input?.value.trim() || ''
+    const content = input?.value.trim() || ""
 
     if (!content && pendingAttachments.length === 0) return
 
@@ -1675,15 +2032,18 @@ export function setupChatHandlers(): void {
     try {
       processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
-      console.error('Attachment processing failed:', e)
-      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      console.error("Attachment processing failed:", e)
+      showStatus(`附件处理失败: ${String(e)}`, "error")
       setInteractionDisabled(false)
       return
     }
 
-    const userMsg = createChatMessage('user', content)
+    const userMsg = createChatMessage("user", content)
     const selectedHistoryAttachments = await getSelectedHistoryAttachments()
-    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    const mergedAttachments = [
+      ...selectedHistoryAttachments,
+      ...processedAttachments
+    ]
     if (mergedAttachments.length > 0) {
       userMsg.attachments = mergedAttachments
     }
@@ -1691,26 +2051,28 @@ export function setupChatHandlers(): void {
     messages.push(userMsg)
     renderMessages(messages, overlayElement)
 
-    const assistantMsg = createChatMessage('assistant', '')
+    const assistantMsg = createChatMessage("assistant", "")
     messages.push(assistantMsg)
     const loadingHandle = appendAssistantLoading(assistantMsg)
     if (!loadingHandle) {
-      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      assistantMsg.content = "❌ 无法创建等待状态，请重试"
       renderMessages(messages, overlayElement)
       setInteractionDisabled(false)
       return
     }
-    const run = createActiveRun('chat', assistantMsg.id, loadingHandle)
+    const run = createActiveRun("chat", assistantMsg.id, loadingHandle)
 
     try {
       await waitForSelectedMaterialsReady()
-      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
+      let context = await buildCourseContext(activeCourseId, {
+        includeHomeworks: false
+      })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
       const config = activeSettings!.configs[provider] as ProviderConfig
 
-      let responseText = ''
+      let responseText = ""
       let hasFirstChunk = false
 
       await streamChat({
@@ -1725,13 +2087,13 @@ export function setupChatHandlers(): void {
         signal: run.controller.signal,
         onProgress: (msg) => {
           if (!isRunCurrent(run) || run.stopped) return
-          showStatus(msg, 'info')
+          showStatus(msg, "info")
         },
         onChunk: (chunk) => {
           if (!isRunCurrent(run) || run.stopped) return
           if (!hasFirstChunk) {
             hasFirstChunk = true
-            setLoadingPhase(loadingHandle, 'receiving')
+            setLoadingPhase(loadingHandle, "receiving")
           }
           responseText += chunk
           appendLoadingPreviewChunk(loadingHandle, chunk)
@@ -1742,24 +2104,24 @@ export function setupChatHandlers(): void {
       if (run.stoppedByUser) {
         assistantMsg.content = responseText.trim()
           ? `${responseText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
       } else {
         assistantMsg.content = responseText
       }
       renderMessages(messages, overlayElement)
 
       await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
-
     } catch (error) {
       if (isStreamAbortError(error) && run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
-        console.error('Chat error:', error)
-        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '发生未知错误'
+        console.error("Chat error:", error)
+        const errorMsg =
+          error instanceof Error ? formatErrorMessage(error) : "发生未知错误"
         const partial = loadingHandle.bufferedText.trim()
         assistantMsg.content = partial
           ? `${partial}\n\n[错误: ${errorMsg}]`
@@ -1775,7 +2137,7 @@ export function setupChatHandlers(): void {
   }
 
   const sendFlashcardMessage = async () => {
-    const content = input?.value.trim() || ''
+    const content = input?.value.trim() || ""
     const selectedMaterialCount = getSelectedMaterialCount()
 
     // 实时获取状态
@@ -1784,8 +2146,15 @@ export function setupChatHandlers(): void {
     const activeCourseName = getCurrentCourseName()
 
     if (!activeCourseId || isGenerating) return
-    if (!content && pendingAttachments.length === 0 && selectedMaterialCount === 0) {
-      showStatus('请输入内容、上传课件，或在侧边栏勾选资料后再生成闪卡', 'error')
+    if (
+      !content &&
+      pendingAttachments.length === 0 &&
+      selectedMaterialCount === 0
+    ) {
+      showStatus(
+        "请输入内容、上传课件，或在侧边栏勾选资料后再生成闪卡",
+        "error"
+      )
       return
     }
 
@@ -1796,23 +2165,33 @@ export function setupChatHandlers(): void {
     try {
       processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
-      console.error('Attachment processing failed:', e)
-      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      console.error("Attachment processing failed:", e)
+      showStatus(`附件处理失败: ${String(e)}`, "error")
       setInteractionDisabled(false)
       return
     }
 
     if (processedAttachments.length === 0) {
       if (selectedMaterialCount > 0) {
-        showStatus(`将基于已勾选的 ${selectedMaterialCount} 份课程资料生成闪卡`, 'info')
+        showStatus(
+          `将基于已勾选的 ${selectedMaterialCount} 份课程资料生成闪卡`,
+          "info"
+        )
       } else {
-        showStatus('未上传资料，将仅基于输入生成闪卡', 'info')
+        showStatus("未上传资料，将仅基于输入生成闪卡", "info")
       }
     }
 
-    const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成闪卡' : '生成闪卡'))
+    const userMsg = createChatMessage(
+      "user",
+      content ||
+        (selectedMaterialCount > 0 ? "基于已勾选资料生成闪卡" : "生成闪卡")
+    )
     const selectedHistoryAttachments = await getSelectedHistoryAttachments()
-    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    const mergedAttachments = [
+      ...selectedHistoryAttachments,
+      ...processedAttachments
+    ]
     if (mergedAttachments.length > 0) {
       userMsg.attachments = mergedAttachments
     }
@@ -1820,23 +2199,29 @@ export function setupChatHandlers(): void {
     messages.push(userMsg)
     renderMessages(messages, overlayElement)
 
-    const assistantMsg = createChatMessage('assistant', '')
+    const assistantMsg = createChatMessage("assistant", "")
     messages.push(assistantMsg)
     const loadingHandle = appendAssistantLoading(assistantMsg)
     if (!loadingHandle) {
-      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      assistantMsg.content = "❌ 无法创建等待状态，请重试"
       renderMessages(messages, overlayElement)
       setInteractionDisabled(false)
       return
     }
-    const run = createActiveRun('flashcard', assistantMsg.id, loadingHandle)
+    const run = createActiveRun("flashcard", assistantMsg.id, loadingHandle)
 
     const promptContent = buildFlashcardPrompt(content)
-    const primaryModelMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_PRIMARY_HISTORY_WINDOW)
+    const primaryModelMessages = buildToolMessagesWithWindow(
+      messages.slice(0, -1),
+      promptContent,
+      TOOL_PRIMARY_HISTORY_WINDOW
+    )
 
     try {
       await waitForSelectedMaterialsReady()
-      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
+      let context = await buildCourseContext(activeCourseId, {
+        includeHomeworks: false
+      })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
@@ -1858,11 +2243,11 @@ export function setupChatHandlers(): void {
           signal: run.controller.signal,
           onProgress: (msg) => {
             if (!isRunCurrent(run) || run.stopped) return
-            showStatus(msg, 'info')
+            showStatus(msg, "info")
           },
           onFirstChunk: () => {
             if (!isRunCurrent(run) || run.stopped) return
-            setLoadingPhase(loadingHandle, 'receiving')
+            setLoadingPhase(loadingHandle, "receiving")
           },
           onChunk: (chunk) => {
             if (!isRunCurrent(run) || run.stopped) return
@@ -1872,8 +2257,12 @@ export function setupChatHandlers(): void {
         })
       } catch (error) {
         if (!isToolTimeoutError(error)) throw error
-        showStatus('闪卡生成耗时较长，正在缩小上下文重试...', 'info')
-        const retryMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_RETRY_HISTORY_WINDOW)
+        showStatus("闪卡生成耗时较长，正在缩小上下文重试...", "info")
+        const retryMessages = buildToolMessagesWithWindow(
+          messages.slice(0, -1),
+          promptContent,
+          TOOL_RETRY_HISTORY_WINDOW
+        )
         const retryContext = buildToolRetryContext(context)
         fullResponse = await streamToolResponseWithTimeout({
           messages: retryMessages,
@@ -1884,11 +2273,11 @@ export function setupChatHandlers(): void {
           signal: run.controller.signal,
           onProgress: (msg) => {
             if (!isRunCurrent(run) || run.stopped) return
-            showStatus(msg, 'info')
+            showStatus(msg, "info")
           },
           onFirstChunk: () => {
             if (!isRunCurrent(run) || run.stopped) return
-            setLoadingPhase(loadingHandle, 'receiving')
+            setLoadingPhase(loadingHandle, "receiving")
           },
           onChunk: (chunk) => {
             if (!isRunCurrent(run) || run.stopped) return
@@ -1901,7 +2290,7 @@ export function setupChatHandlers(): void {
       if (run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
@@ -1909,8 +2298,11 @@ export function setupChatHandlers(): void {
 
       const parsed = parseFlashcardResponse(fullResponse)
       if (!parsed) {
-        assistantMsg.content = buildToolParseFailureMessage('闪卡', fullResponse)
-        showStatus('未能解析闪卡结构，已展示模型原始输出', 'error')
+        assistantMsg.content = buildToolParseFailureMessage(
+          "闪卡",
+          fullResponse
+        )
+        showStatus("未能解析闪卡结构，已展示模型原始输出", "error")
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
@@ -1921,17 +2313,19 @@ export function setupChatHandlers(): void {
       renderMessages(messages, overlayElement)
 
       await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
-
     } catch (error) {
       if (isStreamAbortError(error) && run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
-        console.error('Flashcard generation error:', error)
-        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成闪卡时发生错误'
+        console.error("Flashcard generation error:", error)
+        const errorMsg =
+          error instanceof Error
+            ? formatErrorMessage(error)
+            : "生成闪卡时发生错误"
         const partial = loadingHandle.bufferedText.trim()
         assistantMsg.content = partial
           ? `${partial}\n\n[错误: ${errorMsg}]`
@@ -1947,7 +2341,7 @@ export function setupChatHandlers(): void {
   }
 
   const sendMindmapMessage = async () => {
-    const content = input?.value.trim() || ''
+    const content = input?.value.trim() || ""
     const selectedMaterialCount = getSelectedMaterialCount()
 
     const activeCourseId = getCurrentCourseId()
@@ -1955,8 +2349,15 @@ export function setupChatHandlers(): void {
     const activeCourseName = getCurrentCourseName()
 
     if (!activeCourseId || isGenerating) return
-    if (!content && pendingAttachments.length === 0 && selectedMaterialCount === 0) {
-      showStatus('请输入内容、上传课件，或在侧边栏勾选资料后再生成导图', 'error')
+    if (
+      !content &&
+      pendingAttachments.length === 0 &&
+      selectedMaterialCount === 0
+    ) {
+      showStatus(
+        "请输入内容、上传课件，或在侧边栏勾选资料后再生成导图",
+        "error"
+      )
       return
     }
 
@@ -1967,23 +2368,35 @@ export function setupChatHandlers(): void {
     try {
       processedAttachments = await processAttachments(activeCourseId)
     } catch (e) {
-      console.error('Attachment processing failed:', e)
-      showStatus(`附件处理失败: ${String(e)}`, 'error')
+      console.error("Attachment processing failed:", e)
+      showStatus(`附件处理失败: ${String(e)}`, "error")
       setInteractionDisabled(false)
       return
     }
 
     if (processedAttachments.length === 0) {
       if (selectedMaterialCount > 0) {
-        showStatus(`将基于已勾选的 ${selectedMaterialCount} 份课程资料生成思维导图`, 'info')
+        showStatus(
+          `将基于已勾选的 ${selectedMaterialCount} 份课程资料生成思维导图`,
+          "info"
+        )
       } else {
-        showStatus('未上传资料，将仅基于输入生成思维导图', 'info')
+        showStatus("未上传资料，将仅基于输入生成思维导图", "info")
       }
     }
 
-    const userMsg = createChatMessage('user', content || (selectedMaterialCount > 0 ? '基于已勾选资料生成思维导图' : '生成思维导图'))
+    const userMsg = createChatMessage(
+      "user",
+      content ||
+        (selectedMaterialCount > 0
+          ? "基于已勾选资料生成思维导图"
+          : "生成思维导图")
+    )
     const selectedHistoryAttachments = await getSelectedHistoryAttachments()
-    const mergedAttachments = [...selectedHistoryAttachments, ...processedAttachments]
+    const mergedAttachments = [
+      ...selectedHistoryAttachments,
+      ...processedAttachments
+    ]
     if (mergedAttachments.length > 0) {
       userMsg.attachments = mergedAttachments
     }
@@ -1991,23 +2404,29 @@ export function setupChatHandlers(): void {
     messages.push(userMsg)
     renderMessages(messages, overlayElement)
 
-    const assistantMsg = createChatMessage('assistant', '')
+    const assistantMsg = createChatMessage("assistant", "")
     messages.push(assistantMsg)
     const loadingHandle = appendAssistantLoading(assistantMsg)
     if (!loadingHandle) {
-      assistantMsg.content = '❌ 无法创建等待状态，请重试'
+      assistantMsg.content = "❌ 无法创建等待状态，请重试"
       renderMessages(messages, overlayElement)
       setInteractionDisabled(false)
       return
     }
-    const run = createActiveRun('mindmap', assistantMsg.id, loadingHandle)
+    const run = createActiveRun("mindmap", assistantMsg.id, loadingHandle)
 
     const promptContent = buildMindmapPrompt(content)
-    const primaryModelMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_PRIMARY_HISTORY_WINDOW)
+    const primaryModelMessages = buildToolMessagesWithWindow(
+      messages.slice(0, -1),
+      promptContent,
+      TOOL_PRIMARY_HISTORY_WINDOW
+    )
 
     try {
       await waitForSelectedMaterialsReady()
-      let context = await buildCourseContext(activeCourseId, { includeHomeworks: false })
+      let context = await buildCourseContext(activeCourseId, {
+        includeHomeworks: false
+      })
       context = filterContextBySelectedMaterials(context)
 
       const provider = activeSettings!.provider
@@ -2029,11 +2448,11 @@ export function setupChatHandlers(): void {
           signal: run.controller.signal,
           onProgress: (msg) => {
             if (!isRunCurrent(run) || run.stopped) return
-            showStatus(msg, 'info')
+            showStatus(msg, "info")
           },
           onFirstChunk: () => {
             if (!isRunCurrent(run) || run.stopped) return
-            setLoadingPhase(loadingHandle, 'receiving')
+            setLoadingPhase(loadingHandle, "receiving")
           },
           onChunk: (chunk) => {
             if (!isRunCurrent(run) || run.stopped) return
@@ -2043,8 +2462,12 @@ export function setupChatHandlers(): void {
         })
       } catch (error) {
         if (!isToolTimeoutError(error)) throw error
-        showStatus('导图生成耗时较长，正在缩小上下文重试...', 'info')
-        const retryMessages = buildToolMessagesWithWindow(messages.slice(0, -1), promptContent, TOOL_RETRY_HISTORY_WINDOW)
+        showStatus("导图生成耗时较长，正在缩小上下文重试...", "info")
+        const retryMessages = buildToolMessagesWithWindow(
+          messages.slice(0, -1),
+          promptContent,
+          TOOL_RETRY_HISTORY_WINDOW
+        )
         const retryContext = buildToolRetryContext(context)
         fullResponse = await streamToolResponseWithTimeout({
           messages: retryMessages,
@@ -2055,11 +2478,11 @@ export function setupChatHandlers(): void {
           signal: run.controller.signal,
           onProgress: (msg) => {
             if (!isRunCurrent(run) || run.stopped) return
-            showStatus(msg, 'info')
+            showStatus(msg, "info")
           },
           onFirstChunk: () => {
             if (!isRunCurrent(run) || run.stopped) return
-            setLoadingPhase(loadingHandle, 'receiving')
+            setLoadingPhase(loadingHandle, "receiving")
           },
           onChunk: (chunk) => {
             if (!isRunCurrent(run) || run.stopped) return
@@ -2072,7 +2495,7 @@ export function setupChatHandlers(): void {
       if (run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
@@ -2080,8 +2503,11 @@ export function setupChatHandlers(): void {
 
       const parsed = parseMindmapResponse(fullResponse)
       if (!parsed) {
-        assistantMsg.content = buildToolParseFailureMessage('思维导图', fullResponse)
-        showStatus('未能解析思维导图结构，已展示模型原始输出', 'error')
+        assistantMsg.content = buildToolParseFailureMessage(
+          "思维导图",
+          fullResponse
+        )
+        showStatus("未能解析思维导图结构，已展示模型原始输出", "error")
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
         return
@@ -2097,12 +2523,15 @@ export function setupChatHandlers(): void {
       if (isStreamAbortError(error) && run.stoppedByUser) {
         assistantMsg.content = loadingHandle.bufferedText.trim()
           ? `${loadingHandle.bufferedText}\n\n[已手动停止]`
-          : '[已手动停止]'
+          : "[已手动停止]"
         renderMessages(messages, overlayElement)
         await safeSaveChatHistory(activeCourseId, activeCourseName, messages)
       } else {
-        console.error('Mindmap generation error:', error)
-        const errorMsg = error instanceof Error ? formatErrorMessage(error) : '生成思维导图时发生错误'
+        console.error("Mindmap generation error:", error)
+        const errorMsg =
+          error instanceof Error
+            ? formatErrorMessage(error)
+            : "生成思维导图时发生错误"
         const partial = loadingHandle.bufferedText.trim()
         assistantMsg.content = partial
           ? `${partial}\n\n[错误: ${errorMsg}]`
@@ -2117,16 +2546,16 @@ export function setupChatHandlers(): void {
     }
   }
 
-  sendBtn?.addEventListener('click', sendChatMessage)
-  flashcardSendBtn?.addEventListener('click', sendFlashcardMessage)
-  mindmapSendBtn?.addEventListener('click', sendMindmapMessage)
+  sendBtn?.addEventListener("click", sendChatMessage)
+  flashcardSendBtn?.addEventListener("click", sendFlashcardMessage)
+  mindmapSendBtn?.addEventListener("click", sendMindmapMessage)
 
-  input?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      if (currentMode === 'flashcard') {
+      if (currentMode === "flashcard") {
         void sendFlashcardMessage()
-      } else if (currentMode === 'mindmap') {
+      } else if (currentMode === "mindmap") {
         void sendMindmapMessage()
       } else {
         void sendChatMessage()
@@ -2134,10 +2563,12 @@ export function setupChatHandlers(): void {
     }
   })
 
-  input?.addEventListener('input', () => adjustTextareaHeight(input))
+  input?.addEventListener("input", () => adjustTextareaHeight(input))
 
   // Listen for messages loaded event from courseHandler
-  window.addEventListener('xzzd:assistant-messages-load', ((event: CustomEvent) => {
+  window.addEventListener("xzzd:assistant-messages-load", ((
+    event: CustomEvent
+  ) => {
     messages = event.detail.messages || []
     renderMessages(messages, overlayElement)
   }) as EventListener)

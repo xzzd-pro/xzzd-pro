@@ -45,4 +45,3 @@ export function bootstrapStoredTheme(storage: Storage) {
       // Ignore - fallback is already applied.
     })
 }
-

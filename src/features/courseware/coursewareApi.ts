@@ -16,7 +16,9 @@ function buildCoursewareListUrl(courseId: string): string {
 }
 
 /** All courseware activities of a course; null when the request fails. */
-export async function fetchCoursewares(courseId: string): Promise<CoursewareActivity[] | null> {
+export async function fetchCoursewares(
+  courseId: string
+): Promise<CoursewareActivity[] | null> {
   try {
     const response = await fetch(buildCoursewareListUrl(courseId), {
       credentials: "include"

@@ -9,7 +9,9 @@ import { decodeText } from "./textDecode"
 export async function fetchTextContent(url: string): Promise<string> {
   const blob = await fetchBlob(url)
   if (blob.type.toLowerCase().includes("text/html")) {
-    throw new Error("服务器返回了网页而非文本文件，请确认登录状态或使用原生页面查看。")
+    throw new Error(
+      "服务器返回了网页而非文本文件，请确认登录状态或使用原生页面查看。"
+    )
   }
   return parseText(blob)
 }
@@ -81,7 +83,9 @@ export async function fetchPdfBlob(url: string): Promise<Blob | null> {
   try {
     return await fetchBlob(url)
   } catch (error) {
-    console.error("XZZDPRO: " + (error instanceof Error ? error.message : String(error)))
+    console.error(
+      "XZZDPRO: " + (error instanceof Error ? error.message : String(error))
+    )
     return null
   }
 }

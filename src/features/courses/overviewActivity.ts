@@ -36,11 +36,17 @@ const compareNumbers = (a: number, b: number) => (a === b ? 0 : a - b)
 
 function formatDeadline(date: Date, now: Date): string {
   const day = `${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
-  return date.getFullYear() === now.getFullYear() ? day : `${date.getFullYear()}.${day}`
+  return date.getFullYear() === now.getFullYear()
+    ? day
+    : `${date.getFullYear()}.${day}`
 }
 
 /** This course's entries from the school's todo list, soonest deadline first. */
-export function pendingForCourse(todos: ApiTodoData[], courseId: string | number, now = new Date()): PendingItem[] {
+export function pendingForCourse(
+  todos: ApiTodoData[],
+  courseId: string | number,
+  now = new Date()
+): PendingItem[] {
   return todos
     .filter((item) => item && String(item.course_id) === String(courseId))
     .map((item) => {
@@ -51,7 +57,9 @@ export function pendingForCourse(todos: ApiTodoData[], courseId: string | number
         typeName: TODO_TYPE_NAMES[item.type] || item.type || "活动",
         link: todoActivityUrl(item),
         deadlineText: deadline ? formatDeadline(deadline, now) : null,
-        daysLeft: deadline ? Math.ceil((deadline.getTime() - now.getTime()) / DAY_MS) : null,
+        daysLeft: deadline
+          ? Math.ceil((deadline.getTime() - now.getTime()) / DAY_MS)
+          : null,
         deadlineTime: deadline?.getTime() ?? Number.POSITIVE_INFINITY
       }
     })
@@ -63,7 +71,11 @@ export function pendingForCourse(todos: ApiTodoData[], courseId: string | number
  * Newest files across the course's courseware, newest first. A file without its
  * own timestamp uses its activity's creation (then update) time.
  */
-export function recentUploads(activities: CoursewareActivity[], courseId: string | number, limit = 5): RecentUpload[] {
+export function recentUploads(
+  activities: CoursewareActivity[],
+  courseId: string | number,
+  limit = 5
+): RecentUpload[] {
   return activities
     .filter((activity) => activity && activity.is_started !== false)
     .flatMap((activity) =>
@@ -72,16 +84,25 @@ export function recentUploads(activities: CoursewareActivity[], courseId: string
         name: upload.name || "未命名文件",
         activityTitle: activity.title || "",
         link: nativeActivityUrl(courseId, activity.id),
-        time: parseDate(upload.created_at) ?? parseDate(activity.created_at) ?? parseDate(activity.updated_at)
+        time:
+          parseDate(upload.created_at) ??
+          parseDate(activity.created_at) ??
+          parseDate(activity.updated_at)
       }))
     )
-    .sort((a, b) => compareNumbers(b.time?.getTime() ?? -Infinity, a.time?.getTime() ?? -Infinity))
+    .sort((a, b) =>
+      compareNumbers(
+        b.time?.getTime() ?? -Infinity,
+        a.time?.getTime() ?? -Infinity
+      )
+    )
     .slice(0, limit)
 }
 
 /** "今天" / "昨天" / "3 天前" within a week, otherwise the date. Counts calendar days. */
 export function formatRelativeDay(date: Date, now = new Date()): string {
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const startOfDay = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const days = Math.round((startOfDay(now) - startOfDay(date)) / DAY_MS)
   if (days <= 0) return "今天"
   if (days === 1) return "昨天"

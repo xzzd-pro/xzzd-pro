@@ -1,7 +1,9 @@
 import * as React from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
-import { cn } from "@/lib/utils"
+
 import { storage } from "@/lib/storage"
+import { cn } from "@/lib/utils"
+
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar"
 
 const AVATAR_STORAGE_KEY = "userAvatar"
 
@@ -18,7 +20,11 @@ const sizeClasses = {
   xl: "h-16 w-16"
 }
 
-export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarUploadProps) {
+export function AvatarUpload({
+  className,
+  fallback = "U",
+  size = "md"
+}: AvatarUploadProps) {
   const [avatarSrc, setAvatarSrc] = React.useState<string | null>(null)
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -32,25 +38,27 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
           setAvatarSrc(savedAvatar)
         }
       } catch (error) {
-        console.error('Failed to load avatar:', error)
+        console.error("Failed to load avatar:", error)
       }
     }
     loadAvatar()
   }, [])
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0]
     if (!file) return
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('请选择图片文件')
+    if (!file.type.startsWith("image/")) {
+      alert("请选择图片文件")
       return
     }
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert('图片大小不能超过2MB')
+      alert("图片大小不能超过2MB")
       return
     }
 
@@ -64,11 +72,11 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
       img.onload = async () => {
         try {
           // Create canvas for compression
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
+          const canvas = document.createElement("canvas")
+          const ctx = canvas.getContext("2d")
 
           if (!ctx) {
-            throw new Error('无法创建canvas上下文')
+            throw new Error("无法创建canvas上下文")
           }
 
           // Calculate new dimensions (max 200x200 for avatar)
@@ -98,7 +106,7 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
           const base64 = canvas.toBlob(
             async (blob) => {
               if (!blob) {
-                alert('图片压缩失败')
+                alert("图片压缩失败")
                 setIsUploading(false)
                 return
               }
@@ -109,11 +117,13 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
                 const compressedBase64 = e.target?.result as string
 
                 // Check compressed size (should be much smaller now)
-                const sizeInKB = Math.round((compressedBase64.length * 3) / 4 / 1024)
+                const sizeInKB = Math.round(
+                  (compressedBase64.length * 3) / 4 / 1024
+                )
                 console.log(`压缩后图片大小: ${sizeInKB}KB`)
 
                 if (sizeInKB > 500) {
-                  alert('压缩后图片仍然过大，请选择更小的图片')
+                  alert("压缩后图片仍然过大，请选择更小的图片")
                   setIsUploading(false)
                   return
                 }
@@ -123,46 +133,46 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
                 // Save to storage
                 try {
                   await storage.set(AVATAR_STORAGE_KEY, compressedBase64)
-                  console.log('头像保存成功')
+                  console.log("头像保存成功")
                 } catch (error) {
-                  console.error('保存头像失败:', error)
-                  alert('保存头像失败，请尝试更小的图片')
+                  console.error("保存头像失败:", error)
+                  alert("保存头像失败，请尝试更小的图片")
                 }
 
                 setIsUploading(false)
               }
 
               reader.onerror = () => {
-                alert('读取文件失败')
+                alert("读取文件失败")
                 setIsUploading(false)
               }
 
               reader.readAsDataURL(blob)
             },
-            'image/jpeg',
+            "image/jpeg",
             0.8 // Quality: 80%
           )
 
           // Clean up
           URL.revokeObjectURL(objectUrl)
         } catch (error) {
-          console.error('处理图片失败:', error)
-          alert('处理图片失败')
+          console.error("处理图片失败:", error)
+          alert("处理图片失败")
           setIsUploading(false)
           URL.revokeObjectURL(objectUrl)
         }
       }
 
       img.onerror = () => {
-        alert('加载图片失败')
+        alert("加载图片失败")
         setIsUploading(false)
         URL.revokeObjectURL(objectUrl)
       }
 
       img.src = objectUrl
     } catch (error) {
-      console.error('处理图片失败:', error)
-      alert('处理图片失败')
+      console.error("处理图片失败:", error)
+      alert("处理图片失败")
       setIsUploading(false)
     }
   }
@@ -176,9 +186,9 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
     try {
       await storage.remove(AVATAR_STORAGE_KEY)
       setAvatarSrc(null)
-      console.log('Avatar removed successfully')
+      console.log("Avatar removed successfully")
     } catch (error) {
-      console.error('Failed to remove avatar:', error)
+      console.error("Failed to remove avatar:", error)
     }
   }
 
@@ -191,8 +201,7 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
           isUploading && "opacity-50",
           className
         )}
-        onClick={handleAvatarClick}
-      >
+        onClick={handleAvatarClick}>
         {avatarSrc && (
           <AvatarImage
             src={avatarSrc}
@@ -206,9 +215,20 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
       </Avatar>
 
       {/* Upload overlay on hover */}
-      <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={handleAvatarClick}>
-        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      <div
+        className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+        onClick={handleAvatarClick}>
+        <svg
+          className="w-4 h-4 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+          />
         </svg>
       </div>
 
@@ -217,8 +237,7 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
         <button
           onClick={handleRemoveAvatar}
           className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/80"
-          title="删除头像"
-        >
+          title="删除头像">
           ×
         </button>
       )}
@@ -233,4 +252,4 @@ export function AvatarUpload({ className, fallback = "U", size = "md" }: AvatarU
       />
     </div>
   )
-}
+}

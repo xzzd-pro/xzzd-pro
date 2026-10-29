@@ -1,7 +1,7 @@
-import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 import type { PlasmoCSConfig } from "plasmo"
 
 import { coursewareBeautifier } from "@/features/courseware/coursewareBeautifier"
+import { createBeautifierInjector } from "@/shared/contentScripts/createBeautifierInjector"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://courses.zju.edu.cn/course/*/courseware*"],

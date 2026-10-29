@@ -1,10 +1,20 @@
+import {
+  Component,
+  useEffect,
+  useState,
+  type ErrorInfo,
+  type ReactNode
+} from "react"
+
 import { useStorage } from "@plasmohq/storage/hook"
-import { storage } from "@/lib/storage"
+
 import { Switch } from "@/components/ui/switch"
-import { Component, type ErrorInfo, type ReactNode, useEffect, useState } from "react"
+import { storage } from "@/lib/storage"
+
 import "../styles/popup.css"
-import { applyThemeToDocument, normalizeTheme } from "@/lib/themeDom"
+
 import { loadBrandFont } from "@/lib/fontLoader"
+import { applyThemeToDocument, normalizeTheme } from "@/lib/themeDom"
 
 void loadBrandFont()
 
@@ -39,10 +49,13 @@ class PopupErrorBoundary extends Component<
 }
 
 function PopupContent() {
-  const [beautifyEnabled, setBeautifyEnabled] = useStorage({
-    key: "beautify-enabled",
-    instance: storage
-  }, true)
+  const [beautifyEnabled, setBeautifyEnabled] = useStorage(
+    {
+      key: "beautify-enabled",
+      instance: storage
+    },
+    true
+  )
   const [theme] = useStorage({ key: "theme", instance: storage }, "light")
   const [needsRefresh, setNeedsRefresh] = useState(false)
 
@@ -60,17 +73,21 @@ function PopupContent() {
       <div className="space-y-6">
         <div className="border-b pb-4">
           <h2 className="text-2xl font-bold text-foreground">XZZDPRO</h2>
-          <p className="text-sm text-muted-foreground mt-1">浙大课程平台增强插件</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            浙大课程平台增强插件
+          </p>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="space-y-0.5 min-w-0">
-              <label htmlFor="beautify-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+              <label
+                htmlFor="beautify-toggle"
+                className="text-sm font-medium text-foreground cursor-pointer">
                 页面美化
               </label>
               <p className="text-xs text-muted-foreground">
-                当前状态: {beautifyEnabled ? '已启用' : '已禁用'}
+                当前状态: {beautifyEnabled ? "已启用" : "已禁用"}
               </p>
             </div>
             <Switch

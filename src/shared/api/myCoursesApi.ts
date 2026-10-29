@@ -56,7 +56,10 @@ export async function fetchMyCoursesResponse(
         body: JSON.stringify(payload)
       })
 
-      if (response.status === 404 && url !== MY_COURSES_URLS[MY_COURSES_URLS.length - 1]) {
+      if (
+        response.status === 404 &&
+        url !== MY_COURSES_URLS[MY_COURSES_URLS.length - 1]
+      ) {
         continue
       }
 

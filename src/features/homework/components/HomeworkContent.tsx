@@ -1,3 +1,6 @@
+import { Download, Eye, FileDown, FileText, Upload, X } from "lucide-react"
+import * as React from "react"
+
 import { Button } from "@/components/ui/button"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
 import {
@@ -16,8 +19,6 @@ import type {
   ProcessedHomework,
   SubmissionUpload
 } from "@/types"
-import { Download, Eye, FileDown, FileText, Upload, X } from "lucide-react"
-import * as React from "react"
 
 function getFileKey(file: File): string {
   return `${file.name}:${file.size}:${file.lastModified}`

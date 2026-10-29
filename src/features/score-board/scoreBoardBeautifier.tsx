@@ -1,8 +1,8 @@
 // lib/scoreBoardBeautifier.tsx
 
-import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
-import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
 import { ScoreBoardPanel } from "@/features/score-board/components"
+import { mountCourseDetailPage } from "@/shared/course-detail/courseDetailHelpers"
+import { mountCoursePanel } from "@/shared/course-detail/mountPanel"
 
 export async function scoreBoardBeautifier(): Promise<void> {
   console.log("XZZDPRO: preparing score board page...")

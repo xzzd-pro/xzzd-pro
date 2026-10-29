@@ -22,8 +22,10 @@ const MAIN_TYPES = [
 
 /** Notification types covered by one filter tab. */
 export function typesForFilter(filter: string): string[] {
-  if (filter === "exam_will_start") return ["exam_opened", "exam_will_start", "exam_submit_started"]
-  if (filter === "homework_opened_for_submission") return ["homework_opened_for_submission", "course_homework_make_up"]
+  if (filter === "exam_will_start")
+    return ["exam_opened", "exam_will_start", "exam_submit_started"]
+  if (filter === "homework_opened_for_submission")
+    return ["homework_opened_for_submission", "course_homework_make_up"]
   return [filter]
 }
 
@@ -41,7 +43,10 @@ export function advanceReadTimestamps(
 ): ReadTimestamps | null {
   const next: ReadTimestamps = { ...current }
   let updated = false
-  const raise = (key: keyof ReadTimestamps, items: ReadonlyArray<{ timestamp: number }>) => {
+  const raise = (
+    key: keyof ReadTimestamps,
+    items: ReadonlyArray<{ timestamp: number }>
+  ) => {
     if (!items.length) return
     const newest = Math.max(...items.map((n) => n.timestamp))
     if (newest > next[key]) {
@@ -52,20 +57,31 @@ export function advanceReadTimestamps(
 
   for (const filter of filters) {
     if (filter === "others") {
-      raise("others", notifications.filter((n) => !MAIN_TYPES.includes(n.type)))
+      raise(
+        "others",
+        notifications.filter((n) => !MAIN_TYPES.includes(n.type))
+      )
       continue
     }
     for (const type of typesForFilter(filter)) {
       if (!MAIN_TYPES.includes(type)) continue
-      raise(type as keyof ReadTimestamps, notifications.filter((n) => n.type === type))
+      raise(
+        type as keyof ReadTimestamps,
+        notifications.filter((n) => n.type === type)
+      )
     }
   }
   return updated ? next : null
 }
 
 /** Whether a notification counts as read under the given timestamps (same rule as loading). */
-export function isReadAt(timestamps: ReadTimestamps, notification: { type: string; timestamp: number }): boolean {
-  const key = (MAIN_TYPES.includes(notification.type) ? notification.type : "others") as keyof ReadTimestamps
+export function isReadAt(
+  timestamps: ReadTimestamps,
+  notification: { type: string; timestamp: number }
+): boolean {
+  const key = (
+    MAIN_TYPES.includes(notification.type) ? notification.type : "others"
+  ) as keyof ReadTimestamps
   return notification.timestamp <= (timestamps[key] || 0)
 }
 
@@ -77,10 +93,17 @@ export interface ReadUndo {
   savedAt: number
 }
 
-export function isUsableUndo(value: unknown, now = Date.now()): value is ReadUndo {
+export function isUsableUndo(
+  value: unknown,
+  now = Date.now()
+): value is ReadUndo {
   if (!value || typeof value !== "object") return false
   const { timestamps, savedAt } = value as Partial<ReadUndo>
-  return typeof savedAt === "number" &&
-    now - savedAt >= 0 && now - savedAt < READ_UNDO_WINDOW_MS &&
-    !!timestamps && typeof timestamps === "object"
+  return (
+    typeof savedAt === "number" &&
+    now - savedAt >= 0 &&
+    now - savedAt < READ_UNDO_WINDOW_MS &&
+    !!timestamps &&
+    typeof timestamps === "object"
+  )
 }
