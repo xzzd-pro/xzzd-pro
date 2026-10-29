@@ -4,4 +4,8 @@ export {
   setupHelpModal,
   setupAvatarUpload
 } from "./header"
-export { renderSidebar, setupSidebarToggle } from "./sidebar"
+export {
+  renderSidebar,
+  renderSidebarFooter,
+  setupSidebarToggle
+} from "./sidebar"

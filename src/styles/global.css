@@ -389,20 +389,37 @@
   user-select: none;
 }
 
-/* Toggle button */
+/* Toggle button: styled like a nav item so it reads as the last entry. */
 .sidebar-toggle-btn {
   width: 100%;
   background-color: transparent;
-  border: 1px solid hsl(var(--border));
+  border: none;
   border-radius: var(--radius);
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
+  gap: 12px;
+  padding: 10px 14px;
   color: hsl(var(--muted-foreground));
-  font-size: 12px;
-  transition: all 0.15s ease;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.sidebar-toggle-btn .nav-icon svg {
+  fill: none;
+}
+
+.sidebar-toggle-icon-open,
+.xzzdpro-root.sidebar-collapsed .sidebar-toggle-icon-close {
+  display: none;
+}
+
+.xzzdpro-root.sidebar-collapsed .sidebar-toggle-icon-open {
+  display: flex;
 }
 
 /* Expandable nav item */
@@ -851,21 +868,18 @@
 
 .sidebar-toggle-btn:hover {
   background-color: hsl(var(--accent));
-  color: hsl(var(--foreground));
+  color: hsl(var(--accent-foreground));
 }
 
-.toggle-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.xzzdpro-root.sidebar-collapsed .toggle-icon {
-  transform: rotate(180deg);
+.sidebar-toggle-btn:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 .xzzdpro-root.sidebar-collapsed .sidebar-toggle-btn {
-  padding: 8px;
+  justify-content: center;
+  padding: 10px;
+  gap: 0;
 }
 
 .xzzdpro-root.sidebar-collapsed .sidebar-footer {

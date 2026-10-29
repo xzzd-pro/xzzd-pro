@@ -16,6 +16,29 @@ interface SidebarOptions {
   currentPage?: "home" | "notification" | "courses" | "assistant"
 }
 
+const sidebarToggleIcon = (chevron: string) =>
+  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/>
+    <path d="M9 3V21" stroke="currentColor" stroke-width="1.8"/>
+    <path d="${chevron}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`
+
+/**
+ * Renders the sidebar footer with the collapse button, shared by every page
+ * that has a sidebar. Both icons are rendered; CSS shows the one matching the
+ * collapsed state.
+ * @returns HTML string.
+ */
+export function renderSidebarFooter(): string {
+  return `<div class="sidebar-footer">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle" type="button" title="收起侧边栏" aria-label="收起侧边栏" aria-expanded="true">
+          <span class="nav-icon sidebar-toggle-icon sidebar-toggle-icon-close">${sidebarToggleIcon("M16 15L13 12L16 9")}</span>
+          <span class="nav-icon sidebar-toggle-icon sidebar-toggle-icon-open">${sidebarToggleIcon("M13 9L16 12L13 15")}</span>
+          <span class="nav-text">收起侧边栏</span>
+        </button>
+      </div>`
+}
+
 /**
  * Renders the extension sidebar navigation.
  * @param options Page to highlight.
@@ -118,11 +141,7 @@ export function renderSidebar(options: SidebarOptions = {}): string {
           }
         </ul>
       </div>
-      <div class="sidebar-footer">
-        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
-          <span class="toggle-icon">&lt;&lt;</span>
-        </button>
-      </div>
+      ${renderSidebarFooter()}
       <div id="sidebar-resize-handle" class="sidebar-resize-handle" title="拖拽调整侧边栏宽度" aria-label="调整侧边栏宽度"></div>
     </nav>
   `
@@ -162,17 +181,24 @@ export async function setupSidebarToggle(): Promise<void> {
     return SIDEBAR_DEFAULT_WIDTH
   }
 
+  const setToggleLabel = (collapsed: boolean): void => {
+    const label = collapsed ? "展开侧边栏" : "收起侧边栏"
+    toggleBtn.setAttribute("title", label)
+    toggleBtn.setAttribute("aria-label", label)
+    toggleBtn.setAttribute("aria-expanded", String(!collapsed))
+  }
+
   const setCollapsedState = (collapsed: boolean): void => {
     if (collapsed) {
       root.classList.add("sidebar-collapsed")
       root.style.gridTemplateColumns = `${SIDEBAR_COLLAPSED_WIDTH}px 1fr`
-      toggleBtn.setAttribute("title", "展开侧边栏")
+      setToggleLabel(true)
       return
     }
     root.classList.remove("sidebar-collapsed")
     const expandedWidth = readSidebarWidth()
     root.style.gridTemplateColumns = `${expandedWidth}px 1fr`
-    toggleBtn.setAttribute("title", "收缩侧边栏")
+    setToggleLabel(false)
   }
 
   const persistSidebarState = async (

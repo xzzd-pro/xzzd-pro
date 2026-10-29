@@ -5,6 +5,7 @@ import { suppressAirChatbot } from "@/shared/content-scripts/page-lifecycle"
 
 import {
   renderHeader,
+  renderSidebarFooter,
   setupAvatarUpload,
   setupHelpModal,
   setupSidebarToggle,
@@ -149,11 +150,7 @@ export function renderCourseDetailSidebar(
           </li>
         </ul>
       </div>
-      <div class="sidebar-footer">
-        <button class="sidebar-toggle-btn" id="sidebar-toggle" title="收缩侧边栏">
-          <span class="toggle-icon">&lt;&lt;</span>
-        </button>
-      </div>
+      ${renderSidebarFooter()}
     </nav>
   `
 }
