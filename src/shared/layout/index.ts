@@ -1,9 +1,5 @@
-export {
-  renderHeader,
-  setupThemeToggle,
-  setupHelpModal,
-  setupAvatarUpload
-} from "./header"
+export { renderHeader, setupThemeToggle, setupHelpModal } from "./header"
+export { setupBackgroundPicker } from "./background-picker"
 export {
   renderSidebar,
   renderSidebarFooter,

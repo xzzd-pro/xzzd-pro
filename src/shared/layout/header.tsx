@@ -1,7 +1,3 @@
-import React from "react"
-import { createRoot } from "react-dom/client"
-
-import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { escapeHtml } from "@/lib/html"
 
 import { bindLayoutControl } from "./bindings"
@@ -16,7 +12,7 @@ interface HeaderOptions {
 }
 
 /**
- * Renders the extension header with logo, help, theme toggle and avatar.
+ * Renders the extension header with logo, help, background picker and theme toggle.
  * @param options Username and whether to show it.
  * @returns HTML string.
  */
@@ -33,11 +29,9 @@ export function renderHeader(options: HeaderOptions = {}): string {
         </button>
       </div>
       <div class="right-section">
+        <div id="page-background-picker" class="page-background-picker"></div>
         ${themeToggle.renderHTML()}
-        <div class="user-profile">
-          <div id="user-avatar-container" class="user-avatar-container"></div>
-          ${showUsername && username ? `<span class="username">${escapeHtml(username)}</span>` : ""}
-        </div>
+        ${showUsername && username ? `<span class="username">${escapeHtml(username)}</span>` : ""}
       </div>
     </header>
 
@@ -123,25 +117,5 @@ export function setupHelpModal(): void {
       }
     },
     { signal }
-  )
-}
-
-/**
- * Mounts the avatar upload component in the header.
- */
-export function setupAvatarUpload(): void {
-  const container = document.getElementById("user-avatar-container")
-  if (!container) return
-  const binding = bindLayoutControl("avatar", container)
-  if (!binding) return
-
-  const root = createRoot(container)
-  binding.onCleanup(() => root.unmount())
-  root.render(
-    React.createElement(AvatarUpload, {
-      size: "lg",
-      fallback: "U",
-      className: "user-avatar"
-    })
   )
 }

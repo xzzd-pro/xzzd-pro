@@ -36,7 +36,7 @@ async function main() {
             namespace: "fixture"
           }))
           build.onResolve(
-            { filter: /assistant\/services\/fileService$/ },
+            { filter: /assistant\/services\/file-service$/ },
             () => ({ path: "files", namespace: "fixture" })
           )
           build.onLoad(
@@ -47,6 +47,7 @@ async function main() {
                   ? `export class Storage {
           async get(key) { return JSON.parse(localStorage.getItem(key) || 'null') }
           async set(key, value) { localStorage.setItem(key, JSON.stringify(value)) }
+          async remove(key) { localStorage.removeItem(key) }
           watch() {} unwatch() {}
         }`
                   : name === "messaging"

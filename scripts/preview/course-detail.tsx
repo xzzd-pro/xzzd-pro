@@ -8,6 +8,7 @@ import { HomeworkPanel } from "../../src/features/homework/components/homework-p
 import { ScoreBoardView } from "../../src/features/score-board/components/score-board-view"
 import { renderCourseDetailPage } from "../../src/shared/course-detail/course-detail-helpers"
 import {
+  setupBackgroundPicker,
   setupHelpModal,
   setupSidebarToggle,
   setupThemeToggle
@@ -81,8 +82,6 @@ root.innerHTML = renderCourseDetailPage(
 // Avoid loading the remote school logo in this isolated preview.
 root.querySelector(".logo-link")!.innerHTML =
   '<span style="font-size:22px;font-weight:600">学在浙大</span>'
-root.querySelector("#user-avatar-container")!.innerHTML =
-  '<span style="display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:hsl(var(--muted));color:hsl(var(--primary))">学</span>'
 
 window.fetch = async (input, options) => {
   const url = new URL(String(input), "https://courses.zju.edu.cn")
@@ -168,6 +167,7 @@ window.fetch = async (input, options) => {
 
 setupThemeToggle()
 setupHelpModal()
+setupBackgroundPicker()
 void setupSidebarToggle()
 if (params.get("collapsed") === "true") {
   root.classList.add("sidebar-collapsed")

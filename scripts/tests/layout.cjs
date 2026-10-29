@@ -58,6 +58,7 @@ function harness() {
       return new Promise((resolve) => reads.push(resolve))
     }
     async set() {}
+    async remove() {}
     watch(callbacks) {
       watches.add(callbacks)
     }
@@ -116,7 +117,6 @@ function harness() {
           }
         }
       if (
-        name.includes("avatar-upload") ||
         name.includes("course-data-service") ||
         name.includes("my-courses-api")
       )
@@ -200,24 +200,25 @@ test("bindings deduplicate owners, dispose removed owners, and run late cleanup"
   assert.equal(cleanups, 2)
 })
 
-test("header setup binds once and cleans listeners and avatar root on removal", () => {
+test("header setup binds once and cleans listeners and background picker root on removal", () => {
   const h = harness(),
-    header = h.load("src/shared/layout/header.tsx")
+    header = h.load("src/shared/layout/header.tsx"),
+    picker = h.load("src/shared/layout/background-picker.tsx")
   const button = h.add("#help-btn"),
     modal = h.add("#help-modal")
   h.add("#modal-close")
-  const avatar = h.add("#user-avatar-container")
+  const pickerHost = h.add("#page-background-picker")
   header.setupHelpModal()
   header.setupHelpModal()
-  header.setupAvatarUpload()
-  header.setupAvatarUpload()
+  picker.setupBackgroundPicker()
+  picker.setupBackgroundPicker()
   assert.equal(button.count("click"), 1)
   assert.equal(h.document.count("keydown"), 1)
   assert.equal(h.roots.length, 1)
   button.dispatchEvent(new Event("click"))
   assert.equal(modal.classList.contains("active"), true)
   modal.isConnected = false
-  avatar.isConnected = false
+  pickerHost.isConnected = false
   h.sweep()
   assert.equal(button.count("click"), 0)
   assert.equal(h.document.count("keydown"), 0)

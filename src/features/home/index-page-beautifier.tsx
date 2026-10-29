@@ -31,7 +31,7 @@ import { suppressAirChatbot } from "@/shared/content-scripts/page-lifecycle"
 import {
   renderHeader,
   renderSidebar,
-  setupAvatarUpload,
+  setupBackgroundPicker,
   setupHelpModal,
   setupSidebarToggle,
   setupThemeToggle
@@ -694,7 +694,7 @@ export async function indexPageBeautifier(): Promise<void> {
   setupThemeToggle()
   setupHelpModal()
   setupQuoteRotation(root)
-  setupAvatarUpload()
+  setupBackgroundPicker()
   setupAssistantNavigation()
   await setupSidebarToggle()
 

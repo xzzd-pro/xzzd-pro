@@ -8,7 +8,7 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  background: hsl(var(--background));
+  background: hsl(var(--page-background, var(--background)));
 }
 
 .course-detail-main .course-detail-content {
@@ -650,6 +650,10 @@ a.overview-row-main:hover .overview-row-title {
     grid-template-columns: 1fr 80px 80px;
     gap: 8px;
   }
+}
+
+:root[data-page-image] .xzzdpro-main.course-detail-main {
+  background: transparent;
 }
 
 /* --- sidebar collapsed state for course detail --- */

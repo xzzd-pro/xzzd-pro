@@ -7,7 +7,7 @@ import { suppressAirChatbot } from "@/shared/content-scripts/page-lifecycle"
 import {
   renderHeader,
   renderSidebar,
-  setupAvatarUpload,
+  setupBackgroundPicker,
   setupHelpModal,
   setupSidebarToggle,
   setupThemeToggle
@@ -60,7 +60,7 @@ export function bulletinListBeautifier(): void {
 
   setupThemeToggle()
   setupHelpModal()
-  setupAvatarUpload()
+  setupBackgroundPicker()
   setupAssistantNavigation()
   setupSidebarToggle()
 

@@ -14,7 +14,7 @@
 }
 
 :root {
-  --background: 210 40% 98%;
+  --background: 220 20% 97%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -22,11 +22,11 @@
   --popover-foreground: 222.2 84% 4.9%;
   --primary: 215.4 16.3% 46.9%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
+  --secondary: 220 16% 94.5%;
   --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
+  --muted: 220 16% 94.5%;
   --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
+  --accent: 220 16% 94.5%;
   --accent-foreground: 222.2 47.4% 11.2%;
   --destructive: 0 78.9% 42.7%;
   --destructive-foreground: 0 0% 100%;
@@ -34,9 +34,10 @@
   --success-foreground: 0 0% 100%;
   --warning: 30 100% 27.8%;
   --warning-foreground: 0 0% 100%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 212.7 26.8% 83.9%;
+  --border: 220 14% 90%;
+  --input: 220 13% 84%;
   --ring: 222.2 84% 4.9%;
+  --nav-active: 215 16% 47% / 0.16;
   --radius: 0.5rem;
   --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.06),
     0 1px 3px 0 hsl(222 47% 11% / 0.08);
@@ -44,19 +45,19 @@
 
 :root[data-theme="dark"],
 .xzzdpro[data-theme="dark"] {
-  --background: 222.2 84% 4.9%;
+  --background: 222 20% 7%;
   --foreground: 210 40% 98%;
-  --card: 222.2 47.4% 11.2%;
+  --card: 222 16% 10.5%;
   --card-foreground: 210 40% 98%;
-  --popover: 222.2 47.4% 11.2%;
+  --popover: 222 16% 10.5%;
   --popover-foreground: 210 40% 98%;
   --primary: 210 40% 98%;
   --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
+  --secondary: 220 13% 17%;
   --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
+  --muted: 220 13% 17%;
   --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
+  --accent: 220 13% 17%;
   --accent-foreground: 210 40% 98%;
   --destructive: 8.3 100% 72.9%;
   --destructive-foreground: 0 100% 11.6%;
@@ -64,28 +65,29 @@
   --success-foreground: 134.2 100% 11.6%;
   --warning: 42.9 100% 60%;
   --warning-foreground: 29.5 100% 11.6%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 215.3 25% 26.7%;
+  --border: 220 13% 18%;
+  --input: 220 12% 26%;
   --ring: 212.7 26.8% 83.9%;
+  --nav-active: 210 40% 98% / 0.12;
   --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
 }
 
 /* Avoid a bright flash on initial render before JS reads the stored theme. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --background: 222.2 84% 4.9%;
+    --background: 222 20% 7%;
     --foreground: 210 40% 98%;
-    --card: 222.2 47.4% 11.2%;
+    --card: 222 16% 10.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 47.4% 11.2%;
+    --popover: 222 16% 10.5%;
     --popover-foreground: 210 40% 98%;
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 220 13% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 220 13% 17%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 220 13% 17%;
     --accent-foreground: 210 40% 98%;
     --destructive: 8.3 100% 72.9%;
     --destructive-foreground: 0 100% 11.6%;
@@ -93,9 +95,10 @@
     --success-foreground: 134.2 100% 11.6%;
     --warning: 42.9 100% 60%;
     --warning-foreground: 29.5 100% 11.6%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 215.3 25% 26.7%;
+    --border: 220 13% 18%;
+    --input: 220 12% 26%;
     --ring: 212.7 26.8% 83.9%;
+    --nav-active: 210 40% 98% / 0.12;
     --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.4);
   }
 }
@@ -113,8 +116,17 @@
   transition: grid-template-columns 0.2s ease;
 }
 
+/* A chosen tint sets --page-background; CSS picks its light or dark value. */
+:root[data-page-tint] {
+  --page-background: var(--page-tint-light);
+}
+
+:root[data-page-tint][data-theme="dark"] {
+  --page-background: var(--page-tint-dark);
+}
+
 .xzzdpro-body {
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--page-background, var(--background)));
   color: hsl(var(--foreground));
   margin: 0;
   padding: 0;
@@ -123,6 +135,29 @@
 .xzzdpro-body,
 .xzzdpro-body * {
   font-family: "LXGW WenKai Screen", sans-serif !important;
+}
+
+/* Custom image: washed toward the page color, with the chrome made translucent
+   so the image shows through behind the header and sidebar. */
+:root[data-page-image] .xzzdpro-body {
+  background-image: linear-gradient(
+      hsl(var(--page-background, var(--background)) / var(--page-image-fade)),
+      hsl(var(--page-background, var(--background)) / var(--page-image-fade))
+    ),
+    var(--page-image);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+:root[data-page-image] .xzzdpro-header,
+:root[data-page-image] .xzzdpro-sidebar {
+  background-color: hsl(var(--card) / 0.72);
+  backdrop-filter: blur(16px) saturate(1.2);
+}
+
+:root[data-page-image] .sidebar-footer {
+  background-color: transparent;
 }
 
 .xzzdpro-root,
@@ -257,14 +292,14 @@
 }
 
 .xzzdpro-sidebar .sidebar-nav > li > .nav-action-btn.active {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--nav-active));
+  color: hsl(var(--foreground));
   font-weight: 600;
 }
 
 .xzzdpro-sidebar .sidebar-nav > li.active > a {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--nav-active));
+  color: hsl(var(--foreground));
   font-weight: 600;
 }
 
@@ -490,8 +525,8 @@
 
 .sidebar-nav > li.active > .nav-link-expandable .nav-link-main,
 .sidebar-nav > li.active > .nav-link-expandable .expand-toggle {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--nav-active));
+  color: hsl(var(--foreground));
 }
 
 .sidebar-nav > li.active > .nav-link-expandable .nav-link-main {
@@ -933,6 +968,9 @@
 /* --- header style --- */
 .xzzdpro-header {
   grid-area: header;
+  /* Keeps header popovers above the sidebar and main area. */
+  position: relative;
+  z-index: 30;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -978,40 +1016,179 @@
   gap: 16px;
 }
 
-.xzzdpro-header .user-profile {
+.xzzdpro-header .username {
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* --- page background picker --- */
+.bg-picker {
+  position: relative;
   display: flex;
-  align-items: center;
+}
+
+.bg-picker-trigger[aria-expanded="true"] {
+  color: hsl(var(--foreground));
+}
+
+.bg-picker-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1000;
+  width: 288px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow:
+    0 10px 30px -10px hsl(222 47% 11% / 0.25),
+    var(--shadow-sm);
+}
+
+.bg-picker-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bg-picker-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.bg-picker-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 
-.xzzdpro-header .user-avatar-container {
+.bg-swatch {
+  --swatch-light: var(--background);
+  --swatch-dark: var(--background);
+  height: 48px;
+  padding: 0 0 6px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: center;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background-color: hsl(var(--swatch-light));
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.xzzdpro-header .user-avatar {
-  width: 28px;
-  height: 28px;
+[data-theme="dark"] .bg-swatch {
+  background-color: hsl(var(--swatch-dark));
 }
 
-/* Override avatar upload styles for header */
-.xzzdpro-header .user-avatar-container .relative {
-  width: 28px;
-  height: 28px;
+.bg-swatch:hover {
+  border-color: hsl(var(--input));
 }
 
-.xzzdpro-header .user-avatar-container .group:hover .absolute {
-  opacity: 1;
+.bg-swatch[aria-pressed="true"] {
+  border-color: hsl(var(--foreground) / 0.6);
+  box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.6);
 }
 
-.xzzdpro-header .user-avatar-container .group .absolute {
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.bg-swatch-name {
+  font-size: 12px;
 }
 
-.xzzdpro-header .user-avatar-container .group:hover .absolute svg {
-  width: 12px;
-  height: 12px;
+.bg-picker-thumb {
+  height: 96px;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background-size: cover;
+  background-position: center;
+}
+
+.bg-picker-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bg-picker-btn,
+.bg-picker-reset {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.bg-picker-btn {
+  flex: 1;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  color: hsl(var(--foreground));
+}
+
+.bg-picker-btn:hover:not(:disabled) {
+  background-color: hsl(var(--accent));
+}
+
+.bg-picker-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.bg-picker-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+.bg-picker-slider input {
+  width: 100%;
+  accent-color: hsl(var(--primary));
+}
+
+.bg-picker-hint,
+.bg-picker-error {
+  margin: 0;
+  font-size: 12px;
+}
+
+.bg-picker-hint {
+  color: hsl(var(--muted-foreground));
+}
+
+.bg-picker-error {
+  color: hsl(var(--destructive));
+}
+
+.bg-picker-reset {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  padding: 0;
+  height: auto;
+}
+
+.bg-picker-reset:hover {
+  color: hsl(var(--foreground));
+}
+
+.bg-swatch:focus-visible,
+.bg-picker-btn:focus-visible,
+.bg-picker-reset:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 /* --- help button style --- */

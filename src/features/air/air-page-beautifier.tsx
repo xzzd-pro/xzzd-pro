@@ -3,7 +3,7 @@ import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import {
   renderHeader,
   renderSidebar,
-  setupAvatarUpload,
+  setupBackgroundPicker,
   setupHelpModal,
   setupSidebarToggle,
   setupThemeToggle
@@ -65,7 +65,7 @@ export async function mountAirPage() {
   // 4. Initialize standard layout interactions
   setupThemeToggle()
   setupHelpModal()
-  setupAvatarUpload()
+  setupBackgroundPicker()
   setupSidebarToggle()
   setupAssistantNavigation()
 

@@ -6,7 +6,7 @@ import { suppressAirChatbot } from "@/shared/content-scripts/page-lifecycle"
 import {
   renderHeader,
   renderSidebarFooter,
-  setupAvatarUpload,
+  setupBackgroundPicker,
   setupHelpModal,
   setupSidebarToggle,
   setupThemeToggle
@@ -229,7 +229,7 @@ interface MountedCourseDetailPage {
 function setupCourseDetailLayout(): void {
   setupThemeToggle()
   setupHelpModal()
-  setupAvatarUpload()
+  setupBackgroundPicker()
   void setupSidebarToggle()
 }
 
@@ -284,6 +284,6 @@ export async function mountCourseDetailPage({
 export {
   setupThemeToggle,
   setupHelpModal,
-  setupAvatarUpload,
+  setupBackgroundPicker,
   setupSidebarToggle
 } from "../layout"
