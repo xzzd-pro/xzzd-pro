@@ -18,13 +18,22 @@ import { CourseSearchForm } from "./course-search-form"
 interface CoursePageProps {
   courses: AllCourse[]
   loading?: boolean
+  /** Message shown instead of the course grid when the course list failed to load. */
+  error?: string | null
+  /** Reloads the course list after a failure. */
+  onRetry?: () => void
 }
 
 /**
  * Course list page with keyword, status and semester filters.
- * @param props All courses and loading flag.
+ * @param props All courses, loading flag, and the load error with its retry callback.
  */
-export function CoursePage({ courses, loading = false }: CoursePageProps) {
+export function CoursePage({
+  courses,
+  loading = false,
+  error = null,
+  onRetry
+}: CoursePageProps) {
   const [options, setOptions] = React.useState<SemesterOption[]>([])
   const [ready, setReady] = React.useState(false)
   const [warning, setWarning] = React.useState("")
@@ -50,8 +59,10 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
   currentFilters.current = filters
 
   React.useEffect(() => {
-    if (!loading && catalogCourses === null) setCatalogCourses(courses)
-  }, [loading, courses, catalogCourses])
+    // A failed load must not become the catalog, or retrying could not replace it.
+    if (!loading && !error && catalogCourses === null)
+      setCatalogCourses(courses)
+  }, [loading, error, courses, catalogCourses])
 
   React.useEffect(() => {
     if (catalogCourses === null) return
@@ -103,6 +114,14 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
     courseSemesters,
     courseStatuses || new Map()
   )
+  const totalCount = catalogCourses?.length ?? 0
+  const countLabel =
+    !ready || error || catalogCourses === null
+      ? ""
+      : visibleCourses.length === totalCount
+        ? `共 ${totalCount} 门`
+        : `找到 ${visibleCourses.length} 门，共 ${totalCount} 门`
+
   const statusOptions = [
     { value: "ongoing", label: "进行中" },
     { value: "notStarted", label: "未开始" },
@@ -116,8 +135,9 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
         </CardHeader>
         <CardContent className="pt-2 space-y-5">
           <CourseSearchForm
-            disabled={!ready}
-            onSearch={(keyword) => apply({ ...filters, keyword })}
+            onSearch={(keyword) =>
+              setFilters((previous) => ({ ...previous, keyword }))
+            }
           />
           <div
             className="course-filter-row flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border pt-4"
@@ -224,10 +244,32 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
       </Card>
       <Card className="flex-1 flex flex-col min-h-0 overflow-hidden border-transparent">
         <CardHeader className="flex-shrink-0">
-          <CardTitle>我的课程</CardTitle>
+          <CardTitle>
+            我的课程
+            {countLabel && (
+              <span
+                aria-live="polite"
+                className="ml-2 text-base font-normal text-muted-foreground tabular-nums">
+                {countLabel}
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 min-h-0 overflow-auto p-6">
-          <CourseGrid courses={visibleCourses} loading={loading || !ready} />
+          {error && !loading ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 py-10 text-center">
+              <p className="text-muted-foreground">{error}</p>
+              {onRetry && (
+                <Button variant="outline" size="sm" onClick={onRetry}>
+                  重试
+                </Button>
+              )}
+            </div>
+          ) : (
+            <CourseGrid courses={visibleCourses} loading={loading || !ready} />
+          )}
         </CardContent>
       </Card>
     </div>

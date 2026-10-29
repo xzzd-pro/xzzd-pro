@@ -2,6 +2,7 @@ import * as React from "react"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { storage } from "@/lib/storage"
+import { describeLoadError, LoadError } from "@/shared/api/load-error"
 import {
   createMyCoursesPayload,
   fetchMyCoursesResponse
@@ -90,55 +91,50 @@ async function saveReadTimestamps(timestamps: ReadTimestamps): Promise<void> {
   }
 }
 
+/**
+ * Finds the current user's id, which the notification API needs.
+ * @param signal Cancels the lookup.
+ * @returns The user id, or null if the lookup was cancelled.
+ * @throws LoadError if the course list cannot be loaded or no course reveals the id.
+ */
 async function getUserId(signal?: AbortSignal): Promise<string | null> {
-  try {
-    const coursesResponse = await fetchMyCoursesResponse(
-      createMyCoursesPayload()
-    )
-
-    if (!coursesResponse.ok) {
-      console.error("XZZDPRO: 获取课程列表失败", coursesResponse.status)
-      return null
-    }
-
-    const coursesData = await coursesResponse.json()
-    if (!coursesData.courses || coursesData.courses.length === 0) {
-      console.error("XZZDPRO: 没有找到任何课程")
-      return null
-    }
-
-    return findNotificationUser(coursesData.courses, signal)
-  } catch (error) {
-    console.error("XZZDPRO: 获取用户ID时出错", error)
-    return null
+  const coursesResponse = await fetchMyCoursesResponse(createMyCoursesPayload())
+  if (!coursesResponse.ok) {
+    throw new LoadError("课程列表请求失败", coursesResponse.status)
   }
+  const coursesData = await coursesResponse.json()
+  if (!coursesData.courses || coursesData.courses.length === 0) {
+    throw new LoadError("没有找到任何课程，无法确定当前用户。")
+  }
+  const userId = await findNotificationUser(coursesData.courses, signal)
+  if (!userId && !signal?.aborted) {
+    throw new LoadError("无法确定当前用户，请确认已登录学在浙大。")
+  }
+  return userId
 }
 
+/**
+ * Fetches a page of the user's notifications.
+ * @param userId Current user id.
+ * @param offset Number of notifications to skip.
+ * @param limit Maximum number to return.
+ * @param signal Cancels the request.
+ * @returns The notifications; empty if the response has none.
+ * @throws LoadError on an HTTP error, or the fetch error if the request fails.
+ */
 async function fetchNotifications(
   userId: string,
   offset = 0,
   limit = 100,
   signal?: AbortSignal
 ): Promise<ApiNotificationData[]> {
-  try {
-    const url = `https://courses.zju.edu.cn/ntf/users/${userId}/notifications?offset=${offset}&limit=${limit}&removed=only_mobile&additionalFields=total_count`
-    const response = await fetch(url, { signal })
-
-    if (!response.ok) {
-      console.error("XZZDPRO: 公告API请求失败", response.status)
-      return []
-    }
-
-    const data = await response.json()
-    if (data.notifications && Array.isArray(data.notifications)) {
-      return data.notifications
-    }
-
-    return []
-  } catch (error) {
-    console.error("XZZDPRO: 公告网络请求出错", error)
-    return []
+  const url = `https://courses.zju.edu.cn/ntf/users/${userId}/notifications?offset=${offset}&limit=${limit}&removed=only_mobile&additionalFields=total_count`
+  const response = await fetch(url, { signal })
+  if (!response.ok) {
+    throw new LoadError("公告请求失败", response.status)
   }
+  const data = await response.json()
+  return Array.isArray(data.notifications) ? data.notifications : []
 }
 
 function formatTime(timestamp: number): string {
@@ -366,10 +362,15 @@ export function NotificationsPanel() {
     saveSplitRatio(SPLIT_DEFAULT)
   }, [saveSplitRatio])
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+  // Bumped by the retry button to run the load effect again.
+  const [loadAttempt, setLoadAttempt] = useState(0)
+
   useEffect(() => {
     const controller = new AbortController()
     async function loadData() {
       setIsLoading(true)
+      setLoadError(null)
       try {
         const [timestamps, rawNotifications] = await Promise.all([
           loadReadTimestamps(),
@@ -387,15 +388,19 @@ export function NotificationsPanel() {
             .filter((n): n is ProcessedNotification => n !== null)
         )
       } catch (error) {
-        if (!controller.signal.aborted)
-          console.warn("XZZDPRO: 获取公告异常", error)
+        if (controller.signal.aborted) return
+        console.warn("XZZDPRO: 获取公告异常", error)
+        setAllNotifications([])
+        setLoadError(describeLoadError(error, "公告"))
       } finally {
         if (!controller.signal.aborted) setIsLoading(false)
       }
     }
     void loadData()
     return () => controller.abort()
-  }, [])
+  }, [loadAttempt])
+
+  const retryLoad = useCallback(() => setLoadAttempt((value) => value + 1), [])
 
   // Marks filter categories as read: badges clear now, items move to the read column after reload.
   const markFiltersAsRead = useCallback(
@@ -479,6 +484,8 @@ export function NotificationsPanel() {
         onMarkRead={handleMarkRead}
         onUndoMarkRead={readUndo ? handleUndoMarkRead : undefined}
         isLoading={isLoading}
+        error={loadError}
+        onRetry={retryLoad}
         tempReadTypes={tempReadTypes}
       />
       <div
@@ -506,6 +513,7 @@ export function NotificationsPanel() {
         onFilterChange={setReadFilter}
         showBadges={false}
         isLoading={isLoading}
+        error={loadError}
       />
     </div>
   )

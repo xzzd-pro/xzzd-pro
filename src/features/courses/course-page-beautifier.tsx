@@ -1,10 +1,9 @@
-// lib/coursePageBeautifier
-
 import * as React from "react"
 import { createRoot, type Root } from "react-dom/client"
 
 import { setupAssistantNavigation } from "@/assistant/sidebar/navigation"
 import { CoursePage } from "@/features/courses/components/course-page"
+import { describeLoadError, LoadError } from "@/shared/api/load-error"
 import {
   createMyCoursesPayload,
   fetchMyCoursesResponse
@@ -30,44 +29,40 @@ let coursePageRoot: Root | null = null
 let coursePageContainer: HTMLElement | null = null
 let coursesRequestId = 0
 
-/* get courses api */
+/**
+ * Fetches the user's course list.
+ * @param filters Conditions to send to the API.
+ * @returns The courses; empty if the response has none.
+ * @throws LoadError on an HTTP error, or the fetch error if the request fails.
+ */
 async function fetchCoursesFromApi(
   filters: Partial<CourseFilters> = {}
 ): Promise<ApiCourseData[]> {
-  try {
-    const payload = createMyCoursesPayload({
-      semester_id: filters.semester_id || [],
-      status: filters.status || ["ongoing", "notStarted", "closed"],
-      keyword: filters.keyword || "",
-      classify_type: "recently_started",
-      display_studio_list: false
-    })
+  const payload = createMyCoursesPayload({
+    semester_id: filters.semester_id || [],
+    status: filters.status || ["ongoing", "notStarted", "closed"],
+    keyword: filters.keyword || "",
+    classify_type: "recently_started",
+    display_studio_list: false
+  })
 
-    const response = await fetchMyCoursesResponse(payload)
-
-    if (!response.ok) {
-      console.error("XZZDPRO: 课程API请求失败", response.status)
-      return []
-    }
-
-    const data = await response.json()
-
-    if (data.courses && Array.isArray(data.courses)) {
-      return data.courses
-    }
-
-    console.warn("XZZDPRO: 未找到预期的课程数据结构", data)
-    return []
-  } catch (error) {
-    console.error("XZZDPRO: 课程网络请求出错", error)
-    return []
+  const response = await fetchMyCoursesResponse(payload)
+  if (!response.ok) {
+    throw new LoadError("课程请求失败", response.status)
   }
+
+  const data = await response.json()
+  if (Array.isArray(data.courses)) return data.courses
+
+  console.warn("XZZDPRO: 未找到预期的课程数据结构", data)
+  return []
 }
 
 function renderCoursePageReact(
   container: HTMLElement,
   courses: ApiCourseData[],
-  loading: boolean = false
+  loading: boolean = false,
+  error: string | null = null
 ) {
   if (coursePageContainer !== container) {
     coursePageRoot?.unmount()
@@ -77,7 +72,14 @@ function renderCoursePageReact(
   if (!coursePageRoot) {
     coursePageRoot = createRoot(container)
   }
-  coursePageRoot.render(<CoursePage courses={courses} loading={loading} />)
+  coursePageRoot.render(
+    <CoursePage
+      courses={courses}
+      loading={loading}
+      error={error}
+      onRetry={() => void loadAndRenderCourses()}
+    />
+  )
 }
 
 async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
@@ -88,10 +90,12 @@ async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
   renderCoursePageReact(container, [], true)
 
   let courses: ApiCourseData[] = []
+  let error: string | null = null
   try {
     courses = await fetchCoursesFromApi(filters)
   } catch (e) {
     console.warn("XZZDPRO: 获取课程异常", e)
+    error = describeLoadError(e, "课程")
   }
 
   if (
@@ -102,12 +106,7 @@ async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
   )
     return
 
-  renderCoursePageReact(container, courses, false)
-}
-
-function setupSearchHandler() {
-  // Search handler is now integrated into the React component
-  // No additional setup needed
+  renderCoursePageReact(container, courses, false, error)
 }
 
 /**
@@ -147,7 +146,6 @@ export function coursePageBeautifier(): void {
   setupAvatarUpload()
   setupAssistantNavigation()
   setupSidebarToggle()
-  setupSearchHandler()
 
   console.log("XZZDPRO: 页面骨架渲染完成，开始异步加载数据...")
 

@@ -20,6 +20,10 @@ export interface NotificationCardProps {
   /** Present while the last "mark read" can still be undone. */
   onUndoMarkRead?: () => void
   isLoading?: boolean
+  /** Message shown instead of the list when loading failed. */
+  error?: string | null
+  /** Reloads the notifications after a failure. */
+  onRetry?: () => void
   tempReadTypes?: Set<string>
 }
 
@@ -134,6 +138,8 @@ export function NotificationCard({
   onMarkRead,
   onUndoMarkRead,
   isLoading = false,
+  error = null,
+  onRetry,
   tempReadTypes
 }: NotificationCardProps) {
   const filteredNotifications = filterNotifications(notifications, filter)
@@ -156,7 +162,7 @@ export function NotificationCard({
       <CardHeader className="pb-4 flex-shrink-0 flex-row items-center justify-between space-y-0 gap-3">
         <CardTitle className="text-lg font-semibold">
           {title}
-          {!isLoading && (
+          {!isLoading && !error && (
             <span className="ml-2 font-normal text-muted-foreground tabular-nums">
               {notifications.length}
             </span>
@@ -169,7 +175,7 @@ export function NotificationCard({
             variant="ghost"
             size="sm"
             className="bg-transparent text-muted-foreground hover:bg-accent disabled:bg-transparent"
-            disabled={isLoading || (!hasUnmarked && !onUndoMarkRead)}
+            disabled={isLoading || !!error || (!hasUnmarked && !onUndoMarkRead)}
             onClick={
               hasUnmarked || !onUndoMarkRead
                 ? () => onMarkRead(scope)
@@ -198,6 +204,17 @@ export function NotificationCard({
           <div className="pr-2">
             {isLoading ? (
               <LoadingSkeleton />
+            ) : error ? (
+              <div
+                role="alert"
+                className="flex flex-col items-center gap-3 py-10 text-center">
+                <p className="text-muted-foreground">{error}</p>
+                {onRetry && (
+                  <Button variant="outline" size="sm" onClick={onRetry}>
+                    重试
+                  </Button>
+                )}
+              </div>
             ) : filteredNotifications.length === 0 ? (
               <p className="text-center text-muted-foreground py-10 text-lg">
                 暂无公告
