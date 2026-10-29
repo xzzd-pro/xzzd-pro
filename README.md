@@ -25,6 +25,9 @@ XZZD-Pro 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 ![主页重排示意图](./assets/screenshots/home.jpg)
 ![公告页示意图](./assets/screenshots/notifications.jpg)
 ![课程搜索页示意图](./assets/screenshots/course.jpg)
+![课程概览示意图](./assets/screenshots/course-overview.jpg)
+![课件下载示意图](./assets/screenshots/courseware.jpg)
+![作业提交示意图](./assets/screenshots/homework.jpg)
 
 ### 2. 内置 AI 学习助理
 
