@@ -1,7 +1,7 @@
 {
   "name": "xzzd",
   "displayName": "Xzzd",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "packageManager": "pnpm@10.34.5",
   "description": "学在浙大（courses.zju.edu.cn）页面美化与学习助理扩展",
   "author": "chengjy",
