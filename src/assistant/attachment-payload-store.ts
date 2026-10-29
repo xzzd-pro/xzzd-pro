@@ -1,3 +1,6 @@
+import { sendToBackground } from "@plasmohq/messaging"
+
+import type { PayloadIndex, PayloadIndexOp } from "../background/payload-index"
 import { dataUriToBlob } from "./utils/data-uri-utils"
 
 export type AttachmentPayloadType = "text" | "image" | "pdf_blob"
@@ -16,12 +19,10 @@ export interface AttachmentPayloadRecord {
 const RECORD_KEY_PREFIX = "xzzdpro_payload:"
 const INDEX_KEY = "xzzdpro_payload_index"
 const LEGACY_MIGRATED_KEY = "xzzdpro_payload_legacy_migrated"
+const LEGACY_DELETED_KEY = "xzzdpro_payload_legacy_deleted"
 
 const LEGACY_DB_NAME = "xzzdpro_assistant_payloads"
 const LEGACY_STORE_NAME = "payloads"
-
-type PayloadMeta = Omit<AttachmentPayloadRecord, "id" | "data">
-type PayloadIndex = Record<string, PayloadMeta>
 
 interface StoredPayload {
   type: AttachmentPayloadType
@@ -32,28 +33,22 @@ interface StoredPayload {
 
 const recordKey = (id: string) => `${RECORD_KEY_PREFIX}${id}`
 
-// Serialize index read-modify-write cycles within this context.
-let indexQueue: Promise<unknown> = Promise.resolve()
-
 /**
- * Applies a change to the payload index. Changes run one after another so concurrent writes in this page do not overwrite each other.
- * @param fn Mutates the index and may return a value.
- * @returns The value returned by fn.
+ * Sends an index change to the background script, the index's only writer.
+ * @param op Change to apply.
+ * @throws If the background script rejects or fails to apply the change.
  */
-function updateIndex<T>(fn: (index: PayloadIndex) => T): Promise<T> {
-  const run = indexQueue.then(async () => {
-    const result = await chrome.storage.local.get(INDEX_KEY)
-    const index: PayloadIndex = result[INDEX_KEY] || {}
-    const value = fn(index)
-    await chrome.storage.local.set({ [INDEX_KEY]: index })
-    return value
-  })
-  indexQueue = run.catch(() => undefined)
-  return run
+async function updateIndex(op: PayloadIndexOp): Promise<void> {
+  const response = (await sendToBackground({
+    name: "payload-index",
+    body: op
+  } as any)) as { ok?: boolean; error?: string } | undefined
+  if (!response?.ok) {
+    throw new Error(response?.error || "Payload index update failed")
+  }
 }
 
 async function readIndex(): Promise<PayloadIndex> {
-  await indexQueue
   const result = await chrome.storage.local.get(INDEX_KEY)
   return result[INDEX_KEY] || {}
 }
@@ -77,8 +72,10 @@ async function writeRecord(record: AttachmentPayloadRecord): Promise<void> {
         }
       : { type: record.type, data: record.data }
   await chrome.storage.local.set({ [recordKey(record.id)]: stored })
-  await updateIndex((index) => {
-    index[record.id] = {
+  await updateIndex({
+    op: "put",
+    id: record.id,
+    entry: {
       type: record.type,
       size: record.size,
       createdAt: record.createdAt,
@@ -87,33 +84,59 @@ async function writeRecord(record: AttachmentPayloadRecord): Promise<void> {
   })
 }
 
-// One-time move of payloads cached by older versions in the page's IndexedDB,
-// then drop that database so the page origin no longer holds them.
 let legacyMigration: Promise<void> | null = null
 
 /**
- * Moves payloads that older versions cached in the page's IndexedDB into extension storage, then deletes that database. Runs once; later calls share the same promise.
+ * Moves payloads that older versions cached in the page's IndexedDB into
+ * extension storage, then deletes that database so the page origin no longer
+ * holds them. The old database is deleted only after every record was copied;
+ * if reading or any write fails, it is kept and the move is retried on the
+ * next page load. Within one page, later calls share the same promise.
  */
 function migrateLegacyPayloads(): Promise<void> {
   if (legacyMigration) return legacyMigration
   legacyMigration = (async () => {
-    const flag = await chrome.storage.local.get(LEGACY_MIGRATED_KEY)
-    if (flag[LEGACY_MIGRATED_KEY] || typeof indexedDB === "undefined") return
+    if (typeof indexedDB === "undefined") return
+    const flags = await chrome.storage.local.get([
+      LEGACY_MIGRATED_KEY,
+      LEGACY_DELETED_KEY
+    ])
 
-    const records = await readLegacyPayloads().catch(
-      () => [] as AttachmentPayloadRecord[]
-    )
-    for (const record of records) {
-      await writeRecord(record).catch((error) =>
-        console.warn("Failed to migrate payload", record.id, error)
-      )
+    if (!flags[LEGACY_MIGRATED_KEY]) {
+      let records: AttachmentPayloadRecord[]
+      try {
+        records = await readLegacyPayloads()
+      } catch (error) {
+        console.warn("Legacy payloads unreadable; will retry later", error)
+        return
+      }
+      let failed = 0
+      for (const record of records) {
+        try {
+          await writeRecord(record)
+        } catch (error) {
+          failed += 1
+          console.warn("Failed to migrate payload", record.id, error)
+        }
+      }
+      if (failed > 0) return
+      await chrome.storage.local.set({ [LEGACY_MIGRATED_KEY]: true })
     }
-    indexedDB.deleteDatabase(LEGACY_DB_NAME)
-    await chrome.storage.local.set({ [LEGACY_MIGRATED_KEY]: true })
+
+    if (!flags[LEGACY_DELETED_KEY]) deleteLegacyDatabase()
   })().catch((error) => {
     console.warn("Legacy payload migration failed:", error)
   })
   return legacyMigration
+}
+
+// Deletion waits while tabs still running an old version keep the database
+// open, so it is not awaited; the flag is set only once it actually succeeds.
+function deleteLegacyDatabase(): void {
+  const request = indexedDB.deleteDatabase(LEGACY_DB_NAME)
+  request.onsuccess = () => {
+    void chrome.storage.local.set({ [LEGACY_DELETED_KEY]: true })
+  }
 }
 
 function readLegacyPayloads(): Promise<AttachmentPayloadRecord[]> {
@@ -232,9 +255,7 @@ export async function getPayload(
   const record = await peekPayload(id)
   if (!record) return null
   try {
-    await updateIndex((index) => {
-      if (index[id]) index[id].lastAccessed = Date.now()
-    })
+    await updateIndex({ op: "touch", id, at: Date.now() })
   } catch {
     // Non-fatal: access time update failure shouldn't block payload usage.
   }
@@ -248,9 +269,7 @@ export async function getPayload(
 export async function deletePayload(id: string): Promise<void> {
   if (!id) return
   await chrome.storage.local.remove(recordKey(id))
-  await updateIndex((index) => {
-    delete index[id]
-  })
+  await updateIndex({ op: "delete", ids: [id] })
 }
 
 /**
@@ -279,10 +298,11 @@ export async function gcPayloads(
   const removed: string[] = []
   for (const record of sorted) {
     if (total <= limitBytes) break
-    await deletePayload(record.id)
     removed.push(record.id)
     total -= record.size || 0
   }
+  await chrome.storage.local.remove(removed.map(recordKey))
+  await updateIndex({ op: "delete", ids: removed })
 
   return { removed, totalBytes: total }
 }

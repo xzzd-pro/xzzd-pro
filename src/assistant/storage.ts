@@ -30,6 +30,10 @@ const storage = new Storage({
 })
 const secureStorage = new SecureStorage()
 
+// Fixed and public, so this only obfuscates the settings at rest; it is not a
+// secret. The protection for the API key is that chrome.storage.local is
+// readable only by the extension, never by the course site's page scripts.
+// Changing the passphrase would make existing saved settings unreadable.
 const SECURE_STORAGE_PASSWORD = "xzzdpro_assistant_v1"
 
 export const UPLOAD_HISTORY_INDEX_BYTE_LIMIT = 400 * 1024
