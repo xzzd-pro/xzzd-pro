@@ -22,10 +22,8 @@ import type { ApiCourseData } from "@/types"
 
 import type { CourseFilters } from "./course-filters"
 
-const $ = (selector: string): HTMLElement | null =>
+const queryElement = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
-const $$ = (selector: string): NodeListOf<HTMLElement> =>
-  document.querySelectorAll(selector)
 
 // React root for course page
 let coursePageRoot: Root | null = null
@@ -83,7 +81,7 @@ function renderCoursePageReact(
 }
 
 async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
-  const container = $(".course-page-container")
+  const container = queryElement(".course-page-container")
   if (!container) return
   const requestId = ++coursesRequestId
 
@@ -100,7 +98,7 @@ async function loadAndRenderCourses(filters: Partial<CourseFilters> = {}) {
     requestId !== coursesRequestId ||
     !container.isConnected ||
     container !== coursePageContainer ||
-    container !== $(".course-page-container")
+    container !== queryElement(".course-page-container")
   )
     return
 
@@ -118,7 +116,7 @@ function setupSearchHandler() {
 export function coursePageBeautifier(): void {
   console.log("XZZDPRO: 准备接管课程页...")
 
-  const usernameElement = $("#userCurrentName")
+  const usernameElement = queryElement("#userCurrentName")
   const username = usernameElement?.textContent?.trim() ?? ""
 
   suppressAirChatbot()

@@ -15,7 +15,7 @@ import {
 
 import { NotificationsPanel } from "./components"
 
-const $ = (selector: string): HTMLElement | null =>
+const queryElement = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
 
 function mountNotificationsPanel(): void {
@@ -36,7 +36,7 @@ function mountNotificationsPanel(): void {
 export function bulletinListBeautifier(): void {
   console.log("XZZDPRO: 准备接管公告页...")
 
-  const usernameElement = $("#userCurrentName")
+  const usernameElement = queryElement("#userCurrentName")
   const username = usernameElement?.textContent?.trim() ?? ""
 
   suppressAirChatbot()

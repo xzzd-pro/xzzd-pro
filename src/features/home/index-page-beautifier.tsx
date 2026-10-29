@@ -43,7 +43,7 @@ import {
 } from "@/shared/layout/resize-handlers"
 import type { ApiCourseData, ApiTodoData } from "@/types"
 
-const $ = (selector: string): HTMLElement | null =>
+const queryElement = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
 
 function formatDate(date: Date): string {
@@ -185,7 +185,7 @@ function stopLoginPolling() {
 function loadAndRenderCourses(studentId: string): Promise<void> {
   if (pageSuspended) return Promise.resolve()
   if (pendingCourseLoad) return pendingCourseLoad
-  const container = $(".today-courses-card .courses-list-container")
+  const container = queryElement(".today-courses-card .courses-list-container")
   if (!container) return Promise.resolve()
   const binding = bindLayoutControl("homepage-courses", container)
   if (binding) {
@@ -231,7 +231,7 @@ function loadAndRenderCourses(studentId: string): Promise<void> {
 async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
   console.log("XZZDPRO: Starting course data fetch...")
 
-  const container = $(".today-courses-card .courses-list-container")
+  const container = queryElement(".today-courses-card .courses-list-container")
   if (!container) {
     console.error("XZZDPRO: Could not find courses container!")
     return
@@ -574,7 +574,7 @@ function renderTodosReact(
 }
 
 async function loadAndRenderTodos() {
-  const container = $(".todo-list-container")
+  const container = queryElement(".todo-list-container")
   if (!container) return
 
   renderTodosReact(container, [], true)
@@ -639,10 +639,10 @@ async function loadAndRenderTodos() {
 export async function indexPageBeautifier(): Promise<void> {
   console.log("XZZDPRO: 准备接管主页...")
 
-  const usernameElement = $("#userCurrentName")
+  const usernameElement = queryElement("#userCurrentName")
   const username = usernameElement?.textContent?.trim() ?? ""
 
-  const userNoElement = $(".user-no")
+  const userNoElement = queryElement(".user-no")
   const studentId = userNoElement?.textContent?.trim() ?? ""
   console.log("XZZDPRO: Found student ID:", studentId)
 
