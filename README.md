@@ -22,9 +22,9 @@ XZZD-Pro 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 - 课程列表支持实时搜索、按学期筛选，课程卡片显示上课学期
 - 课程详情页优化课件下载（支持勾选后打包下载）、作业提交和成绩查看；为保证小测安全，“小测”会回到学在浙大原页面作答
 
-![主页重排示意图](./assets/screenshots/home.png)
-![公告页示意图](./assets/screenshots/notifications.png)
-![课程页示意图](./assets/screenshots/course.png)
+![主页重排示意图](./assets/screenshots/home.jpg)
+![公告页示意图](./assets/screenshots/notifications.jpg)
+![课程搜索页示意图](./assets/screenshots/course.jpg)
 
 ### 2. 内置 AI 学习助理
 
@@ -58,16 +58,17 @@ XZZD-Pro 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 
 - [x] 修复公式显示问题
 - [x] 完善使用文档
-- [x] 上架插件商店
 - [x] **修复关闭插件按钮失效**
 - [x] 报错修复
 - [x] 黑夜模式修复
 - [x] 预览附件页面全屏
-- [ ] 课程搜索界面完善
-- [ ] 课程概览界面逻辑重构
-- [ ] 增加作业DDL缓存功能
-- [ ] 增加新增DDL功能
+- [x] 课程搜索界面完善
+- [x] 课程概览界面逻辑重构
+- [x] 增加作业DDL缓存功能
+- [x] 增加新增DDL功能
 - [x] 增加课件批量下载
+- [ ] 浏览器适配（Safari；Firefox 签名后可长期安装）
+- [ ] 上架应用商店（Chrome / Edge / Firefox）
 
 ## 技术栈
 
