@@ -11,7 +11,18 @@ const NOTIFICATION_TYPE_NAMES: Record<string, string> = {
   'homework_score_updated': '作业成绩发布',
   'exam_opened': '测验已开放',
   'exam_will_start': '测验即将开始',
-  'exam_submit_started': '测验已开始'
+  'exam_submit_started': '测验已开始',
+  'activity_expiring': '即将截止',
+  'course_opened': '课程开放',
+  'course_closed': '课程结束',
+  'course_updated': '课程更新',
+  'announcement_published': '课程公告',
+  'forum_topic_created': '讨论区新话题',
+  'forum_reply_created': '讨论区回复',
+  'rollcall_started': '点名开始',
+  'rollcall_ended': '点名结束',
+  'grade_published': '成绩发布',
+  'certificate_issued': '证书发放'
 }
 
 export interface NotificationItemProps {
@@ -31,7 +42,7 @@ function getScoreStyles(score: string | undefined): string {
 }
 
 export function NotificationItem({ notification }: NotificationItemProps) {
-  const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || notification.type
+  const typeName = NOTIFICATION_TYPE_NAMES[notification.type] || '通知'
   const scoreStyles = getScoreStyles(notification.score)
   const hasScore = notification.score !== undefined && notification.score !== null
 

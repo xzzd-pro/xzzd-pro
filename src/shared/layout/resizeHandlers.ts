@@ -5,6 +5,8 @@ import type { LayoutState } from "../../types"
 import { bindLayoutControl } from "./bindings"
 
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
+// The summary bar's content (greeting, date, counts) needs this much; less would clip it.
+const WELCOME_MIN_HEIGHT = 112
 
 // Check if extension context is still valid
 function isExtensionContextValid(): boolean {
@@ -69,7 +71,7 @@ export async function applySavedLayout(): Promise<void> {
   }
 
   if (mainContentWrapper) {
-    mainContentWrapper.style.gridTemplateRows = `${state.welcomeCardHeight}px 12px 1fr`
+    mainContentWrapper.style.gridTemplateRows = `${Math.max(WELCOME_MIN_HEIGHT, state.welcomeCardHeight)}px 12px 1fr`
     mainContentWrapper.style.gridTemplateColumns = `${state.coursesCardFlex}fr 12px ${state.todoCardFlex}fr`
   }
 
@@ -201,7 +203,7 @@ export function setupResizeHandlers(): void {
       if (!isResizingHorizontal) return
 
       const deltaY = e.clientY - startY
-      const newHeight = Math.max(80, startHeight + deltaY)
+      const newHeight = Math.max(WELCOME_MIN_HEIGHT, startHeight + deltaY)
 
       mainContentWrapper.style.gridTemplateRows = `${newHeight}px 12px 1fr`
     }, { signal })

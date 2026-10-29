@@ -22,6 +22,7 @@ import {
 import { TodayCoursesPanel, type TodayCourse } from "@/features/home/components/TodayCoursesPanel"
 import { TodoPanel, type TodoItem } from "@/features/home/components/TodoPanel"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
+import { countDeadlines, renderQuote, renderSummaryHeading, setSummaryStat, setupQuoteRotation } from "@/features/home/homeSummary"
 
 import type { ApiTodoData, ApiCourseData } from "@/types"
 import { fetchTodos, todoActivityUrl, TODO_TYPE_NAMES } from "@/shared/api/todos"
@@ -470,6 +471,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
 
     console.log(`XZZDPRO: Rendering ${todayCourses.length} courses`)
     renderCoursesReact(container, todayCourses, false)
+    setSummaryStat(document, "courses", todayCourses.length)
   } else if (response && response.status === "login_required") {
     // Unmount React root if exists, then render login prompt
     if (coursesRoot) {
@@ -496,6 +498,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
     }
 
     renderLoginPrompt(container, studentId)
+    setSummaryStat(document, "courses", null)
   } else {
     stopLoginPolling()
     if (coursesRoot) {
@@ -509,6 +512,7 @@ async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
     // Display the actionable reason as text, without embedding response HTML.
     const detail = container.querySelector('pre')
     if (detail) detail.textContent = response?.message || '请稍后重试。'
+    setSummaryStat(document, "courses", null)
   }
 }
 
@@ -531,12 +535,13 @@ async function loadAndRenderTodos() {
   // Show loading state
   renderTodosReact(container, [], true)
 
-  let rawTodos: ApiTodoData[] = []
+  let fetchedTodos: ApiTodoData[] | null = null
   try {
-    rawTodos = (await fetchTodos()) ?? []
+    fetchedTodos = await fetchTodos()
   } catch (e) {
     console.warn("XZZDPRO: 获取待办异常", e)
   }
+  const rawTodos = fetchedTodos ?? []
 
   const today = new Date()
 
@@ -577,6 +582,10 @@ async function loadAndRenderTodos() {
     })
 
   renderTodosReact(container, todos, false)
+
+  const counts = fetchedTodos === null ? null : countDeadlines(todos.map((todo) => todo.daysLeft))
+  setSummaryStat(document, "dueSoon", counts?.dueSoon ?? null)
+  setSummaryStat(document, "overdue", counts?.overdue ?? null)
 }
 
 // main function
@@ -594,7 +603,6 @@ export async function indexPageBeautifier(): Promise<void> {
   suppressAirChatbot()
 
   const today = new Date()
-  const todayDate = formatDate(today)
 
   document.body.innerHTML = ""
   const root = document.createElement("div")
@@ -608,13 +616,13 @@ export async function indexPageBeautifier(): Promise<void> {
     <main class="xzzdpro-main" id="main-grid">
       <div class="resize-handle resize-handle-left" data-direction="left"></div>
       <div class="main-content-wrapper">
-        <div class="widget-card welcome-card">
-          <h2>欢迎回来</h2>
-          <p>今天也要元气满满！</p>
-        </div>
+        <section class="widget-card welcome-card home-summary">
+          ${renderSummaryHeading(today)}
+          ${renderQuote()}
+        </section>
         <div class="resize-handle resize-handle-horizontal" data-direction="horizontal"></div>
         <div class="widget-card today-courses-card">
-          <h2>今日课程 <span class="date">${todayDate}</span></h2>
+          <h2>今日课程</h2>
           <div class="courses-list-container"></div>
         </div>
         <div class="resize-handle resize-handle-vertical" data-direction="vertical"></div>
@@ -634,6 +642,7 @@ export async function indexPageBeautifier(): Promise<void> {
 
   setupThemeToggle()
   setupHelpModal()
+  setupQuoteRotation(root)
   setupAvatarUpload()
   setupAssistantNavigation()
   await setupSidebarToggle()

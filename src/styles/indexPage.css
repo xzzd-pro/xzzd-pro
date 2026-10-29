@@ -123,18 +123,128 @@
   margin-right: 0;
 }
 
-/* --- welcome-card style --- */
-.welcome-card {
-  display: flex;
-  overflow: hidden;
-  flex-direction: column;
+/* --- summary bar (top row) ---
+   One focal point: a sentence that carries the greeting and today's counts,
+   with the date under it. The quote on the right is deliberately quieter.
+   Below 1280px the quote is hidden and the heading scales down so the bar
+   stays within its minimum drag height. */
+.home-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: 32px;
+  padding: 20px 28px;
 }
 
-.welcome-card p {
+.home-summary .home-summary-title {
+  display: block;
+  margin: 0;
+  font-size: clamp(18px, 1.7vw, 26px);
+  font-weight: 400;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+}
+
+/* The shared `.widget-card span { font-size: 14px }` would shrink these mid-sentence. */
+.home-summary .home-summary-title span {
+  font-size: inherit;
+}
+
+.home-summary-greet,
+.home-summary-title strong {
+  font-weight: 600;
+}
+
+/* Clause text well below the greeting (26px -> 16px at full width); numbers
+   scale back up to the heading size so they carry the sentence. */
+.home-summary .home-summary-title .home-summary-detail {
+  font-size: 0.615em;
+}
+
+.home-summary .home-summary-title .home-summary-detail strong {
+  font-size: 1.625em;
+}
+
+.home-summary-title strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Same red as the urgent deadline badge. */
+.home-summary-alert {
+  color: #b91c1c;
+}
+
+[data-theme='dark'] .home-summary-alert {
+  color: #fca5a5;
+}
+
+.home-summary .home-summary-date {
+  margin: 6px 0 0;
+  font-size: 14px;
   color: hsl(var(--muted-foreground));
-  margin: 8px 0 0 0;
-  font-size: 20px;
+}
+
+.home-summary-quote {
+  max-width: 20em;
+  margin: 0;
+  padding-left: 24px;
+  border-left: 1px solid hsl(var(--border));
+  text-align: left;
+}
+
+/* Two lines at most so the bar never outgrows its minimum drag height;
+   the full quote is in the title tooltip. */
+.home-summary-quote blockquote {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.home-summary-quote figcaption {
+  margin-top: 4px;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Click (or Enter/Space) swaps in another random quote. */
+.home-summary-quote {
+  cursor: pointer;
+  border-radius: 2px;
+  transition: opacity 150ms ease;
+}
+
+.home-summary-quote:hover blockquote {
+  color: hsl(var(--foreground));
+}
+
+.home-summary-quote:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 4px;
+}
+
+.home-summary-quote.is-fading {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-summary-quote {
+    transition: none;
+  }
+}
+
+@media (max-width: 1279px) {
+  .home-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-summary-quote {
+    display: none;
+  }
 }
 
 /* --- list container styles --- */
@@ -169,12 +279,6 @@
 .today-courses-card {
   display: flex;
   flex-direction: column;
-}
-
-.today-courses-card .date {
-  color: hsl(var(--muted-foreground));
-  font-size: 20px;
-  font-weight: 400;
 }
 
 /* Force text spacing for index page cards */

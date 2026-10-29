@@ -1,17 +1,17 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+import { typesForFilter } from "../readState"
 
 export interface FilterTabsProps {
   activeFilter: string
   onFilterChange: (filter: string) => void
   counts?: Record<string, number>
-  onMarkAsRead?: (type: string) => void
   showBadges?: boolean
   tempReadTypes?: Set<string>
 }
 
-const FILTER_OPTIONS = [
+export const FILTER_OPTIONS = [
   { type: 'all', label: '全部' },
   { type: 'activity_opened', label: '新文件' },
   { type: 'homework_opened_for_submission', label: '新作业' },
@@ -20,63 +20,49 @@ const FILTER_OPTIONS = [
   { type: 'others', label: '其他' },
 ]
 
+/** A category marked read this session keeps its items in place until reload but loses its badge. */
+export function isFilterMarked(filter: string, tempReadTypes?: Set<string>): boolean {
+  return !!tempReadTypes?.size && typesForFilter(filter).some((key) => tempReadTypes.has(key))
+}
+
+/**
+ * Category filters. Choosing one only filters the list; marking as read is a
+ * separate action in the card header. Unread counts sit as corner badges; the
+ * total lives in the card title, so "全部" carries none.
+ */
 export function FilterTabs({
   activeFilter,
   onFilterChange,
   counts = {},
-  onMarkAsRead,
   showBadges = false,
   tempReadTypes
 }: FilterTabsProps) {
-  const isTempRead = (type: string): boolean => {
-    if (!tempReadTypes?.size) return false
-
-    if (type === 'exam_will_start') {
-      return ['exam_opened', 'exam_will_start', 'exam_submit_started'].some((key) =>
-        tempReadTypes.has(key)
-      )
-    }
-
-    if (type === 'homework_opened_for_submission') {
-      return ['homework_opened_for_submission', 'course_homework_make_up'].some((key) =>
-        tempReadTypes.has(key)
-      )
-    }
-
-    return tempReadTypes.has(type)
-  }
-
-  const handleClick = async (type: string) => {
-    onFilterChange(type)
-
-    // Mark as read when clicking non-"all" buttons (for unread panel)
-    if (type !== 'all' && onMarkAsRead) {
-      onMarkAsRead(type)
-    }
-  }
-
   return (
-    <div className="flex gap-2 mb-6 flex-wrap">
+    <div className="flex gap-2 pt-2 mb-6 flex-wrap">
       {FILTER_OPTIONS.map(({ type, label }) => {
         const isActive = activeFilter === type
         const count = counts[type] || 0
-        const showBadge = showBadges && count > 0 && !isTempRead(type)
+        const showBadge = showBadges && type !== 'all' && count > 0 && !isFilterMarked(type, tempReadTypes)
 
         return (
           <Button
             key={type}
-            variant={isActive ? "default" : "outline"}
-            onClick={() => handleClick(type)}
-            className="gap-2 text-sm font-medium"
+            variant="outline"
+            aria-pressed={isActive}
+            onClick={() => onFilterChange(type)}
+            className={cn(
+              "relative h-8 px-3 text-sm font-medium text-muted-foreground",
+              isActive && "bg-secondary text-foreground border-foreground/25 font-semibold hover:bg-secondary"
+            )}
           >
             {label}
             {showBadge && (
-              <Badge
-                variant={isActive ? "secondary" : "destructive"}
-                className="ml-1 text-xs"
+              <span
+                className="absolute -top-2 -right-2 min-w-5 h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[11px] font-semibold leading-5 text-center ring-2 ring-card"
+                aria-label={`${count} 条未读`}
               >
-                {count}
-              </Badge>
+                {count > 99 ? '99+' : count}
+              </span>
             )}
           </Button>
         )

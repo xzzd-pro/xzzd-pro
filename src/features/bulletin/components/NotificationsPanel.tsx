@@ -3,6 +3,7 @@ import * as React from "react"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { storage } from "@/lib/storage"
 import { NotificationCard } from "./NotificationCard"
+import { advanceReadTimestamps, isReadAt, isUsableUndo, typesForFilter, type ReadUndo } from "../readState"
 import {
   SPLIT_DEFAULT,
   SPLIT_KEYBOARD_STEP,
@@ -17,6 +18,8 @@ import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myC
 import type { ApiNotificationData, ProcessedNotification, ReadTimestamps, NotificationType } from "@/types"
 
 const READ_TIMESTAMPS_KEY = 'xzzdpro_read_timestamps'
+// Read state from just before the last "mark all read", kept so it can be undone.
+const READ_UNDO_KEY = 'xzzdpro_read_timestamps_undo'
 
 const VALID_TYPES = [
   'activity_opened',
@@ -219,6 +222,20 @@ export function NotificationsPanel() {
   const [isLoading, setIsLoading] = useState(true)
   // 临时已读的通知类型，用于去掉红点但保持在未读栏中
   const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
+  // 上次“标为已读”之前的状态，24 小时内可撤销
+  const [readUndo, setReadUndo] = useState<ReadUndo | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    storage.get<unknown>(READ_UNDO_KEY)
+      .then((saved) => {
+        if (cancelled || saved === undefined) return
+        if (isUsableUndo(saved)) setReadUndo(saved)
+        else void storage.remove(READ_UNDO_KEY)
+      })
+      .catch((error) => console.warn('XZZDPRO: 读取撤销记录失败', error))
+    return () => { cancelled = true }
+  }, [])
   // 未读栏占两栏总宽的比例，可拖动中间分隔条调整（仅宽屏双栏时生效）
   const [splitRatio, setSplitRatioState] = useState(SPLIT_DEFAULT)
   // Mirrors the state so fast key repeats read the latest value, not the last render's.
@@ -304,67 +321,46 @@ export function NotificationsPanel() {
     return () => controller.abort()
   }, [])
 
-  const handleMarkAsRead = useCallback(async (type: string) => {
-    let typesToMark: string[]
-    if (type === 'exam_will_start') {
-      typesToMark = ['exam_opened', 'exam_will_start', 'exam_submit_started']
-    } else if (type === 'homework_opened_for_submission') {
-      typesToMark = ['homework_opened_for_submission', 'course_homework_make_up']
-    } else if (type === 'others') {
-      typesToMark = ['others']
-    } else {
-      typesToMark = [type]
-    }
-
-    // 将这些类型添加到临时已读集合中
+  // 标记若干筛选类别为临时已读：红点立即消失，刷新后移动到已读栏
+  const markFiltersAsRead = useCallback(async (filters: readonly string[]) => {
     setTempReadTypes(prev => {
       const newSet = new Set(prev)
-      typesToMark.forEach(t => newSet.add(t))
+      filters.forEach(filter => typesForFilter(filter).forEach(t => newSet.add(t)))
       return newSet
     })
 
-    // 保存时间戳到存储，但不立即更新通知的 read 状态
-    let updated = false
-    const newTimestamps = { ...readTimestamps }
-
-    if (type === 'others') {
-      // 标记所有其他类型的通知为已读
-      const mainTypes = [
-        'activity_opened',
-        'homework_opened_for_submission',
-        'course_homework_make_up',
-        'homework_score_updated',
-        'exam_opened',
-        'exam_will_start',
-        'exam_submit_started'
-      ]
-      const otherNotifications = allNotifications.filter(n => !mainTypes.includes(n.type))
-      if (otherNotifications.length > 0) {
-        const maxTimestamp = Math.max(...otherNotifications.map(n => n.timestamp))
-        newTimestamps.others = maxTimestamp
-        updated = true
-      }
-    } else {
-      for (const t of typesToMark) {
-        const notificationsOfType = allNotifications.filter(n => n.type === t)
-        if (notificationsOfType.length === 0) continue
-
-        const maxTimestamp = Math.max(...notificationsOfType.map(n => n.timestamp))
-        const typeKey = t as keyof ReadTimestamps
-
-        if (maxTimestamp > newTimestamps[typeKey]) {
-          newTimestamps[typeKey] = maxTimestamp
-          updated = true
-        }
-      }
-    }
-
-    if (updated) {
+    // 一次算出所有类别的时间戳再保存，避免连续保存互相覆盖
+    const newTimestamps = advanceReadTimestamps(readTimestamps, filters, allNotifications)
+    if (newTimestamps) {
       await saveReadTimestamps(newTimestamps)
       setReadTimestamps(newTimestamps)
-      console.log('XZZDPRO: 已标记为临时已读，刷新后将移动到已读栏', typesToMark)
+      console.log('XZZDPRO: 已标记为临时已读，刷新后将移动到已读栏', filters)
     }
   }, [readTimestamps, allNotifications])
+
+  // 标记前保存当前状态，24 小时内可撤销
+  const handleMarkRead = useCallback(async (filters: readonly string[]) => {
+    const snapshot: ReadUndo = { timestamps: readTimestamps, savedAt: Date.now() }
+    try {
+      await storage.set(READ_UNDO_KEY, snapshot)
+      setReadUndo(snapshot)
+    } catch (error) {
+      console.warn('XZZDPRO: 保存撤销记录失败', error)
+    }
+    await markFiltersAsRead(filters)
+  }, [readTimestamps, markFiltersAsRead])
+
+  // 恢复到上次“标为已读”之前：时间戳、红点和已读/未读分栏都立即还原
+  const handleUndoMarkRead = useCallback(async () => {
+    if (!readUndo) return
+    const restored: ReadTimestamps = { ...DEFAULT_READ_TIMESTAMPS, ...readUndo.timestamps }
+    await saveReadTimestamps(restored)
+    setReadTimestamps(restored)
+    setTempReadTypes(new Set())
+    setAllNotifications(prev => prev.map(n => ({ ...n, read: isReadAt(restored, n) })))
+    setReadUndo(null)
+    await storage.remove(READ_UNDO_KEY).catch((error) => console.warn('XZZDPRO: 清除撤销记录失败', error))
+  }, [readUndo])
 
   const unreadNotifications = allNotifications.filter(n => !n.read)
   const readNotifications = allNotifications.filter(n => n.read)
@@ -381,7 +377,8 @@ export function NotificationsPanel() {
         filter={unreadFilter}
         onFilterChange={setUnreadFilter}
         showBadges={true}
-        onMarkAsRead={handleMarkAsRead}
+        onMarkRead={handleMarkRead}
+        onUndoMarkRead={readUndo ? handleUndoMarkRead : undefined}
         isLoading={isLoading}
         tempReadTypes={tempReadTypes}
       />

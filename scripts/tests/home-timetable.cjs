@@ -1,7 +1,7 @@
 const fs = require('node:fs'), path = require('node:path'), vm = require('node:vm')
 const assert = require('node:assert/strict'), { test } = require('node:test'), ts = require('typescript')
 function harness() {
-  const sends = [], renders = [], intervals = new Set(), errors = []
+  const sends = [], renders = [], intervals = new Set(), errors = [], stats = []
   const detail = { textContent: '' }
   const container = { isConnected: true, innerHTML: '', querySelector: () => detail }
   const window = new EventTarget()
@@ -18,6 +18,7 @@ function harness() {
       if (name === 'react') return { createElement: (_type, props) => props }
       if (name === 'react-dom/client') return { createRoot: () => ({ render: x => renders.push(x), unmount() {} }) }
       if (name === '@plasmohq/messaging') return { sendToBackground: () => new Promise((resolve, reject) => sends.push({ resolve, reject })) }
+      if (name === '@/features/home/homeSummary') return { setSummaryStat: (_root, stat, value) => stats.push([stat, value]) }
       if (name === '@/shared/api/myCoursesApi') return { createMyCoursesPayload: x => x, fetchMyCoursesResponse: async () => ({ ok: true, json: async () => ({ courses: [] }) }) }
       if (name === '@/shared/layout/bindings') return { bindLayoutControl() {
         if (bound) return null; bound = true
@@ -26,7 +27,7 @@ function harness() {
       return {}
     }
   })
-  return { load: exports.loadAndRenderCourses, sends, intervals, renders, errors, detail, window }
+  return { load: exports.loadAndRenderCourses, sends, intervals, renders, errors, detail, window, stats }
 }
 const tick = () => new Promise(resolve => setImmediate(resolve))
 test('homepage polling is single flight and stops on service errors', async () => {
@@ -56,4 +57,6 @@ test('message rejection is handled and does not leave an unhandled promise', asy
   await first
   assert.equal(h.errors.length, 0)
   assert.match(h.detail.textContent, /连接已中断/)
+  // The summary shows "—" for today's classes rather than a misleading 0.
+  assert.deepEqual(h.stats.at(-1), ['courses', null])
 })
