@@ -4,7 +4,7 @@ import {
   checkTimetableResponse,
   performBackgroundLogin,
   TimetableRequestError
-} from "../timetableAccess"
+} from "../timetable-access"
 
 const API_URL = "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"
 const DEFAULT_GNMKDM = "N253508"

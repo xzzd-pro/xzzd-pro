@@ -64,7 +64,7 @@ async function main() {
   })
   const source = fs
     .readFileSync(path.join(repo, "src/styles/global.css"), "utf8")
-    .replace("data-url:../assets/LXGWWenKaiScreen.ttf", "./font.ttf")
+    .replace("data-url:../assets/lxgw-wen-kai-screen.ttf", "./font.ttf")
   const result = await postcss([
     tailwind(path.join(repo, "tailwind.config.js"))
   ]).process(source, { from: path.join(repo, "src/styles/global.css") })
@@ -72,14 +72,14 @@ async function main() {
     path.join(out, "preview.css"),
     result.css +
       "\n" +
-      fs.readFileSync(path.join(repo, "src/styles/courseDetail.css"), "utf8")
+      fs.readFileSync(path.join(repo, "src/styles/course-detail.css"), "utf8")
   )
   fs.copyFileSync(
-    path.join(repo, "src/assets/LXGWWenKaiScreen.ttf"),
+    path.join(repo, "src/assets/lxgw-wen-kai-screen.ttf"),
     path.join(out, "font.ttf")
   )
   fs.copyFileSync(
-    path.join(repo, "src/styles/coursePage.css"),
+    path.join(repo, "src/styles/course-page.css"),
     path.join(out, "course-page.css")
   )
   fs.writeFileSync(

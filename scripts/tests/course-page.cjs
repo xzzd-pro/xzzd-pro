@@ -10,7 +10,7 @@ const ts = require("typescript")
 function createHarness() {
   const filename = path.resolve(
     __dirname,
-    "../../src/features/courses/coursePageBeautifier.tsx"
+    "../../src/features/courses/course-page-beautifier.tsx"
   )
   const source =
     fs.readFileSync(filename, "utf8") + "\nexport { loadAndRenderCourses };"
@@ -51,7 +51,7 @@ function createHarness() {
           }
         }
       }
-      if (name === "@/shared/api/myCoursesApi") {
+      if (name === "@/shared/api/my-courses-api") {
         return {
           createMyCoursesPayload: (payload) => {
             payloads.push(payload)

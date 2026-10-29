@@ -76,12 +76,12 @@ function harness(
       clearTimeout: (id) => timers.delete(id),
       require(name) {
         if (name === "react") return react
-        if (name === "@/lib/nativePreview")
-          return load("src/lib/nativePreview.ts")
+        if (name === "@/lib/native-preview")
+          return load("src/lib/native-preview.ts")
         if (name === "@/lib/storage") return { storage: {} }
-        if (name === "@/lib/fontLoader")
+        if (name === "@/lib/font-loader")
           return { loadBrandFont: () => Promise.resolve() }
-        if (name === "@/lib/themeDom")
+        if (name === "@/lib/theme-dom")
           return {
             bootstrapStoredTheme() {},
             applyThemeToDocument() {},
@@ -91,23 +91,24 @@ function harness(
           return {
             useStorage: ({ key }) => [values[key], null, { isLoading: false }]
           }
-        if (name === "@/shared/contentScripts/createBeautifierInjector")
+        if (name === "@/shared/content-scripts/create-beautifier-injector")
           return shared
         if (
-          name === "./useBeautifierInitialization" ||
-          name === "@/shared/contentScripts/useBeautifierInitialization"
+          name === "./use-beautifier-initialization" ||
+          name === "@/shared/content-scripts/use-beautifier-initialization"
         )
           return initialization
-        if (name === "@/features/air/airPageBeautifier") return { mountAirPage }
+        if (name === "@/features/air/air-page-beautifier")
+          return { mountAirPage }
         throw new Error(name)
       }
     })
     return exports
   }
   initialization = load(
-    "src/shared/contentScripts/useBeautifierInitialization.ts"
+    "src/shared/content-scripts/use-beautifier-initialization.ts"
   )
-  shared = load("src/shared/contentScripts/createBeautifierInjector.tsx")
+  shared = load("src/shared/content-scripts/create-beautifier-injector.tsx")
   return {
     shared,
     values,
@@ -120,7 +121,7 @@ function harness(
     },
     air(mount) {
       mountAirPage = mount
-      return load("src/contents/airPage.tsx").default
+      return load("src/contents/air-page.tsx").default
     },
     render(component) {
       cursor = 0

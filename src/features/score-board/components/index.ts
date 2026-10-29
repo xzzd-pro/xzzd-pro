@@ -1,1 +1,1 @@
-export { ScoreBoardPanel } from "./ScoreBoardPanel"
+export { ScoreBoardPanel } from "./score-board-panel"

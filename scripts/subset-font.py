@@ -4,7 +4,7 @@ Keeps Latin, common punctuation and the 6,763 GB2312 hanzi, then writes WOFF2.
 Characters outside the subset fall back to the system font.
 
     pip install fonttools brotli
-    python scripts/subset-font.py [src/assets/LXGWWenKaiScreen.ttf]
+    python scripts/subset-font.py [src/assets/lxgw-wen-kai-screen.ttf]
 """
 
 import sys
@@ -13,8 +13,8 @@ from pathlib import Path
 from fontTools import subset
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "src/assets/LXGWWenKaiScreen.ttf"
-TARGET = ROOT / "src/assets/fonts/LXGWWenKaiScreen.woff2"
+SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "src/assets/lxgw-wen-kai-screen.ttf"
+TARGET = ROOT / "src/assets/fonts/lxgw-wen-kai-screen.woff2"
 
 RANGES = [
     (0x0020, 0x007E),  # Basic Latin

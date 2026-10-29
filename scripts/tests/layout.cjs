@@ -117,11 +117,11 @@ function harness() {
         }
       if (
         name.includes("avatar-upload") ||
-        name.includes("courseDataService") ||
-        name.includes("myCoursesApi")
+        name.includes("course-data-service") ||
+        name.includes("my-courses-api")
       )
         return {}
-      if (name === "@/lib/themeDom")
+      if (name === "@/lib/theme-dom")
         return {
           normalizeTheme: (x) => x,
           getFallbackTheme: () => "light",
@@ -226,7 +226,7 @@ test("header setup binds once and cleans listeners and avatar root on removal", 
 
 test("theme setup watches once, unwatches on removal, and ignores stale reads", async () => {
   const h = harness(),
-    { ThemeToggle } = h.load("src/shared/layout/ThemeToggle.tsx")
+    { ThemeToggle } = h.load("src/shared/layout/theme-toggle.tsx")
   const button = h.add("#theme-toggle-btn")
   h.add(".theme-icon")
   new ThemeToggle().setup()
@@ -286,7 +286,7 @@ test("sidebar repeated setup and active drag cleanup release document listeners"
 
 test("resize setup binds once and clears active drag state on owner removal", () => {
   const h = harness(),
-    { setupResizeHandlers } = h.load("src/shared/layout/resizeHandlers.ts")
+    { setupResizeHandlers } = h.load("src/shared/layout/resize-handlers.ts")
   h.add(".xzzdpro-main")
   const owner = h.add(".main-content-wrapper"),
     handle = h.add(".resize-handle-left")
@@ -315,7 +315,7 @@ test("rendered header, sidebar, and course detail HTML exactly match baseline fi
     header: current.load("src/shared/layout/header.tsx").renderHeader,
     sidebar: current.load("src/shared/layout/sidebar.ts").renderSidebar,
     courseDetail: current.load(
-      "src/shared/course-detail/courseDetailHelpers.ts"
+      "src/shared/course-detail/course-detail-helpers.ts"
     ).renderCourseDetailPage
   }
   for (const [name, render] of Object.entries(renderers)) {

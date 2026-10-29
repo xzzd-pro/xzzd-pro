@@ -28,7 +28,7 @@ function harness() {
     fs.readFileSync(
       path.resolve(
         __dirname,
-        "../../src/features/home/indexPageBeautifier.tsx"
+        "../../src/features/home/index-page-beautifier.tsx"
       ),
       "utf8"
     ) + "\nexport { loadAndRenderCourses };"
@@ -68,11 +68,11 @@ function harness() {
           sendToBackground: () =>
             new Promise((resolve, reject) => sends.push({ resolve, reject }))
         }
-      if (name === "@/features/home/homeSummary")
+      if (name === "@/features/home/home-summary")
         return {
           setSummaryStat: (_root, stat, value) => stats.push([stat, value])
         }
-      if (name === "@/shared/api/myCoursesApi")
+      if (name === "@/shared/api/my-courses-api")
         return {
           createMyCoursesPayload: (x) => x,
           fetchMyCoursesResponse: async () => ({

@@ -38,7 +38,7 @@ const ssoUrl = "https://zjuam.zju.edu.cn/cas/login?service=zdbk"
 function harness(finalResponse) {
   const calls = [],
     errors = []
-  const access = load("src/background/timetableAccess.ts", {
+  const access = load("src/background/timetable-access.ts", {
     fetch: async (url, options) => {
       calls.push({ url, options })
       if (calls.length === 1)
@@ -166,10 +166,13 @@ test("development port disconnect consumes lastError and reports unexpected fail
       return { message }
     }
   }
-  const { handleDevelopmentPort } = load("src/background/developmentPorts.ts", {
-    chrome: { runtime },
-    console: { error: (...args) => errors.push(args) }
-  })
+  const { handleDevelopmentPort } = load(
+    "src/background/development-ports.ts",
+    {
+      chrome: { runtime },
+      console: { error: (...args) => errors.push(args) }
+    }
+  )
   handleDevelopmentPort({
     name: "__plasmo_runtime_script_test",
     onDisconnect: {

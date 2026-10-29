@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LXGW WenKai Screen is registered at runtime by src/lib/fontLoader.ts */
+/* LXGW WenKai Screen is registered at runtime by src/lib/font-loader.ts */
 
 :root {
   --background: 210 40% 98%;

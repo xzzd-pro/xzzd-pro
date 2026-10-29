@@ -13,11 +13,11 @@ function load(file, globals = {}) {
   )
   return exports
 }
-const { decodeText } = load("src/assistant/services/textDecode.ts")
+const { decodeText } = load("src/assistant/services/text-decode.ts")
 
 test("native preview requests the school endpoint with activity context and fresh credentials", async () => {
   const requests = []
-  const api = load("src/lib/nativePreview.ts", {
+  const api = load("src/lib/native-preview.ts", {
     fetch: async (url, options) => {
       requests.push({ url, options })
       return {
@@ -64,7 +64,7 @@ test("native preview rejects denied, missing, malformed and foreign preview URLs
       json: async () => ({ preview_url: "https://example.com/preview" })
     }
   ]) {
-    const api = load("src/lib/nativePreview.ts", {
+    const api = load("src/lib/native-preview.ts", {
       fetch: async () => response
     })
     await assert.rejects(
@@ -74,7 +74,7 @@ test("native preview rejects denied, missing, malformed and foreign preview URLs
       )
     )
   }
-  const api = load("src/lib/nativePreview.ts", {
+  const api = load("src/lib/native-preview.ts", {
     fetch: () => {
       throw new Error("must not fetch")
     }
@@ -128,7 +128,7 @@ test("preview reserves one tab, closes on failure and allows retry", async () =>
     },
     require(name) {
       if (name === "react") return react
-      if (name.endsWith("/nativePreview"))
+      if (name.endsWith("/native-preview"))
         return {
           fetchNativePreviewUrl() {
             requests++
@@ -174,7 +174,7 @@ test("text previews decode UTF-8, GBK and BOM-marked UTF-16", () => {
   assert.equal(decodeText(new Uint8Array()), "")
 })
 test("native links retain activity routes and existing query parameters", () => {
-  const api = load("src/lib/nativePreview.ts")
+  const api = load("src/lib/native-preview.ts")
   const url = api.nativeActivityUrl(12, 34)
   assert.equal(new URL(url).hash, "#/34")
   assert.equal(api.isNativePreviewPage(url), true)
@@ -225,9 +225,9 @@ test("every preview goes to the school reader and never fetches file bytes", asy
       require(name) {
         if (name === "react") return react
         if (name === "react-dom") return { createPortal: (x) => x }
-        if (name.endsWith("/nativePreview"))
-          return load("src/lib/nativePreview.ts")
-        if (name.endsWith("/fileService"))
+        if (name.endsWith("/native-preview"))
+          return load("src/lib/native-preview.ts")
+        if (name.endsWith("/file-service"))
           return {
             fetchTextContent: async () => {
               reads.push("text")

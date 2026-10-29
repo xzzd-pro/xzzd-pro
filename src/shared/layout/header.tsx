@@ -5,7 +5,7 @@ import { AvatarUpload } from "@/components/ui/avatar-upload"
 import { escapeHtml } from "@/lib/html"
 
 import { bindLayoutControl } from "./bindings"
-import { createThemeToggle } from "./ThemeToggle"
+import { createThemeToggle } from "./theme-toggle"
 
 const LOGO_SRC =
   "https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272"

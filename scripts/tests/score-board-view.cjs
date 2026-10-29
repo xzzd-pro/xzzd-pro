@@ -26,13 +26,13 @@ function load(relative) {
     exports,
     require(name) {
       if (name === "react") return React
-      if (name === "./scoreBoardStyles") return load("scoreBoardStyles.ts")
+      if (name === "./score-board-styles") return load("score-board-styles.ts")
       throw new Error(`Unexpected view dependency: ${name}`)
     }
   })
   return exports
 }
-const { ScoreBoardView } = load("ScoreBoardView.tsx")
+const { ScoreBoardView } = load("score-board-view.tsx")
 function render(data) {
   return renderToStaticMarkup(React.createElement(ScoreBoardView, { data }))
 }

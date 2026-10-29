@@ -4,7 +4,7 @@ const { test } = require("node:test"),
   vm = require("node:vm"),
   ts = require("typescript")
 const source = ts.transpileModule(
-  fs.readFileSync("src/features/home/homeSummary.ts", "utf8"),
+  fs.readFileSync("src/features/home/home-summary.ts", "utf8"),
   {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,

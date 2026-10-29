@@ -2,11 +2,11 @@
 import React from "react"
 import { createRoot } from "react-dom/client"
 
-import { CoursePage } from "../../src/features/courses/components/CoursePage"
-import { CoursewarePanel } from "../../src/features/courseware/components/CoursewarePanel"
-import { HomeworkPanel } from "../../src/features/homework/components/HomeworkPanel"
-import { ScoreBoardView } from "../../src/features/score-board/components/ScoreBoardView"
-import { renderCourseDetailPage } from "../../src/shared/course-detail/courseDetailHelpers"
+import { CoursePage } from "../../src/features/courses/components/course-page"
+import { CoursewarePanel } from "../../src/features/courseware/components/courseware-panel"
+import { HomeworkPanel } from "../../src/features/homework/components/homework-panel"
+import { ScoreBoardView } from "../../src/features/score-board/components/score-board-view"
+import { renderCourseDetailPage } from "../../src/shared/course-detail/course-detail-helpers"
 import {
   setupHelpModal,
   setupSidebarToggle,

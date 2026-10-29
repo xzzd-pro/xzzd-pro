@@ -1,5 +1,5 @@
-import { handleDevelopmentPort } from "./developmentPorts"
-import { migrateLegacySyncStorage } from "./migrateStorage"
+import { handleDevelopmentPort } from "./development-ports"
+import { migrateLegacySyncStorage } from "./migrate-storage"
 
 export {}
 

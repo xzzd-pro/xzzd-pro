@@ -16,10 +16,10 @@ function load() {
     vm.runInNewContext(compile(file), { exports, require, console })
     return exports
   }
-  const native = mod("src/lib/nativePreview.ts", () => ({}))
+  const native = mod("src/lib/native-preview.ts", () => ({}))
   const todos = mod("src/shared/api/todos.ts", () => ({}))
-  return mod("src/features/courses/overviewActivity.ts", (name) =>
-    name.endsWith("nativePreview")
+  return mod("src/features/courses/overview-activity.ts", (name) =>
+    name.endsWith("native-preview")
       ? native
       : name.endsWith("/todos")
         ? todos

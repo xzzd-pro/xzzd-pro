@@ -12,7 +12,9 @@ const compile = (file) =>
     }
   }).outputText
 const htmlSource = compile("src/lib/html.ts"),
-  overviewSource = compile("src/features/courses/courseOverviewBeautifier.tsx")
+  overviewSource = compile(
+    "src/features/courses/course-overview-beautifier.tsx"
+  )
 // Pure modules run for real; only DOM- and React-bound imports are stubbed.
 function loadPure(file, deps) {
   const exports = {}
@@ -53,13 +55,16 @@ function load() {
           ? null
           : { variant: d <= 3 ? "urgent" : "normal", text: `剩余 ${d} 天` }
     },
-    "@/shared/course-detail/courseDetailHelpers": {
+    "@/shared/course-detail/course-detail-helpers": {
       mountCourseDetailPage: async () => null
     },
-    "./overviewActivity": loadPure("src/features/courses/overviewActivity.ts", {
-      "@/lib/nativePreview": loadPure("src/lib/nativePreview.ts", {}),
-      "@/shared/api/todos": loadPure("src/shared/api/todos.ts", {})
-    })
+    "./overview-activity": loadPure(
+      "src/features/courses/overview-activity.ts",
+      {
+        "@/lib/native-preview": loadPure("src/lib/native-preview.ts", {}),
+        "@/shared/api/todos": loadPure("src/shared/api/todos.ts", {})
+      }
+    )
   }
   vm.runInNewContext(overviewSource, {
     exports,

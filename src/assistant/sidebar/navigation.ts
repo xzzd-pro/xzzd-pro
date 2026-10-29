@@ -5,7 +5,7 @@ import {
   SIDEBAR_MIN_WIDTH
 } from "@/shared/layout/constants"
 
-import { fetchAllCourses } from "../services/courseDataService"
+import { fetchAllCourses } from "../services/course-data-service"
 import type { AssistantUploadHistoryItem } from "../types"
 
 interface SidebarMaterialFile {
@@ -316,7 +316,7 @@ async function loadAssistantMaterials(courseId?: string): Promise<void> {
       { fetchCourseMaterials },
       { getAssistantUploadHistory, deleteAssistantUploadHistoryItems }
     ] = await Promise.all([
-      import("../services/courseDataService"),
+      import("../services/course-data-service"),
       import("../storage")
     ])
     const [materials, historyItems] = await Promise.all([

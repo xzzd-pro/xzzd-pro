@@ -2,7 +2,7 @@
 // 统一的图标集合
 
 // 主题切换图标
-export const themeIcons = {
+export const THEME_ICONS = {
   sun: `<svg width="27" height="27" viewBox="0 0 27 27" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_147_26)">
 <path d="M13.5 1.125V3.375M13.5 23.625V25.875M4.7475 4.7475L6.345 6.345M20.655 20.655L22.2525 22.2525M1.125 13.5H3.375M23.625 13.5H25.875M4.7475 22.2525L6.345 20.655M20.655 6.345L22.2525 4.7475M19.125 13.5C19.125 16.6066 16.6066 19.125 13.5 19.125C10.3934 19.125 7.875 16.6066 7.875 13.5C7.875 10.3934 10.3934 7.875 13.5 7.875C16.6066 7.875 19.125 10.3934 19.125 13.5Z" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -20,7 +20,7 @@ export const themeIcons = {
 }
 
 // 导航栏图标
-export const navIcons = {
+export const NAV_ICONS = {
   home: `<svg width="25" height="23" viewBox="0 0 25 23" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 <path d="M9.59714 20.8733V14.2067H14.9305V20.8733C14.9305 21.6067 15.5305 22.2067 16.2638 22.2067H20.2638C20.9971 22.2067 21.5971 21.6067 21.5971 20.8733V11.54H23.8638C24.4771 11.54 24.7705 10.78 24.3038 10.38L13.1571 0.34C12.6505 -0.113333 11.8771 -0.113333 11.3705 0.34L0.223803 10.38C-0.229531 10.78 0.0504692 11.54 0.663803 11.54H2.93047V20.8733C2.93047 21.6067 3.53047 22.2067 4.2638 22.2067H8.2638C8.99714 22.2067 9.59714 21.6067 9.59714 20.8733Z"/>
 </svg>`,
@@ -53,7 +53,7 @@ export const navIcons = {
 const solidIcon = (body: string) =>
   `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">${body}</svg>`
 
-export const courseDetailIcons = {
+export const COURSE_DETAIL_ICONS = {
   overview: solidIcon(
     `<rect x="2" y="2" width="9" height="11" rx="2"/><rect x="13" y="2" width="9" height="7" rx="2"/><rect x="13" y="11" width="9" height="11" rx="2"/><rect x="2" y="15" width="9" height="7" rx="2"/>`
   ),

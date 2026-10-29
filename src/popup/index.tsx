@@ -13,8 +13,8 @@ import { storage } from "@/lib/storage"
 
 import "../styles/popup.css"
 
-import { loadBrandFont } from "@/lib/fontLoader"
-import { applyThemeToDocument, normalizeTheme } from "@/lib/themeDom"
+import { loadBrandFont } from "@/lib/font-loader"
+import { applyThemeToDocument, normalizeTheme } from "@/lib/theme-dom"
 
 void loadBrandFont()
 

@@ -8,7 +8,7 @@ import {
   SIDEBAR_MAX_WIDTH,
   SIDEBAR_MIN_WIDTH
 } from "./constants"
-import { navIcons } from "./icons"
+import { NAV_ICONS } from "./icons"
 
 const LAYOUT_STORAGE_KEY = "indexPageLayout"
 
@@ -25,26 +25,26 @@ export function renderSidebar(options: SidebarOptions = {}): string {
         <ul class="sidebar-nav">
           <li class="nav-item ${currentPage === "home" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/user/index#/" class="nav-link">
-              <span class="nav-icon">${navIcons.home}</span>
+              <span class="nav-icon">${NAV_ICONS.home}</span>
               <span class="nav-text">主页</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === "notification" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/bulletin-list/#/" class="nav-link">
-              <span class="nav-icon">${navIcons.notification}</span>
+              <span class="nav-icon">${NAV_ICONS.notification}</span>
               <span class="nav-text">动态</span>
             </a>
           </li>
           <li class="nav-item ${currentPage === "courses" ? "active" : ""}">
             <a href="https://courses.zju.edu.cn/user/courses#/" class="nav-link">
-              <span class="nav-icon">${navIcons.courses}</span>
+              <span class="nav-icon">${NAV_ICONS.courses}</span>
               <span class="nav-text">课程</span>
             </a>
           </li>
           <li class="nav-item nav-item-expandable ${currentPage === "assistant" ? "active" : ""}">
             <div class="nav-link nav-link-expandable">
               <a href="https://courses.zju.edu.cn/air" id="nav-assistant-link" class="nav-link-main" aria-label="学习助理">
-                <span class="nav-icon">${navIcons.assistant}</span>
+                <span class="nav-icon">${NAV_ICONS.assistant}</span>
                 <span class="nav-text">学习助理</span>
               </a>
               <button id="nav-assistant-expand" class="expand-toggle" type="button" aria-label="展开学习助理课程列表" title="展开课程列表">

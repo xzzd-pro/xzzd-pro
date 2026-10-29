@@ -2,7 +2,7 @@ import { Eye, Loader2 } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
-import { fetchNativePreviewUrl } from "@/lib/nativePreview"
+import { fetchNativePreviewUrl } from "@/lib/native-preview"
 
 export function NativePreviewButton({
   fileUrl,

@@ -1,3 +1,3 @@
-export { CoursewarePanel } from "./CoursewarePanel"
-export { CoursewareContent } from "./CoursewareContent"
-export { CoursewareFileItem } from "./CoursewareFileItem"
+export { CoursewarePanel } from "./courseware-panel"
+export { CoursewareContent } from "./courseware-content"
+export { CoursewareFileItem } from "./courseware-file-item"

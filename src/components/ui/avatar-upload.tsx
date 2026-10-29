@@ -13,7 +13,7 @@ interface AvatarUploadProps {
   size?: "sm" | "md" | "lg" | "xl"
 }
 
-const sizeClasses = {
+const SIZE_CLASSES = {
   sm: "h-8 w-8",
   md: "h-10 w-10",
   lg: "h-12 w-12",
@@ -196,7 +196,7 @@ export function AvatarUpload({
     <div className="relative group">
       <Avatar
         className={cn(
-          sizeClasses[size],
+          SIZE_CLASSES[size],
           "cursor-pointer transition-opacity hover:opacity-80",
           isUploading && "opacity-50",
           className

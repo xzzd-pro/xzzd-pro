@@ -1,6 +1,6 @@
 import { Storage } from "@plasmohq/storage"
 
-import { installExtensionContextGuard } from "./extensionContextGuard"
+import { installExtensionContextGuard } from "./extension-context-guard"
 
 installExtensionContextGuard()
 

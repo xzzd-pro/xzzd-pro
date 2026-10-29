@@ -18,10 +18,10 @@ import {
   fetchFileContent,
   fetchPdfBlob,
   fetchTextContent
-} from "@/assistant/services/fileService"
+} from "@/assistant/services/file-service"
 import { Button } from "@/components/ui/button"
 import { NativePreviewButton } from "@/components/ui/native-preview-button"
-import { nativeCurrentPageUrl } from "@/lib/nativePreview"
+import { nativeCurrentPageUrl } from "@/lib/native-preview"
 import { cn } from "@/lib/utils"
 
 /** Set to false to render PDFs, text and media inside the extension again. */

@@ -8,7 +8,7 @@ import {
   gcPayloads,
   peekPayload,
   putPayload
-} from "./attachmentPayloadStore"
+} from "./attachment-payload-store"
 import {
   DEFAULT_PROVIDER,
   MAX_HISTORY_MESSAGES,
@@ -22,8 +22,8 @@ import type {
   ChatMessage,
   ChatSession
 } from "./types"
-import { dataUriToBlob } from "./utils/dataUriUtils"
-import { hashArrayBuffer, hashString } from "./utils/hashUtils"
+import { dataUriToBlob } from "./utils/data-uri-utils"
+import { hashArrayBuffer, hashString } from "./utils/hash-utils"
 
 const storage = new Storage({
   area: "local"
