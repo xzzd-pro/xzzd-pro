@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Skeleton } from "@/components/ui/skeleton"
 import { downloadCoursewareZip } from "@/features/courseware/coursewareDownload"
+import { fetchCoursewares } from "@/features/courseware/coursewareApi"
 import { formatFileSize } from "@/lib/fileFormat"
 import { cn } from "@/lib/utils"
 import { ChevronDown, Download, Loader2 } from "lucide-react"
@@ -18,7 +19,6 @@ import type {
   CourseModule,
   CourseModulesResponse,
   CoursewareActivity,
-  CoursewareApiResponse,
   ProcessedCoursewareSection
 } from "@/types"
 
@@ -112,40 +112,6 @@ function processCourseware(
   })
 }
 
-function buildCoursewareListUrl(courseId: string): string {
-  const conditions = encodeURIComponent(
-    JSON.stringify({
-      category: null,
-      itemsSortBy: {
-        predicate: "chapter",
-        reverse: false
-      },
-      ignore_activity_types: ["lesson"]
-    })
-  )
-
-  return `https://courses.zju.edu.cn/api/course/${courseId}/coursewares?conditions=${conditions}&page=1&page_size=1000`
-}
-
-async function fetchCoursewares(courseId: string): Promise<CoursewareActivity[]> {
-  try {
-    const response = await fetch(buildCoursewareListUrl(courseId), {
-      credentials: "include"
-    })
-
-    if (!response.ok) {
-      console.error("XZZDPRO: failed to fetch coursewares", response.status)
-      return []
-    }
-
-    const data: CoursewareApiResponse = await response.json()
-    return data.activities || []
-  } catch (error) {
-    console.error("XZZDPRO: failed to fetch coursewares", error)
-    return []
-  }
-}
-
 async function fetchCourseModules(courseId: string): Promise<CourseModule[]> {
   try {
     const response = await fetch(
@@ -170,7 +136,7 @@ function CoursewareSkeleton() {
   return (
     <div className="flex flex-col gap-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden">
+        <Card key={i} className="overflow-hidden border-transparent">
           <CardHeader className="p-5">
             <div className="flex items-center gap-3">
               <Skeleton className="w-6 h-6 rounded" />
@@ -221,7 +187,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
 
       try {
         const [activities, modules] = await Promise.all([
-          fetchCoursewares(courseId),
+          fetchCoursewares(courseId).then((activities) => activities ?? []),
           fetchCourseModules(courseId)
         ])
         const nextSections = processCourseware(activities, modules, courseId)
@@ -466,7 +432,7 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
         </div>
       </div>
 
-      <div className="w-full overflow-hidden rounded-lg border border-border/70 bg-card divide-y divide-border/70">
+      <div className="w-full overflow-hidden rounded-lg border border-transparent bg-card shadow-sm divide-y divide-border/70">
         {sections.map((section) => {
           const statusText = section.isClosed
             ? "已关闭"
@@ -497,9 +463,9 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                         variant="outline"
                         className={cn(
                           section.isClosed &&
-                            "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300",
+                            "border-success/25 bg-success/10 text-success",
                           !section.isClosed && section.isStarted &&
-                            "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300",
+                            "border-red-500/25 bg-red-100 text-red-700 dark:border-red-400/25 dark:bg-red-950 dark:text-red-300",
                           !section.isStarted &&
                             !section.isClosed &&
                             "bg-muted text-muted-foreground border-border"

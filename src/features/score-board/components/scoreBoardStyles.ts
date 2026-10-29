@@ -1,6 +1,5 @@
 export const scoreBoardStyles = `
-.score-board-view { --sb-accent: #416487; --sb-subtle: #f3f6fa; --sb-border: #e3e9f0; display: grid; gap: 20px; color: hsl(var(--foreground)); font-size: 14px; min-width: 0; }
-.dark .score-board-view, [data-theme="dark"] .score-board-view { --sb-accent: #a9c5e2; --sb-subtle: #202b39; --sb-border: #334155; }
+.score-board-view { --sb-accent: hsl(var(--primary)); --sb-subtle: hsl(var(--muted)); --sb-border: hsl(var(--border)); display: grid; gap: 20px; color: hsl(var(--foreground)); font-size: 14px; min-width: 0; }
 .score-board-view * { box-sizing: border-box; }
 .score-board-view h3, .score-board-view p { margin: 0; }
 .score-board-view h3 { font-size: 15px; font-weight: 650; line-height: 1.5; }

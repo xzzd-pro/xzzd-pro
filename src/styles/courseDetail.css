@@ -8,7 +8,7 @@
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  background: hsl(var(--muted) / 0.3);
+  background: hsl(var(--background));
 }
 
 .course-detail-main .course-detail-content {
@@ -288,135 +288,313 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
 
 .error-message {
   text-align: center;
-  color: #dc3545;
+  color: hsl(var(--destructive));
   padding: 40px 20px;
   font-size: 16px;
 }
 
-/* --- course overview styles --- */
-.course-overview-content {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.course-info-section,
-.description-block {
-  background-color: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-  border-radius: 12px;
-  padding: 24px;
-}
-
-.course-info-section .section-title,
-.description-block .section-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
-  margin: 0 0 20px 0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid hsl(var(--border));
-}
-
-.course-info-grid {
+/* --- course overview ---
+   Description in the main column (measure capped near 40 CJK characters),
+   facts and teachers in a fixed side column. Cards sit on the slate canvas
+   without outlines, like the other containers. */
+.course-overview {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.info-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: hsl(var(--muted-foreground));
-}
-
-.info-value {
-  font-size: 15px;
-  font-weight: 500;
-  color: hsl(var(--foreground));
-  line-height: 1.5;
-}
-
-.instructors-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid hsl(var(--border));
-}
-
-.instructors-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.instructor-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background-color: hsl(var(--card));
-  border-radius: 8px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.instructor-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.instructor-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid hsl(var(--primary));
-}
-
-.instructor-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: hsl(var(--foreground));
-}
-
-.course-description-section {
+.overview-aside {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
 }
 
-.description-content {
-  font-size: 15px;
-  line-height: 1.8;
+.overview-card {
+  min-width: 0;
+  padding: 24px;
+  background-color: hsl(var(--card));
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Scoped under .course-overview to win over the shared `.widget-card h2/h3/span` sizes. */
+.course-overview .overview-card-title {
+  display: block;
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
   color: hsl(var(--foreground));
 }
 
-.description-content p {
-  margin: 0;
+.overview-prose {
+  max-width: 42em;
+  font-size: 15px;
+  line-height: 1.8;
+  color: hsl(var(--foreground));
   text-align: justify;
+  overflow-wrap: anywhere;
 }
 
-.no-data {
+.overview-prose p {
+  margin: 0;
+}
+
+.overview-prose p + p {
+  margin-top: 0.8em;
+}
+
+.overview-prose ul,
+.overview-prose ol {
+  margin: 0.8em 0;
+  padding-left: 1.5em;
+}
+
+.overview-prose a {
+  color: hsl(var(--primary));
+  text-underline-offset: 3px;
+}
+
+.overview-english {
+  margin-top: 28px;
+}
+
+.overview-english .overview-prose {
+  font-size: 14px;
+  line-height: 1.7;
   color: hsl(var(--muted-foreground));
-  font-style: italic;
+  text-align: left;
+}
+
+.course-overview .overview-subtitle {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.overview-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.overview-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.overview-fact dt {
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+.overview-fact dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+
+.overview-teachers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-teacher {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.overview-avatar {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.course-overview .overview-avatar > span {
+  font-size: 16px;
+}
+
+.overview-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overview-teacher .skeleton-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.overview-teacher-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.overview-teacher-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.overview-teacher-email {
+  overflow: hidden;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-teacher-email:hover {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.overview-empty {
+  margin: 0;
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+}
+
+.overview-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* Pending work and recent files: rows inside a container keep 1px separators. */
+.overview-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.course-overview .overview-card-head .overview-card-title {
+  margin: 0;
+}
+
+.overview-card-link {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+}
+
+.overview-card-link:hover {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.overview-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+}
+
+.overview-row + .overview-row {
+  border-top: 1px solid hsl(var(--border));
+}
+
+.overview-row-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.course-overview .overview-row-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+a.overview-row-main:hover .overview-row-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.course-overview .overview-row-meta {
+  overflow: hidden;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-row .skeleton-value {
+  width: 60%;
+}
+
+.overview-row-badge {
+  flex-shrink: 0;
+}
+
+.overview-more {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+@media (max-width: 1024px) {
+  .course-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* --- responsive design --- */
 @media (max-width: 1200px) {
   .xzzdpro-root {
     grid-template-columns: 280px 1fr;
-  }
-
-  .course-info-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -432,14 +610,6 @@ body:not(.xzzdpro-body):not(.xzzdpro-disabled)::before {
 
   .xzzdpro-sidebar {
     display: none;
-  }
-
-  .instructors-list {
-    flex-direction: column;
-  }
-
-  .instructor-item {
-    width: 100%;
   }
 }
 

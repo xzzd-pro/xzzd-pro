@@ -346,7 +346,7 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
               <span className="text-sm text-muted-foreground">
                 {"\u6279\u6539\u72b6\u6001\uff1a"}
               </span>
-              <span className="inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300">
+              <span className="inline-flex items-center rounded-full border border-success/25 bg-success/10 px-2.5 py-1 text-xs font-medium text-success">
                 {"\u5df2\u6279\u6539"}
               </span>
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">

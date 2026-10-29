@@ -18,7 +18,7 @@ const badgeVariants = cva(
         overdue:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         urgent:
-          "border-transparent bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-800",
+          "border-transparent bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900",
         soon:
           "border-transparent bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800",
         normal:

@@ -116,7 +116,7 @@ export function NotificationCard({
   const counts = calculateCounts(notifications)
 
   return (
-    <Card className="flex flex-col min-h-0 overflow-hidden">
+    <Card className="flex flex-col min-h-0 overflow-hidden border-transparent">
       <CardHeader className="pb-4 flex-shrink-0">
         <CardTitle className="text-3xl font-semibold">{title}</CardTitle>
       </CardHeader>

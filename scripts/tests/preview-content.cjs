@@ -102,13 +102,14 @@ test('native links retain activity routes and existing query parameters', () => 
   assert.equal(api.isNativePreviewPage('https://courses.zju.edu.cn/'), false)
 })
 
-test('restricted files and DOC never fetch file bytes; TXT uses strict text reader', async () => {
+test('every preview goes to the school reader and never fetches file bytes', async () => {
   const code = ts.transpileModule(fs.readFileSync('src/components/ui/file-preview-modal.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React }
   }).outputText
   for (const [fileName, canDownload, expected] of [
     ['restricted.pdf', false, 0], ['restricted.txt', false, 0],
-    ['restricted.png', false, 0], ['legacy.doc', true, 0], ['notes.txt', true, 1]
+    ['restricted.png', false, 0], ['legacy.doc', true, 0], ['notes.txt', true, 0],
+    ['slides.pdf', true, 0], ['photo.png', true, 0]
   ]) {
     const exports = {}, effects = [], reads = []
     const react = {
@@ -136,6 +137,5 @@ test('restricted files and DOC never fetch file bytes; TXT uses strict text read
     effects.forEach((effect) => effect())
     await Promise.resolve()
     assert.equal(reads.length, expected, fileName)
-    if (expected) assert.equal(reads[0], 'text')
   }
 })

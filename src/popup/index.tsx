@@ -82,7 +82,7 @@ function PopupContent() {
         </div>
 
         {needsRefresh && (
-          <div className="text-xs text-amber-600 pt-3 border-t border-amber-200 bg-amber-50 -mx-6 px-6 pb-3 -mb-6 rounded-b-lg">
+          <div className="text-xs text-warning pt-3 border-t border-warning/25 bg-warning/10 -mx-6 px-6 pb-3 -mb-6 rounded-b-lg">
             设置已保存，请刷新页面以生效
           </div>
         )}

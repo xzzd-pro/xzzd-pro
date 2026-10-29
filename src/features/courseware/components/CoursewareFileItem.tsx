@@ -108,7 +108,8 @@ export function CoursewareFileItem({
   const [showPreview, setShowPreview] = React.useState(false)
   const selectionId = React.useId()
   const isSelectable = file.canDownload && Boolean(onSelectedChange)
-  const useNativePreview = !file.canDownload || /\.doc$/i.test(file.name.trim())
+  // Every file with a learning-activity link opens in the school's own reader.
+  const useNativePreview = Boolean(file.nativePreviewUrl)
 
   return (
     <>

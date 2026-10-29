@@ -47,32 +47,32 @@ export const navIcons = {
 }
 
 // 课程详情页图标
+// Solid course-detail icons on a 24px grid: shapes stay inside 2..22, corners
+// use a 2px radius, and cut-out details (arrow, check, question mark) are 2px wide
+// so they read at the 20px display size and in the inverted active state.
+const solidIcon = (body: string) =>
+  `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">${body}</svg>`
+
 export const courseDetailIcons = {
-  overview: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<rect x="1" y="1" width="10" height="10" rx="1.5"/><rect x="13" y="1" width="10" height="7" rx="1.5"/><rect x="1" y="13" width="10" height="10" rx="1.5"/><rect x="13" y="10" width="10" height="13" rx="1.5"/>
-</svg>`,
-
-  courseware: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" d="M3 3h6l3 3h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm8 6v5H8l4 4 4-4h-3V9h-2Z"/>
-</svg>`,
-
-  homework: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" d="M8 1h8a1 1 0 0 1 1 1v1h3a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3V2a1 1 0 0 1 1-1Zm1 2v2h6V3H9Zm7.8 6.6-6.3 6.3-3.3-3.3-1.4 1.4 4.7 4.7 7.7-7.7-1.4-1.4Z"/>
-</svg>`,
-
-  quiz: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" d="M4 1h10l7 7v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2Zm10 2v5h5l-5-5Zm-3 7a3 3 0 0 0-3 3h2a1 1 0 1 1 1.7.7C9.8 15 10 15.9 10 17h2c0-1 .1-1.2 1.2-2a3 3 0 0 0-2.2-5Zm-1 9v2h2v-2h-2Z"/>
-</svg>`,
-
-  discussion: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<path fill-rule="evenodd" d="M4 2h16a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3h-9l-6 4v-4H4a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3Zm1 5v2h14V7H5Zm0 5v2h10v-2H5Z"/>
-</svg>`,
-
-  grades: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<rect x="1" y="12" width="6" height="11" rx="1"/><rect x="9" y="7" width="6" height="16" rx="1"/><rect x="17" y="1" width="6" height="22" rx="1"/>
-</svg>`,
-
-  back: `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-<path d="M9.3 2.3a1 1 0 0 1 1.4 1.4L4.4 10H15a8 8 0 0 1 8 8v4h-4v-4a4 4 0 0 0-4-4H4.4l6.3 6.3a1 1 0 0 1-1.4 1.4l-9-9a1 1 0 0 1 0-1.4l9-9Z"/>
-</svg>`
+  overview: solidIcon(
+    `<rect x="2" y="2" width="9" height="11" rx="2"/><rect x="13" y="2" width="9" height="7" rx="2"/><rect x="13" y="11" width="9" height="11" rx="2"/><rect x="2" y="15" width="9" height="7" rx="2"/>`
+  ),
+  courseware: solidIcon(
+    `<path fill-rule="evenodd" d="M4 3h4.6a2 2 0 0 1 1.6.8l1.3 1.7H20a2 2 0 0 1 2 2V19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm7 6h2v4.6l1.9-1.9 1.4 1.4-4.3 4.3-4.3-4.3 1.4-1.4 1.9 1.9V9Z"/>`
+  ),
+  homework: solidIcon(
+    `<path fill-rule="evenodd" d="M9 2h6a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2V3a1 1 0 0 1 1-1Zm6.3 8.3 1.4 1.4-5.7 5.7-3.4-3.4 1.4-1.4 2 2 4.3-4.3Z"/>`
+  ),
+  quiz: solidIcon(
+    `<mask id="xzzd-icon-quiz-mark" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24"><rect width="24" height="24" fill="white"/><path d="M9.8 11.4a2.3 2.3 0 1 1 3.3 2.1c-.7.3-1.1.8-1.1 1.5v.4" fill="none" stroke="black" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="18.4" r="1.2" fill="black"/><path d="M14 2v4a2 2 0 0 0 2 2h4" fill="none" stroke="black" stroke-width="1.5"/></mask><path mask="url(#xzzd-icon-quiz-mark)" d="M6 2h7.2a2 2 0 0 1 1.4.6l4.8 4.8a2 2 0 0 1 .6 1.4V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z"/>`
+  ),
+  discussion: solidIcon(
+    `<path d="M5 3h9a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H9.3L5.6 16.8A1 1 0 0 1 4 16v-2.2A3 3 0 0 1 2 11V6a3 3 0 0 1 3-3Z"/><path d="M19 8.2a3 3 0 0 1 3 2.8v5a3 3 0 0 1-2 2.8V21a1 1 0 0 1-1.6.8L14.7 19H11a3 3 0 0 1-2.2-1H14a5 5 0 0 0 5-5V8.2Z"/>`
+  ),
+  grades: solidIcon(
+    `<rect x="2" y="12" width="5" height="10" rx="1.5"/><rect x="9.5" y="7" width="5" height="15" rx="1.5"/><rect x="17" y="2" width="5" height="20" rx="1.5"/>`
+  ),
+  back: solidIcon(
+    `<path d="M10.6 3.9 12.4 5.7l-5.05 5.05H21.5v2.5H7.35l5.05 5.05-1.8 1.8L2.5 12l8.1-8.1Z"/>`
+  )
 }

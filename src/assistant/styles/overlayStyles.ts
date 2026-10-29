@@ -1,38 +1,32 @@
 export const overlayStyles = `/* Assistant Overlay Styles - Extracted from assistantBeautifier.tsx */
 
 :host {
-  /* Default Light Theme Variables */
-  --xzzd-bg-color: #f0f2f8;
-  --xzzd-text-color: #333;
-  --xzzd-text-primary: #1a1a1a;
-  --xzzd-text-secondary: #6b7280;
-  --xzzd-card-bg: #fffffe;
-  --xzzd-card-border: #e5e7eb;
+  /* Aliases for the shared tokens in styles/global.css. Custom properties
+     inherit into the shadow root, and the page's <html> carries the same
+     data-theme as this host, so light/dark values switch with the page. */
+  --xzzd-bg-color: hsl(var(--background));
+  --xzzd-text-color: hsl(var(--foreground));
+  --xzzd-text-primary: hsl(var(--foreground));
+  --xzzd-text-secondary: hsl(var(--muted-foreground));
+  --xzzd-card-bg: hsl(var(--card));
+  --xzzd-card-border: hsl(var(--border));
+  /* The assistant keeps its own blue accent rather than the grey-blue --primary. */
   --xzzd-primary: #007bff;
-  --xzzd-sidebar-bg: #fffffe;
-  --xzzd-user-bubble-bg: #e8eaed;
-  --xzzd-input-bg: #f0f4f9;
-  --xzzd-input-hover: #e2e6ea;
+  --xzzd-sidebar-bg: hsl(var(--card));
+  --xzzd-user-bubble-bg: hsl(var(--secondary));
+  --xzzd-input-bg: hsl(var(--muted));
+  --xzzd-input-hover: hsl(var(--input));
   --xzzd-font-base: "LXGW WenKai Screen", "Microsoft YaHei", "PingFang SC", sans-serif;
   --xzzd-font-emoji: "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
   --math-filter: none;
 }
 
 :host([data-theme='dark']) {
-  --xzzd-bg-color: #121212;
-  --xzzd-text-color: #e0e0e0;
-  --xzzd-text-primary: #f0f0f0;
-  --xzzd-text-secondary: #a0a0a0;
-  --xzzd-card-bg: #1f1f1f;
-  --xzzd-card-border: #333;
   --xzzd-primary: #58a6ff;
-  --xzzd-sidebar-bg: #1e1e1e;
-  --xzzd-user-bubble-bg: #2f2f2f;
-  --xzzd-input-bg: #26282c;
-  --xzzd-input-hover: #333435;
-  --xzzd-scrollbar-track: #2f2f2f;
-  --xzzd-scrollbar-thumb: #555;
-  --xzzd-scrollbar-thumb-hover: #777;
+  --xzzd-input-hover: hsl(var(--muted-foreground) / 0.25);
+  --xzzd-scrollbar-track: hsl(var(--muted));
+  --xzzd-scrollbar-thumb: hsl(var(--muted-foreground) / 0.5);
+  --xzzd-scrollbar-thumb-hover: hsl(var(--muted-foreground) / 0.7);
   --math-filter: invert(1) hue-rotate(180deg);
 }
 
@@ -324,7 +318,8 @@ button, input, select, textarea, label {
 .flashcard-panel {
   min-height: 0;
   background-color: var(--xzzd-card-bg);
-  border: 1px solid var(--xzzd-card-border);
+  border: 1px solid transparent;
+  box-shadow: var(--shadow-sm);
   border-radius: 16px;
   overflow: hidden;
 }
@@ -665,8 +660,8 @@ button, input, select, textarea, label {
     box-sizing: border-box;
 }
 :host([data-theme='dark']) .attachment-card {
-    background-color: #1e1e1e;
-    border-color: #333;
+    background-color: var(--xzzd-input-bg);
+    border-color: var(--xzzd-card-border);
 }
 /* File badge base style */
 .file-badge {
@@ -781,12 +776,9 @@ button, input, select, textarea, label {
   overflow-x: auto;
 }
 .message.user .message-content {
-  background-color: var(--xzzd-user-bubble-bg, #e0e0e0);
+  background-color: var(--xzzd-user-bubble-bg);
   color: var(--xzzd-text-primary);
   box-shadow: none;
-}
-:host([data-theme='light']) .message.user .message-content {
-    background-color: #e8eaed;
 }
 .message-content h1 { font-size: 1.5em; font-weight: 700; margin: 16px 0 8px 0; }
 .message-content h2 { font-size: 1.3em; font-weight: 600; margin: 14px 0 8px 0; }
@@ -822,7 +814,7 @@ button, input, select, textarea, label {
   max-width: 100%;
   width: 100%;
   margin: 0;
-  background-color: var(--xzzd-input-bg, #f0f4f9);
+  background-color: var(--xzzd-input-bg);
   border: 1px solid var(--xzzd-card-border);
   border-radius: 28px;
   padding: 12px;
@@ -831,11 +823,8 @@ button, input, select, textarea, label {
   position: relative;
   transition: background-color 0.2s, border-color 0.2s;
 }
-:host([data-theme='light']) .modern-input-container {
-    background-color: #e1e5eb;
-}
 .modern-input-container:focus-within {
-  background-color: var(--xzzd-input-bg, #f0f4f9);
+  background-color: var(--xzzd-input-bg);
   border-color: var(--xzzd-primary);
 }
 
@@ -876,7 +865,7 @@ button, input, select, textarea, label {
     position: relative;
 }
 :host([data-theme='dark']) .preview-card {
-    background-color: #2f2f2f;
+    background-color: var(--xzzd-input-bg);
 }
 .preview-card img.preview-thumbnail {
     width: 24px;
@@ -943,8 +932,8 @@ button, input, select, textarea, label {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background-color: rgba(255, 255, 255, 0.85);
-    color: #333;
+    background-color: hsl(var(--background) / 0.85);
+    color: hsl(var(--foreground));
     border: none;
     cursor: pointer;
     display: flex;
@@ -957,15 +946,16 @@ button, input, select, textarea, label {
     z-index: 10;
 }
 .remove-attachment-btn:hover {
-    background-color: #ff5252;
-    color: white;
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
 }
 :host([data-theme='dark']) .remove-attachment-btn {
     background-color: rgba(0, 0, 0, 0.7);
     color: white;
 }
 :host([data-theme='dark']) .remove-attachment-btn:hover {
-    background-color: #ff5252;
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
 }
 
 .modern-input-footer {
@@ -1179,8 +1169,8 @@ button, input, select, textarea, label {
 }
 .settings-content { flex: 1; overflow-y: auto; padding: 20px; }
 .settings-notice {
-  background-color: #fff3cd;
-  border: 1px solid #ffc107;
+  background-color: hsl(var(--warning) / 0.1);
+  border: 1px solid hsl(var(--warning) / 0.35);
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 20px;
@@ -1189,11 +1179,11 @@ button, input, select, textarea, label {
 }
 .settings-notice strong {
   display: inline;
-  color: #856404;
+  color: hsl(var(--warning));
 }
 .settings-notice p {
   margin: 0;
-  color: #856404;
+  color: hsl(var(--warning));
 }
 
 /* Status Toast */
@@ -1230,8 +1220,8 @@ button, input, select, textarea, label {
   visibility: visible;
   transform: translateX(-50%) translateY(0);
 }
-.status-toast.success { border-color: #28a745; color: #28a745; }
-.status-toast.error { border-color: #dc3545; color: #dc3545; }
+.status-toast.success { border-color: hsl(var(--success)); color: hsl(var(--success)); }
+.status-toast.error { border-color: hsl(var(--destructive)); color: hsl(var(--destructive)); }
 .status-toast.info { border-color: var(--xzzd-primary); color: var(--xzzd-primary); }
 .toast-spinner {
     width: 14px;
@@ -1328,9 +1318,9 @@ button, input, select, textarea, label {
   filter: brightness(0.96);
 }
 .assistant-modal-btn.danger {
-  border-color: rgba(220, 53, 69, 0.32);
-  background: #dc3545;
-  color: #fff;
+  border-color: hsl(var(--destructive) / 0.32);
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
 }
 .assistant-modal-btn.danger:hover {
   filter: brightness(0.94);
@@ -1375,8 +1365,8 @@ button, input, select, textarea, label {
   opacity: 0.6;
 }
 .stream-loading-btn.danger {
-  border-color: rgba(220, 53, 69, 0.32);
-  color: #b42334;
+  border-color: hsl(var(--destructive) / 0.32);
+  color: hsl(var(--destructive));
 }
 .stream-loading-preview-wrap {
   border: 1px solid var(--xzzd-card-border);
@@ -1568,9 +1558,9 @@ button, input, select, textarea, label {
   min-width: 0;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(245, 158, 11, 0.34);
-  background: rgba(245, 158, 11, 0.16);
-  color: #92400e;
+  border: 1px solid hsl(var(--warning) / 0.34);
+  background: hsl(var(--warning) / 0.12);
+  color: hsl(var(--warning));
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
@@ -1579,22 +1569,22 @@ button, input, select, textarea, label {
   box-sizing: border-box;
 }
 .flashcard-tool-btn:hover {
-  background: rgba(245, 158, 11, 0.24);
-  color: #78350f;
+  background: hsl(var(--warning) / 0.2);
+  color: hsl(var(--warning));
 }
 .flashcard-tool-btn.is-favorited {
-  border-color: rgba(245, 158, 11, 0.48);
-  background: rgba(245, 158, 11, 0.28);
-  color: #78350f;
+  border-color: hsl(var(--warning) / 0.48);
+  background: hsl(var(--warning) / 0.24);
+  color: hsl(var(--warning));
 }
 .flashcard-tool-btn.danger {
-  color: #b91c1c;
-  border-color: rgba(239, 68, 68, 0.38);
-  background: rgba(239, 68, 68, 0.14);
+  color: hsl(var(--destructive));
+  border-color: hsl(var(--destructive) / 0.38);
+  background: hsl(var(--destructive) / 0.1);
 }
 .flashcard-tool-btn.danger:hover {
-  background: rgba(239, 68, 68, 0.22);
-  color: #991b1b;
+  background: hsl(var(--destructive) / 0.18);
+  color: hsl(var(--destructive));
 }
 .flashcard-tool-btn:disabled {
   opacity: 0.45;
@@ -1684,9 +1674,9 @@ button, input, select, textarea, label {
   padding: 10px 0;
 }
 .flashcard-btn:active { transform: translateY(1px) scale(0.98); }
-.flashcard-btn.danger { background: #fee2e2; color: #b91c1c; }
-.flashcard-btn.warning { background: #fef9c3; color: #92400e; }
-.flashcard-btn.success { background: #dcfce7; color: #166534; }
+.flashcard-btn.danger { background: hsl(var(--destructive) / 0.12); color: hsl(var(--destructive)); }
+.flashcard-btn.warning { background: hsl(var(--warning) / 0.12); color: hsl(var(--warning)); }
+.flashcard-btn.success { background: hsl(var(--success) / 0.12); color: hsl(var(--success)); }
 .flashcard-btn.primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
 .flashcard-overlay {
   position: absolute;
@@ -1727,9 +1717,9 @@ button, input, select, textarea, label {
   align-items: center;
   gap: 6px;
 }
-.flashcard-stat.red { background: #fee2e2; color: #b91c1c; }
-.flashcard-stat.yellow { background: #fef9c3; color: #92400e; }
-.flashcard-stat.green { background: #dcfce7; color: #166534; }
+.flashcard-stat.red { background: hsl(var(--destructive) / 0.12); color: hsl(var(--destructive)); }
+.flashcard-stat.yellow { background: hsl(var(--warning) / 0.12); color: hsl(var(--warning)); }
+.flashcard-stat.green { background: hsl(var(--success) / 0.12); color: hsl(var(--success)); }
 .icon-svg {
   width: 16px;
   height: 16px;
@@ -1742,9 +1732,9 @@ button, input, select, textarea, label {
   height: 18px;
 }
 .cloze-blank { border-bottom: 2px dotted var(--xzzd-text-secondary); padding: 0 4px; }
-.cloze-highlight { background: #fef08a; padding: 0 4px; border-radius: 4px; }
-.flashcard-tf-result.ok { color: #166534; }
-.flashcard-tf-result.error { color: #b91c1c; }
+.cloze-highlight { background: hsl(var(--warning) / 0.18); color: inherit; padding: 0 4px; border-radius: 4px; }
+.flashcard-tf-result.ok { color: hsl(var(--success)); }
+.flashcard-tf-result.error { color: hsl(var(--destructive)); }
 .flashcard-tip-container {
   display: flex;
   align-items: center;
@@ -1934,12 +1924,12 @@ button, input, select, textarea, label {
   color: var(--xzzd-text-primary);
 }
 .mindmap-tool-btn.danger {
-  border-color: rgba(220, 53, 69, 0.35);
-  color: #dc3545;
+  border-color: hsl(var(--destructive) / 0.35);
+  color: hsl(var(--destructive));
 }
 .mindmap-tool-btn.danger:hover {
-  background: rgba(220, 53, 69, 0.1);
-  color: #b3263a;
+  background: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
 }
 .mindmap-tool-btn .icon-svg {
   width: 14px;

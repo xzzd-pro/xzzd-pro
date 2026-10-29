@@ -24,6 +24,9 @@ import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import { cn } from "@/lib/utils"
 import { nativeCurrentPageUrl } from "@/lib/nativePreview"
 
+/** Set to false to render PDFs, text and media inside the extension again. */
+const NATIVE_PREVIEW_ONLY = true
+
 interface FilePreviewModalProps {
   isOpen: boolean
   onClose: () => void
@@ -262,7 +265,9 @@ export function FilePreviewModal({
   const isVideo = VIDEO_EXTENSIONS.includes(ext)
   const isAudio = AUDIO_EXTENSIONS.includes(ext)
   const isText = TEXT_EXTENSIONS.includes(ext)
-  const useNativePreview = !canDownload || ext === "doc"
+  // All previews go through the school's reader. The in-extension renderers below
+  // (pdf.js pages, extracted text, media) stay available behind this switch.
+  const useNativePreview = NATIVE_PREVIEW_ONLY || !canDownload || ext === "doc"
   const nativeUrl = nativePreviewUrl || nativeCurrentPageUrl(window.location.href)
 
   React.useEffect(() => {
@@ -465,7 +470,7 @@ export function FilePreviewModal({
               <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
               <h4 className="mb-2 text-lg font-medium">请使用学在浙大原生预览</h4>
               <p className="mb-4 text-muted-foreground">
-                {canDownload ? "旧版 DOC 文档使用学校在线阅读器查看。" : "此文件禁止下载，插件不会请求原文件。"}
+                {canDownload ? "文件使用学校在线阅读器查看。" : "此文件禁止下载，插件不会请求原文件。"}
                 点击后将打开学校阅读器，是否可预览以学校权限为准。
               </p>
               <NativePreviewButton fileUrl={fileUrl} activityUrl={nativeUrl} />

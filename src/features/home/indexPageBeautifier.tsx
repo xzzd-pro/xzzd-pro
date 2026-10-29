@@ -24,6 +24,7 @@ import { TodoPanel, type TodoItem } from "@/features/home/components/TodoPanel"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 
 import type { ApiTodoData, ApiCourseData } from "@/types"
+import { fetchTodos, todoActivityUrl, TODO_TYPE_NAMES } from "@/shared/api/todos"
 
 const $ = (selector: string): HTMLElement | null =>
   document.querySelector(selector)
@@ -33,43 +34,6 @@ function formatDate(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
   return `${year}.${month}.${day}`
-}
-
-function generateActivityUrl(item: ApiTodoData): string {
-  if (!item.course_id || !item.id) {
-    return "#"
-  }
-  // Exam type uses different URL format
-  if (item.type === "exam") {
-    return `https://courses.zju.edu.cn/course/${item.course_id}/learning-activity#/exam/${item.id}`
-  }
-  return `https://courses.zju.edu.cn/course/${item.course_id}/learning-activity#/${item.id}`
-}
-
-/* get todolist api */
-async function fetchTodosFromApi(): Promise<ApiTodoData[]> {
-  try {
-    const response = await fetch("/api/todos?no-intercept=true")
-
-    if (!response.ok) {
-      console.error("XZZDPRO: API 请求失败", response.status)
-      return []
-    }
-
-    const data = await response.json()
-
-    if (data.todo_list && Array.isArray(data.todo_list)) {
-      return data.todo_list
-    }
-
-    if (Array.isArray(data)) return data
-
-    console.warn("XZZDPRO: 未找到预期的数据结构", data)
-    return []
-  } catch (error) {
-    console.error("XZZDPRO: 网络请求出错", error)
-    return []
-  }
 }
 
 /* get courses api */
@@ -174,7 +138,7 @@ function renderLoginPrompt(container: HTMLElement, studentId: string) {
         margin-top: 5px;
         font-size: 12px;
       ">去登录</button>
-      <p style="font-size:10px;color:gray;margin-top:5px">登录成功后页面将自动刷新</p>
+      <p style="font-size:10px;color:hsl(var(--muted-foreground));margin-top:5px">登录成功后页面将自动刷新</p>
     </div>
   `
 
@@ -569,7 +533,7 @@ async function loadAndRenderTodos() {
 
   let rawTodos: ApiTodoData[] = []
   try {
-    rawTodos = await fetchTodosFromApi()
+    rawTodos = (await fetchTodos()) ?? []
   } catch (e) {
     console.warn("XZZDPRO: 获取待办异常", e)
   }
@@ -577,20 +541,14 @@ async function loadAndRenderTodos() {
   const today = new Date()
 
   // Process todos
-  const typeMap: Record<string, string> = {
-    homework: "作业",
-    exam: "考试",
-    evaluation: "评教",
-    questionnaire: "问卷",
-    vote: "投票",
-  }
+
 
   const todos: TodoItem[] = rawTodos
     .map((item) => {
       const title = item.title || "未知任务"
-      const typeName = typeMap[item.type] || item.type
+      const typeName = TODO_TYPE_NAMES[item.type] || item.type
       const courseName = item.course_name || ""
-      const linkUrl = generateActivityUrl(item)
+      const linkUrl = todoActivityUrl(item)
 
       let daysLeft: number | null = null
       let deadlineText = "无截止日期"

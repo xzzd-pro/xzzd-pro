@@ -197,7 +197,7 @@ function HomeworkSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="overflow-hidden border-border/70">
+        <Card key={i} className="overflow-hidden border-transparent">
           <CardHeader className="p-4">
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -329,7 +329,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
           <Card
             key={homework.id}
             className={cn(
-              "overflow-hidden border border-border/70 bg-card/95 shadow-sm transition-all duration-200",
+              "overflow-hidden border border-transparent bg-card shadow-sm transition-all duration-200",
               "hover:border-primary/30 hover:shadow-md",
               homework.canSubmit && "hover:-translate-y-0.5"
             )}
@@ -357,7 +357,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                           "border-transparent text-xs",
                           homework.canSubmit && "border-primary/20 bg-primary/10 text-primary",
                           homework.isNotStarted &&
-                            "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300"
+                            "border-warning/25 bg-warning/10 text-warning"
                         )}
                       >
                         {statusText}
@@ -367,8 +367,8 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                         className={cn(
                           "text-xs",
                           homework.submitted
-                            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
-                            : "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-300"
+                            ? "border-success/25 bg-success/10 text-success"
+                            : "border-warning/25 bg-warning/10 text-warning"
                         )}
                       >
                         {homework.submitted ? "\u5df2\u63d0\u4ea4" : "\u672a\u63d0\u4ea4"}
@@ -390,7 +390,7 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                         className={cn(
                           "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
                           homework.isReviewed
-                            ? "border border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-400/10 dark:text-emerald-300"
+                            ? "border border-success/25 bg-success/10 text-success"
                             : "bg-muted text-muted-foreground"
                         )}
                       >

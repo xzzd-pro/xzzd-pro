@@ -1,8 +1,18 @@
 import { findNotificationUser } from "../findNotificationUser"
 import * as React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { storage } from "@/lib/storage"
 import { NotificationCard } from "./NotificationCard"
+import {
+  SPLIT_DEFAULT,
+  SPLIT_KEYBOARD_STEP,
+  SPLIT_MAX,
+  SPLIT_MIN,
+  SPLIT_STORAGE_KEY,
+  clampSplitRatio,
+  ratioFromPointer,
+  splitColumns
+} from "../splitRatio"
 import { createMyCoursesPayload, fetchMyCoursesResponse } from "@/shared/api/myCoursesApi"
 import type { ApiNotificationData, ProcessedNotification, ReadTimestamps, NotificationType } from "@/types"
 
@@ -209,6 +219,68 @@ export function NotificationsPanel() {
   const [isLoading, setIsLoading] = useState(true)
   // 临时已读的通知类型，用于去掉红点但保持在未读栏中
   const [tempReadTypes, setTempReadTypes] = useState<Set<string>>(new Set())
+  // 未读栏占两栏总宽的比例，可拖动中间分隔条调整（仅宽屏双栏时生效）
+  const [splitRatio, setSplitRatioState] = useState(SPLIT_DEFAULT)
+  // Mirrors the state so fast key repeats read the latest value, not the last render's.
+  const splitRatioRef = useRef(SPLIT_DEFAULT)
+  const setSplitRatio = useCallback((ratio: number) => {
+    splitRatioRef.current = ratio
+    setSplitRatioState(ratio)
+  }, [])
+  const splitContainerRef = useRef<HTMLDivElement>(null)
+  const draggingRef = useRef(false)
+
+  useEffect(() => {
+    let cancelled = false
+    storage.get<number>(SPLIT_STORAGE_KEY)
+      .then((saved) => {
+        if (!cancelled && saved !== undefined) setSplitRatio(clampSplitRatio(saved))
+      })
+      .catch((error) => console.warn('XZZDPRO: 读取公告栏宽度失败', error))
+    return () => { cancelled = true }
+  }, [])
+
+  const saveSplitRatio = useCallback((ratio: number) => {
+    storage.set(SPLIT_STORAGE_KEY, ratio)
+      .catch((error) => console.warn('XZZDPRO: 保存公告栏宽度失败', error))
+  }, [])
+
+  const handleSplitPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    draggingRef.current = true
+  }, [])
+
+  const handleSplitPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || !splitContainerRef.current) return
+    setSplitRatio(ratioFromPointer(event.clientX, splitContainerRef.current.getBoundingClientRect()))
+  }, [])
+
+  const handleSplitPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current) return
+    draggingRef.current = false
+    event.currentTarget.releasePointerCapture(event.pointerId)
+    if (splitContainerRef.current) {
+      const ratio = ratioFromPointer(event.clientX, splitContainerRef.current.getBoundingClientRect())
+      setSplitRatio(ratio)
+      saveSplitRatio(ratio)
+    }
+  }, [saveSplitRatio])
+
+  const handleSplitKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = event.key === 'ArrowLeft' ? -SPLIT_KEYBOARD_STEP : event.key === 'ArrowRight' ? SPLIT_KEYBOARD_STEP : 0
+    if (!step) return
+    event.preventDefault()
+    const next = clampSplitRatio(splitRatioRef.current + step)
+    setSplitRatio(next)
+    saveSplitRatio(next)
+  }, [setSplitRatio, saveSplitRatio])
+
+  const resetSplitRatio = useCallback(() => {
+    setSplitRatio(SPLIT_DEFAULT)
+    saveSplitRatio(SPLIT_DEFAULT)
+  }, [saveSplitRatio])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -298,7 +370,11 @@ export function NotificationsPanel() {
   const readNotifications = allNotifications.filter(n => n.read)
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
+    <div
+      ref={splitContainerRef}
+      className="grid grid-cols-1 gap-6 h-full min-h-0 lg:gap-0 lg:[grid-template-columns:var(--bulletin-split)]"
+      style={{ "--bulletin-split": splitColumns(splitRatio) } as React.CSSProperties}
+    >
       <NotificationCard
         title="未读公告"
         notifications={unreadNotifications}
@@ -309,6 +385,25 @@ export function NotificationsPanel() {
         isLoading={isLoading}
         tempReadTypes={tempReadTypes}
       />
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整未读与已读公告的宽度"
+        aria-valuemin={Math.round(SPLIT_MIN * 100)}
+        aria-valuemax={Math.round(SPLIT_MAX * 100)}
+        aria-valuenow={Math.round(splitRatio * 100)}
+        title="拖动调整宽度，双击恢复"
+        tabIndex={0}
+        className="group hidden lg:flex justify-center cursor-ew-resize touch-none select-none outline-none"
+        onPointerDown={handleSplitPointerDown}
+        onPointerMove={handleSplitPointerMove}
+        onPointerUp={handleSplitPointerUp}
+        onPointerCancel={handleSplitPointerUp}
+        onKeyDown={handleSplitKeyDown}
+        onDoubleClick={resetSplitRatio}
+      >
+        <div className="w-0.5 h-full rounded-full bg-transparent transition-colors group-hover:bg-primary/40 group-focus-visible:bg-primary group-active:bg-primary" />
+      </div>
       <NotificationCard
         title="已读公告"
         notifications={readNotifications}

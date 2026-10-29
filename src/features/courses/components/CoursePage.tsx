@@ -65,7 +65,7 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
   const statusOptions = [{ value: "ongoing", label: "进行中" }, { value: "notStarted", label: "未开始" }, { value: "closed", label: "已结束" }]
   return (
     <div className="course-catalog h-full flex flex-col space-y-6">
-      <Card className="flex-shrink-0">
+      <Card className="flex-shrink-0 border-transparent">
         <CardHeader><CardTitle>课程搜索</CardTitle></CardHeader>
         <CardContent className="pt-2 space-y-5">
           <CourseSearchForm disabled={!ready} onSearch={keyword => apply({ ...filters, keyword })} />
@@ -95,7 +95,7 @@ export function CoursePage({ courses, loading = false }: CoursePageProps) {
           {warning && <p role="status" className="text-sm text-muted-foreground">{warning} <Button size="sm" variant="ghost" className="bg-transparent text-foreground" disabled={!ready} onClick={() => { setReady(false); setAttempt(value => value + 1) }}>重试预加载</Button></p>}
         </CardContent>
       </Card>
-      <Card className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <Card className="flex-1 flex flex-col min-h-0 overflow-hidden border-transparent">
         <CardHeader className="flex-shrink-0"><CardTitle>我的课程</CardTitle></CardHeader>
         <CardContent className="flex-1 min-h-0 overflow-auto p-6"><CourseGrid courses={visibleCourses} loading={loading || !ready} /></CardContent>
       </Card>
