@@ -143,7 +143,7 @@ src/
   shared/
     layout/       两类页面共用的页头、侧栏、主题与布局拖拽
     course-detail/ 单门课程的页面骨架、活动识别与面板挂载
-    contentScripts/ 内容脚本初始化、重试与页面清理
+    content-scripts/ 内容脚本初始化、重试与页面清理
     api/          共用接口请求
   lib/            存储、主题、文件格式等基础工具
   styles/         全局与页面样式

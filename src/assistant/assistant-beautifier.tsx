@@ -3,7 +3,7 @@
  *
  * This module serves as the main entry point for the learning assistant overlay.
  * It has been refactored to use modular architecture:
- * - Styles: src/assistant/styles/overlay-styles.css
+ * - Styles: src/assistant/styles/overlay-styles.ts
  * - Utils: src/assistant/utils/
  * - Handlers: src/assistant/handlers/
  */

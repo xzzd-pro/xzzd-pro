@@ -5,6 +5,8 @@ export const PAYLOAD_INDEX_KEY = "xzzdpro_payload_index"
 export interface PayloadIndexEntry {
   type: AttachmentPayloadType
   size: number
+  /** Bytes actually kept in storage (Blobs are stored as base64, about 4/3 of size). */
+  storedBytes?: number
   createdAt: number
   lastAccessed: number
 }

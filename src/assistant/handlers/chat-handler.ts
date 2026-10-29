@@ -1515,15 +1515,30 @@ export function setupChatHandlers(): void {
     externalMaterialToggleHandler
   )
 
-  // Close menu when clicking outside
-  document.addEventListener("click", (e) => {
+  // Close the menu on clicks outside it. The shadow root is closed, so a
+  // document listener cannot see which inner element was clicked: clicks
+  // inside the assistant are checked on its shadow root, and the document
+  // listener only handles clicks that did not come from the assistant host.
+  const assistantRoot = overlayElement?.getRootNode()
+  const hidePlusMenu = () => {
     if (plusMenu && plusMenu.style.display !== "none") {
-      const target = e.composedPath()[0] as HTMLElement
-      if (!target.closest(".plus-menu-container")) {
-        plusMenu.style.display = "none"
-      }
+      plusMenu.style.display = "none"
     }
-  })
+  }
+  if (assistantRoot instanceof ShadowRoot) {
+    assistantRoot.addEventListener("click", (e) => {
+      const target = e.composedPath()[0]
+      if (
+        !(target instanceof Element) ||
+        !target.closest(".plus-menu-container")
+      ) {
+        hidePlusMenu()
+      }
+    })
+    document.addEventListener("click", (e) => {
+      if (!e.composedPath().includes(assistantRoot.host)) hidePlusMenu()
+    })
+  }
 
   // File Input Change
   fileInput?.addEventListener("change", (e) => {

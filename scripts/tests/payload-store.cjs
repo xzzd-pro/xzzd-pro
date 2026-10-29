@@ -134,7 +134,7 @@ function fakeIndexedDB({ records = [], readError = false } = {}) {
   }
 }
 
-function loadStore({ storage, indexedDB }) {
+function loadStore({ storage, indexedDB, indexResponse = { ok: true } }) {
   const exports = {}
   const ops = []
   vm.runInNewContext(STORE_SOURCE, {
@@ -150,7 +150,7 @@ function loadStore({ storage, indexedDB }) {
         ? {
             sendToBackground: async ({ body }) => {
               ops.push(body)
-              return { ok: true }
+              return indexResponse
             }
           }
         : { dataUriToBlob: () => new Blob() }
@@ -179,7 +179,13 @@ test("legacy payloads are copied, then the old database is deleted", async () =>
   assert.deepEqual(JSON.parse(JSON.stringify(store.ops[0])), {
     op: "put",
     id: "x",
-    entry: { type: "text", size: 5, createdAt: 1, lastAccessed: 1 }
+    entry: {
+      type: "text",
+      size: 5,
+      storedBytes: 5,
+      createdAt: 1,
+      lastAccessed: 1
+    }
   })
   assert.equal(storage.data.xzzdpro_payload_legacy_migrated, true)
   assert.equal(indexedDB.calls.deleted, 1)
@@ -211,4 +217,44 @@ test("a failed copy keeps the legacy database and retries on the next load", asy
   assert.equal(healthy.data["xzzdpro_payload:y"].data, "hello")
   assert.equal(healthy.data.xzzdpro_payload_legacy_migrated, true)
   assert.equal(indexedDB.calls.deleted, 1)
+})
+
+test("a payload whose index update fails is not left behind", async () => {
+  const storage = fakeStorage({ xzzdpro_payload_legacy_migrated: true })
+  const store = loadStore({
+    storage,
+    indexedDB: fakeIndexedDB(),
+    indexResponse: { ok: false, error: "context invalidated" }
+  })
+  await assert.rejects(
+    store.putPayload({ id: "z", type: "text", data: "hi", size: 2 }),
+    /context invalidated/
+  )
+  assert.equal(storage.data["xzzdpro_payload:z"], undefined)
+})
+
+test("garbage collection counts stored bytes, not the original file size", async () => {
+  const entry = (storedBytes, lastAccessed) => ({
+    type: "pdf_blob",
+    size: 30,
+    storedBytes,
+    createdAt: 1,
+    lastAccessed
+  })
+  const storage = fakeStorage({
+    xzzdpro_payload_legacy_migrated: true,
+    xzzdpro_payload_legacy_deleted: true,
+    xzzdpro_payload_index: { old: entry(40, 1), new: entry(40, 2) },
+    "xzzdpro_payload:old": { type: "pdf_blob", data: "x" },
+    "xzzdpro_payload:new": { type: "pdf_blob", data: "x" }
+  })
+  const store = loadStore({ storage, indexedDB: fakeIndexedDB() })
+  // Original sizes total 60 (fits 70), but 80 bytes are stored.
+  const result = await store.gcPayloads(70)
+  assert.deepEqual([...result.removed], ["old"])
+  assert.equal(result.totalBytes, 40)
+  assert.equal(storage.data["xzzdpro_payload:old"], undefined)
+  assert.deepEqual(JSON.parse(JSON.stringify(store.ops)), [
+    { op: "delete", ids: ["old"] }
+  ])
 })

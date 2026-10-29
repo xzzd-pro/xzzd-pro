@@ -1,4 +1,4 @@
-export const OVERLAY_STYLES = `/* Assistant Overlay Styles - Extracted from assistantBeautifier.tsx */
+export const OVERLAY_STYLES = `/* Assistant overlay styles, injected into the assistant's shadow root. */
 
 :host {
   /* Aliases for the shared tokens in styles/global.css. Custom properties

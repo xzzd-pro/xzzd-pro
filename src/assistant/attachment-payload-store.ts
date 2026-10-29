@@ -72,16 +72,26 @@ async function writeRecord(record: AttachmentPayloadRecord): Promise<void> {
         }
       : { type: record.type, data: record.data }
   await chrome.storage.local.set({ [recordKey(record.id)]: stored })
-  await updateIndex({
-    op: "put",
-    id: record.id,
-    entry: {
-      type: record.type,
-      size: record.size,
-      createdAt: record.createdAt,
-      lastAccessed: record.lastAccessed
-    }
-  })
+  try {
+    await updateIndex({
+      op: "put",
+      id: record.id,
+      entry: {
+        type: record.type,
+        size: record.size,
+        storedBytes: estimatePayloadBytes(stored.data),
+        createdAt: record.createdAt,
+        lastAccessed: record.lastAccessed
+      }
+    })
+  } catch (error) {
+    // Unindexed data would never be garbage-collected, so drop it. The index
+    // may still have applied the change if only the reply was lost, so also
+    // ask it to forget the entry.
+    await chrome.storage.local.remove(recordKey(record.id)).catch(() => {})
+    await updateIndex({ op: "delete", ids: [record.id] }).catch(() => {})
+    throw error
+  }
 }
 
 let legacyMigration: Promise<void> | null = null
@@ -273,8 +283,8 @@ export async function deletePayload(id: string): Promise<void> {
 }
 
 /**
- * Deletes least recently used payloads until the total size fits the limit.
- * @param limitBytes Maximum total size to keep.
+ * Deletes least recently used payloads until the stored size fits the limit.
+ * @param limitBytes Maximum bytes to keep in storage (base64 included).
  * @returns Ids that were removed and the remaining total size in bytes.
  */
 export async function gcPayloads(
@@ -285,7 +295,7 @@ export async function gcPayloads(
   const all = Object.entries(index).map(([id, meta]) => ({ id, ...meta }))
   let total = 0
   for (const record of all) {
-    total += record.size || 0
+    total += record.storedBytes ?? record.size ?? 0
   }
 
   if (total <= limitBytes) {
@@ -299,7 +309,7 @@ export async function gcPayloads(
   for (const record of sorted) {
     if (total <= limitBytes) break
     removed.push(record.id)
-    total -= record.size || 0
+    total -= record.storedBytes ?? record.size ?? 0
   }
   await chrome.storage.local.remove(removed.map(recordKey))
   await updateIndex({ op: "delete", ids: removed })
