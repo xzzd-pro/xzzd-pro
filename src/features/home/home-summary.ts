@@ -1,7 +1,7 @@
 /**
  * Summary bar at the top of the home page: one sentence that folds the greeting
- * and today's counts together ("早上好，今天有 2 节课，2 项待办 7 天内截止"),
- * the date beneath it, and a random quote on the side.
+ * and today's counts together ("早上好，今天有 2 节课，2 项待办即将截止"),
+ * the date beneath it, and a random 竺可桢 quote on the side.
  */
 
 export type SummaryStat = "courses" | "dueSoon" | "overdue"
@@ -15,25 +15,54 @@ export interface Quote {
 }
 
 /**
- * Zhejiang University sayings, one picked at random per visit: the motto, the shared values,
- * lines from the school song (lyrics by 马一浮, d. 1967) and words of president
- * 竺可桢 (d. 1974) — all outside copyright.
+ * Words of 竺可桢 (ZJU president 1936-1949, d. 1974, now public domain), one
+ * picked at random per visit. Wording follows the 竺可桢语录 section of Zhejiang
+ * University's 《竺可桢精神宣传册》; longer passages are trimmed to a continuous
+ * excerpt without rewording.
  */
 export const QUOTES: Quote[] = [
-  { text: "求是创新", source: "浙江大学校训" },
+  { text: "不盲从，不附和，一以理智为依归。", source: "竺可桢" },
+  { text: "不屈不挠，不畏强御，只问是非，不计利害。", source: "竺可桢" },
+  { text: "虚怀若谷，不武断，不蛮横。", source: "竺可桢" },
   {
-    text: "海纳江河，启真厚德，开物前民，树我邦国。",
-    source: "浙江大学共同价值观"
+    text: "专心一致，实事求是，不作无病之呻吟，严谨整饬，毫不苟且。",
+    source: "竺可桢"
   },
-  { text: "大不自多，海纳江河。", source: "浙江大学校歌" },
-  { text: "惟学无际，际于天地。", source: "浙江大学校歌" },
-  { text: "形上谓道兮，形下谓器。", source: "浙江大学校歌" },
-  { text: "无曰已是，无曰遂真。", source: "浙江大学校歌" },
-  { text: "靡革匪因，靡故匪新。", source: "浙江大学校歌" },
-  { text: "何以新之，开物前民。", source: "浙江大学校歌" },
-  { text: "树我邦国，天下来同。", source: "浙江大学校歌" },
-  { text: "只问是非，不计利害。", source: "竺可桢" },
-  { text: "到浙大来做什么？将来毕业后做什么样的人？", source: "竺可桢" }
+  { text: "科学永远对抗着迷信以及一切蒙昧无知的思想。", source: "竺可桢" },
+  {
+    text: "科学家的态度，应该是知之为知之，不知为不知，丝毫不能苟且。",
+    source: "竺可桢"
+  },
+  {
+    text: "大学的最大目标是在蕲求真理，要蕲求真理，必得锻炼思想，使人人能辨别真伪是非。",
+    source: "竺可桢"
+  },
+  {
+    text: "科学事业之目的在于求真理。只有求真理，才值得科学家的一番努力。",
+    source: "竺可桢"
+  },
+  { text: "排万难冒百死以求真知。", source: "竺可桢" },
+  {
+    text: "教育的目的，不但是在改进个人，还要能影响于社会。",
+    source: "竺可桢"
+  },
+  { text: "我们人生的目的是在能服务，而不在享受。", source: "竺可桢" },
+  {
+    text: "教育的发达，学风的优良，在人不在屋，所谓“斯是陋室，惟吾德馨”。",
+    source: "竺可桢"
+  },
+  {
+    text: "若侧重应用的科学，而置纯粹科学、人文科学于不顾，这是谋食而不谋道的办法。",
+    source: "竺可桢"
+  },
+  {
+    text: "教授是大学的灵魂，一个大学学风的优劣，全视教授人选为转移。",
+    source: "竺可桢"
+  },
+  {
+    text: "第一，到浙大来做什么？第二，将来毕业后要做什么样的人？",
+    source: "竺可桢，1936 年对新生谈话"
+  }
 ]
 
 /**
