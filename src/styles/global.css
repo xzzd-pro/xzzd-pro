@@ -1245,6 +1245,10 @@
 .modal-overlay.active {
   opacity: 1;
   visibility: visible;
+  /* Visible at once on open so focus can move into the dialog. */
+  transition:
+    opacity 0.2s ease,
+    visibility 0s;
 }
 
 .modal-content {

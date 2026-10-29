@@ -1,7 +1,7 @@
-# XZZD-PRO
+# XZZD-Pro
 
-XZZD-PRO 是一个面向学在浙大（`courses.zju.edu.cn`）的浏览器扩展，当前主要支持 Chrome / Edge。
-它直接在原页面生效，不需要登录任何第三方平台。
+XZZD-Pro 是一个面向学在浙大（`courses.zju.edu.cn`）的浏览器扩展，主要支持 Chrome / Edge，也可在 Firefox 中安装。
+它直接在原页面生效；页面美化不需要登录任何第三方平台，学习助理需要你自备 AI 服务商的 API Key。
 
 ## 为什么做这个项目
 
@@ -11,7 +11,7 @@ XZZD-PRO 是一个面向学在浙大（`courses.zju.edu.cn`）的浏览器扩展
 - 作业、公告、讨论区等模块割裂，页面切换频繁
 - 缺乏清晰的复习路径与框架，复习方向不够明确
 
-XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体验里。
+XZZD-Pro 的目标是把这些高频痛点收敛到一个更顺手的使用体验里。
 
 ## 主要功能
 
@@ -19,7 +19,8 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 
 - 主页重排，集中展示今日课程与作业 DDL，支持快速跳转
 - 公告页区分已读 / 未读，优先提示新消息
-- 课程页对课件下载、作业提交等高频流程进行优化
+- 课程列表支持实时搜索、按学期筛选，课程卡片显示上课学期
+- 课程详情页优化课件下载（支持勾选后打包下载）、作业提交和成绩查看；为保证小测安全，“小测”会回到学在浙大原页面作答
 
 ![主页重排示意图](./assets/screenshots/home.png)
 ![公告页示意图](./assets/screenshots/notifications.png)
@@ -28,16 +29,19 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 ### 2. 内置 AI 学习助理
 
 - 可直接使用当前课程资料进行问答
-- 支持生成笔记与闪卡，辅助复习
+- 支持生成思维导图与闪卡，辅助复习
 - 支持自定义 API Key，不依赖原有“浙大先生”
 - 支持多模型与多平台接入：GPT、Claude、Gemini，以及硅基流动、OpenRouter、阿里云等
 - 注意 AI 功能不支持ppt格式文件输入，仅支持pdf/pptx/docx等文本格式文件输入
+
+数据说明：学习助理会把课程名、课件内容（文字或页面图片）、对话记录和你上传的附件，从浏览器直接发送给你选择的 AI 服务商。没有勾选资料时会发送整门课的全部资料，只想用部分资料请先在侧边栏“资料选择”中勾选。扩展不会发送你的姓名、学号、成绩、作业提交记录或学在浙大登录信息，API Key 只保存在本机；除学习助理外，扩展不会上传任何数据。
 
 ![AI 闪卡示意图](./assets/screenshots/ai-flashcards.png)
 ![AI思维导图示意图](./assets/screenshots/ai-mindmaps.png)
 
 ### 3. 其他能力
 
+- 深浅色主题切换；页面背景可选背景色或上传背景图片（图片只保存在本机）
 - 侧边栏支持折叠、宽度拖拽、状态持久化
 - 主页组件支持拖拽分栏
 - 插件选项中支持关闭美化功能
@@ -59,12 +63,11 @@ XZZD-PRO 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 - [x] 报错修复
 - [x] 黑夜模式修复
 - [x] 预览附件页面全屏
-- [ ] 修复小测页面依旧被重定向
 - [ ] 课程搜索界面完善
 - [ ] 课程概览界面逻辑重构
 - [ ] 增加作业DDL缓存功能
 - [ ] 增加新增DDL功能
-- [ ] 增加课件批量下载
+- [x] 增加课件批量下载
 
 ## 技术栈
 
@@ -160,19 +163,22 @@ build/
 使用已经安装的依赖运行，不需要新增测试工具：
 
 ```bash
-node node_modules/typescript/bin/tsc --noEmit
-node --test scripts/tests/*.cjs
+pnpm format:check
+pnpm test
+pnpm typecheck
 ```
+
+类型检查依赖 Plasmo 生成的 `.plasmo/index.d.ts`，首次运行前请先执行一次 `pnpm build` 或 `pnpm dev`。
 
 布局控件重复初始化时复用当前绑定，页面移除时清理绑定；页面初始化失败最多尝试三次。回归测试覆盖初始化重试、请求乱序及布局监听的生命周期。
 
 ### 课程详情本地预览
 
-运行 `node scripts/preview/build.cjs`，打开生成的 `build/course-detail-preview/index.html`。通过查询参数 `?page=materials`、`?page=homework` 或 `?page=grades` 切换页面，追加 `&theme=dark` 查看深色模式。
+运行 `node scripts/preview/build.cjs`，打开生成的 `build/course-detail-preview/index.html`。通过查询参数 `?page=materials`、`?page=homework`、`?page=grades` 或 `?page=courses` 切换页面，追加 `&theme=dark` 查看深色模式。
 
 预览使用真实组件和模拟数据，不连接学校 API；下载、提交和扩展消息功能不用于此预览。真实功能需在登录后的学在浙大页面验证。
 
 ## 反馈与共建
 
 项目仍在持续迭代中，欢迎通过 Issue / PR 提出新想法与 Bug 反馈。
-如果你也想要一个更好用、更顺手的学在浙大体验，欢迎试用 XZZD-PRO。
+如果你也想要一个更好用、更顺手的学在浙大体验，欢迎试用 XZZD-Pro。

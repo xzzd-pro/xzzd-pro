@@ -6,6 +6,15 @@ import { createThemeToggle } from "./theme-toggle"
 const LOGO_SRC =
   "https://courses.zju.edu.cn/api/uploads/57/modified-image?thumbnail=0x272"
 
+// Empty outside the extension (tests, the local preview).
+function getExtensionVersion(): string {
+  try {
+    return chrome.runtime.getManifest().version || ""
+  } catch {
+    return ""
+  }
+}
+
 interface HeaderOptions {
   username?: string
   showUsername?: boolean
@@ -19,12 +28,13 @@ interface HeaderOptions {
 export function renderHeader(options: HeaderOptions = {}): string {
   const { username = "", showUsername = true } = options
   const themeToggle = createThemeToggle()
+  const version = getExtensionVersion()
 
   return `
     <header class="xzzdpro-header">
       <div class="logo-area">
         ${LOGO_SRC ? `<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link"><img src="${LOGO_SRC}" alt="Logo"></a>` : '<a href="https://courses.zju.edu.cn/user/index#/" class="logo-link">Logo 区域</a>'}
-        <button class="help-btn" id="help-btn" title="使用须知">
+        <button type="button" class="help-btn" id="help-btn" title="使用须知" aria-haspopup="dialog">
           <span>使用须知</span>
         </button>
       </div>
@@ -35,23 +45,29 @@ export function renderHeader(options: HeaderOptions = {}): string {
       </div>
     </header>
 
-    <!-- 使用须知模态框 -->
-    <div class="modal-overlay" id="help-modal">
+    <!-- Help dialog -->
+    <div class="modal-overlay" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>使用须知</h3>
-          <button class="modal-close" id="modal-close">&times;</button>
+          <h3 id="help-modal-title">使用须知</h3>
+          <button type="button" class="modal-close" id="modal-close" aria-label="关闭">&times;</button>
         </div>
         <div class="modal-body">
-          <p><strong>欢迎使用 XZZDPRO ！</strong></p>
+          <p><strong>欢迎使用 XZZD-Pro！</strong>本项目作为浏览器插件，仅用于美化学在浙大页面，课程、通知等内容请以学在浙大原页面为准。</p>
+          <p><strong>功能和一些建议</strong></p>
           <ul>
-            本项目为学在浙大页面美化插件，仅在本地运行，不会向开发者上传个人数据。
-            所有课程信息、通知及相关内容，均以学在浙大原生页面为准。
-            目前课程详情页仅支持课件下载、作业提交和成绩查看。
-            Chrome / Edge 用户建议将插件固定到浏览器顶部工具栏，可随时通过插件图标关闭美化功能。
+            <li>课程详情页支持课程概览、课件批量下载、作业提交和成绩查看。为保证小测安全，点击“小测”会回到学在浙大原页面作答。</li>
+            <li>右上角可切换深浅色主题，或设置页面背景色和背景图片；背景图片只保存在本机。</li>
+            <li>可将扩展固定到浏览器工具栏，随时点击扩展图标关闭美化。</li>
           </ul>
-          <p><strong>如有问题或建议，欢迎反馈！</strong></p>
-          <p>GitHub 仓库：<a href="https://github.com/xzzd-pro/xzzd-pro" target="_blank" rel="noopener noreferrer">xzzd-pro/xzzd-pro</a></p>
+          <p><strong>学习助理与数据处理</strong></p>
+          <ul>
+            <li>学习助理会把课程名、课件内容（文字或页面图片）、对话记录和你上传的附件，从浏览器直接发送给你在设置中选择的 AI 服务商，由该服务商按其规则处理。</li>
+            <li>没有勾选资料时，会发送整门课的全部资料；只想用部分资料，请先在侧边栏“资料选择”中勾选。</li>
+            <li>不会发送你的姓名、学号、成绩、作业提交记录或学在浙大登录信息。API Key 保存在本机，只用于向该服务商发送请求。</li>
+            <li>除学习助理外，扩展不会上传任何数据，开发者也收不到你的数据。</li>
+          </ul>
+          <p>遇到问题或有建议，欢迎到 <a href="https://github.com/xzzd-pro/xzzd-pro/issues" target="_blank" rel="noopener noreferrer">GitHub Issues</a> 反馈${version ? `（当前版本 v${escapeHtml(version)}）` : ""}。</p>
           <p>主要开发者：<a href="https://github.com/RanderDouble" target="_blank" rel="noopener noreferrer">RanderDouble</a>、<a href="https://github.com/Ch3ngJY" target="_blank" rel="noopener noreferrer">Ch3ngJY</a>、<a href="https://github.com/NoughtQ" target="_blank" rel="noopener noreferrer">NoughtQ</a></p>
         </div>
       </div>
@@ -68,8 +84,9 @@ export function setupThemeToggle(): void {
 }
 
 /**
- * Setup help modal functionality
- * Should be called after the header HTML is added to the DOM
+ * Binds the help dialog: open from the header button, close with the close
+ * button, the backdrop or Escape. Focus moves into the dialog on open and
+ * back to the help button on close. Call after the header is in the DOM.
  */
 export function setupHelpModal(): void {
   const helpBtn = document.getElementById("help-btn")
@@ -81,29 +98,24 @@ export function setupHelpModal(): void {
   if (!binding) return
   const { signal } = binding
 
-  helpBtn.addEventListener(
-    "click",
-    () => {
-      modal.classList.add("active")
-    },
-    { signal }
-  )
+  const open = () => {
+    modal.classList.add("active")
+    closeBtn.focus()
+  }
+  const close = () => {
+    if (!modal.classList.contains("active")) return
+    modal.classList.remove("active")
+    helpBtn.focus()
+  }
 
-  closeBtn.addEventListener(
-    "click",
-    () => {
-      modal.classList.remove("active")
-    },
-    { signal }
-  )
+  helpBtn.addEventListener("click", open, { signal })
+  closeBtn.addEventListener("click", close, { signal })
 
   // Close when the backdrop is clicked.
   modal.addEventListener(
     "click",
     (e) => {
-      if (e.target === modal) {
-        modal.classList.remove("active")
-      }
+      if (e.target === modal) close()
     },
     { signal }
   )
@@ -112,9 +124,7 @@ export function setupHelpModal(): void {
   document.addEventListener(
     "keydown",
     (e) => {
-      if (e.key === "Escape" && modal.classList.contains("active")) {
-        modal.classList.remove("active")
-      }
+      if (e.key === "Escape") close()
     },
     { signal }
   )

@@ -39,6 +39,9 @@ class Element extends EventTarget {
   setAttribute(key, value) {
     this[key] = value
   }
+  focus() {
+    this.focused = true
+  }
 }
 function harness() {
   const nodes = new Map(),
@@ -206,7 +209,7 @@ test("header setup binds once and cleans listeners and background picker root on
     picker = h.load("src/shared/layout/background-picker.tsx")
   const button = h.add("#help-btn"),
     modal = h.add("#help-modal")
-  h.add("#modal-close")
+  const close = h.add("#modal-close")
   const pickerHost = h.add("#page-background-picker")
   header.setupHelpModal()
   header.setupHelpModal()
@@ -217,6 +220,10 @@ test("header setup binds once and cleans listeners and background picker root on
   assert.equal(h.roots.length, 1)
   button.dispatchEvent(new Event("click"))
   assert.equal(modal.classList.contains("active"), true)
+  assert.equal(close.focused, true)
+  close.dispatchEvent(new Event("click"))
+  assert.equal(modal.classList.contains("active"), false)
+  assert.equal(button.focused, true)
   modal.isConnected = false
   pickerHost.isConnected = false
   h.sweep()
