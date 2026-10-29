@@ -26,14 +26,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Run tests
+        run: pnpm test
+
       - name: Build Chrome package
         run: pnpm exec plasmo build --target=chrome-mv3 --tag=prod --zip
+
+      # Runs after the build so Plasmo's generated .plasmo/index.d.ts exists.
+      - name: Typecheck
+        run: pnpm run typecheck
 
       - name: Build Firefox package
         run: pnpm exec plasmo build --target=firefox-mv3 --tag=prod --zip

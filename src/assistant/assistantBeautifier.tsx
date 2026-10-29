@@ -223,8 +223,8 @@ export async function createAssistantHost(): Promise<HTMLElement> {
   host.style.height = '100%'
   host.style.overflow = 'hidden'
 
-  // Create Shadow Root
-  const shadow = host.attachShadow({ mode: 'open' })
+  // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
+  const shadow = host.attachShadow({ mode: 'closed' })
 
   // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)
@@ -285,8 +285,8 @@ export async function openAssistant(): Promise<void> {
   overlayHost.style.width = '0'
   overlayHost.style.height = '0'
 
-  // Create Shadow Root
-  const shadow = overlayHost.attachShadow({ mode: 'open' })
+  // Closed so host-page scripts can't reach the assistant UI via element.shadowRoot
+  const shadow = overlayHost.attachShadow({ mode: 'closed' })
 
   // Inject Styles into Shadow DOM
   injectOverlayStyles(shadow)

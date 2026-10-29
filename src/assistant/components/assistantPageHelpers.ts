@@ -426,7 +426,7 @@ export function renderSettingsPanel(): string {
         
         <div class="form-group">
           <label for="api-key-input">API Key</label>
-          <input type="password" id="api-key-input" class="form-input" placeholder="请输入 API Key">
+          <input type="password" id="api-key-input" class="form-input" placeholder="请输入 API Key" autocomplete="off">
         </div>
         
         <div class="form-group">

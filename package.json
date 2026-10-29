@@ -17,7 +17,8 @@
     "package": "plasmo package --target=chrome-mv3 --tag=prod",
     "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id",
     "fix:firefox:addon-id": "node scripts/inject-firefox-addon-id.mjs",
-    "test": "node --test \"scripts/tests/*.cjs\""
+    "test": "node --test \"scripts/tests/*.cjs\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.2.3",
@@ -64,7 +65,8 @@
     "name": "XZZD-Pro",
     "description": "Enhanced tools for Learning in ZJU(xzzd).",
     "permissions": [
-      "storage"
+      "storage",
+      "unlimitedStorage"
     ],
     "host_permissions": [
       "https://*/*"

@@ -1,9 +1,18 @@
 import { loadSettings, saveSettings } from '../storage'
 import { PROVIDER_DEFAULTS } from '../config'
-import type { AssistantSettings, Provider } from '../types'
+import type { AssistantSettings, Provider, ProviderConfig } from '../types'
 import { showStatus } from '../utils/uiUtils'
 
 let overlayElement: HTMLElement | null = null
+
+const API_KEY_PLACEHOLDER = '请输入 API Key'
+
+// The overlay lives in the host page's DOM, so never write the saved key back
+// into an input: page scripts could read it. Show a masked hint instead.
+function maskApiKey(apiKey: string): string {
+  if (apiKey.length <= 8) return '已保存'
+  return `已保存（${apiKey.slice(0, 3)}…${apiKey.slice(-4)}），留空则保持不变`
+}
 
 export function setOverlayElement(element: HTMLElement | null): void {
   overlayElement = element
@@ -22,6 +31,13 @@ export function setupSettingsHandlers(
   const baseUrlInput = overlayElement?.querySelector('#base-url-input') as HTMLInputElement
   const saveBtn = overlayElement?.querySelector('#save-settings-btn')
 
+  const fillProviderFields = (config: ProviderConfig | undefined) => {
+    apiKeyInput.value = ''
+    apiKeyInput.placeholder = config?.apiKey ? maskApiKey(config.apiKey) : API_KEY_PLACEHOLDER
+    baseUrlInput.value = config?.baseUrl || ''
+    if (config) modelInput.value = config.model
+  }
+
   const openSettings = () => {
     const currentSettings = getCurrentSettings()
     if (!currentSettings) return
@@ -33,16 +49,15 @@ export function setupSettingsHandlers(
     const config = currentSettings.configs[provider]
     const defaults = PROVIDER_DEFAULTS[provider]
 
-    if (config) {
-      apiKeyInput.value = config.apiKey || ''
-      baseUrlInput.value = config.baseUrl || ''
-      modelInput.value = config.model
-    }
+    fillProviderFields(config)
 
     baseUrlInput.placeholder = defaults.baseUrl || '官方默认地址'
   }
 
-  const closeSettings = () => panel?.classList.remove('open')
+  const closeSettings = () => {
+    panel?.classList.remove('open')
+    apiKeyInput.value = ''
+  }
 
   const saveSettingsHandler = async () => {
     const currentSettings = getCurrentSettings()
@@ -52,7 +67,8 @@ export function setupSettingsHandlers(
 
     try {
       const provider = providerSelect.value as Provider
-      const apiKey = apiKeyInput.value.trim()
+      // Empty input keeps the previously saved key for this provider.
+      const apiKey = apiKeyInput.value.trim() || currentSettings.configs[provider]?.apiKey || ''
       const baseUrl = baseUrlInput.value.trim()
       const model = modelInput.value.trim()
 
@@ -77,6 +93,7 @@ export function setupSettingsHandlers(
 
       setCurrentSettings(currentSettings)
       await saveSettings(currentSettings)
+      fillProviderFields(config)
       showStatus('设置已保存', 'success', overlayElement)
       closeSettings()
     } catch (error) {
@@ -100,14 +117,7 @@ export function setupSettingsHandlers(
     const config = currentSettings.configs[provider]
     const defaults = PROVIDER_DEFAULTS[provider]
 
-    if (config) {
-      apiKeyInput.value = config.apiKey || ''
-      baseUrlInput.value = config.baseUrl || ''
-      modelInput.value = config.model
-    } else {
-      apiKeyInput.value = ''
-      baseUrlInput.value = ''
-    }
+    fillProviderFields(config)
 
     baseUrlInput.placeholder = defaults.baseUrl || '官方默认地址'
   })
