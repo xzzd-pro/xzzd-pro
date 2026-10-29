@@ -164,6 +164,166 @@
   gap: 6px;
 }
 
+/* The results card fits its content and scrolls inside only when it must. */
+.course-page-container .course-results .overflow-auto {
+  height: auto !important;
+}
+
+/* Status filter: light toggle chips; "全部" is pressed when nothing narrows. */
+.xzzdpro .course-catalog .course-filter-row .course-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 9999px;
+  background-color: transparent !important;
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.xzzdpro .course-catalog .course-status-chip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.xzzdpro
+  .course-catalog
+  .course-filter-row
+  .course-status-chip:hover:not(:disabled) {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--foreground));
+}
+
+.xzzdpro
+  .course-catalog
+  .course-filter-row
+  .course-status-chip[aria-pressed="true"] {
+  border-color: transparent !important;
+  background-color: hsl(var(--nav-active)) !important;
+  color: hsl(var(--foreground));
+}
+
+/* Pressed status chips share the status colors used across the extension:
+   ongoing green, not started orange, closed slate. */
+.xzzdpro
+  .course-catalog
+  .course-filter-row
+  .course-status-chip[data-status="ongoing"][aria-pressed="true"] {
+  border-color: hsl(var(--success) / 0.25) !important;
+  background-color: hsl(var(--success) / 0.1) !important;
+  color: hsl(var(--success));
+}
+
+.xzzdpro
+  .course-catalog
+  .course-filter-row
+  .course-status-chip[data-status="notStarted"][aria-pressed="true"] {
+  border-color: hsl(var(--warning) / 0.25) !important;
+  background-color: hsl(var(--warning) / 0.1) !important;
+  color: hsl(var(--warning));
+}
+
+.xzzdpro
+  .course-catalog
+  .course-filter-row
+  .course-status-chip[data-status="closed"][aria-pressed="true"] {
+  border-color: hsl(var(--primary) / 0.2) !important;
+  background-color: hsl(var(--primary) / 0.1) !important;
+  color: hsl(var(--primary));
+}
+
+.xzzdpro .course-catalog .course-status-chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.xzzdpro .course-catalog .course-status-chip:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* --- course cards --- */
+.course-catalog .course-card {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.course-catalog a:hover .course-card {
+  border-color: hsl(var(--input));
+  box-shadow:
+    0 4px 12px -4px hsl(222 47% 11% / 0.12),
+    var(--shadow-sm);
+}
+
+.course-catalog .course-card-title {
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  color: hsl(var(--foreground));
+}
+
+.course-catalog .course-card-teacher {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: hsl(var(--muted-foreground));
+}
+
+.course-catalog .course-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.course-catalog .course-status-tag,
+.course-catalog .course-time-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-catalog .course-time-tag {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+}
+
+/* Same status colors as the homework and courseware badges. */
+.course-catalog .course-status-tag {
+  font-weight: 600;
+  border-color: hsl(var(--primary) / 0.2);
+  background-color: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+.course-catalog .course-status-tag[data-status="ongoing"] {
+  border-color: hsl(var(--success) / 0.25);
+  background-color: hsl(var(--success) / 0.1);
+  color: hsl(var(--success));
+}
+
+.course-catalog .course-status-tag[data-status="notStarted"] {
+  border-color: hsl(var(--warning) / 0.25);
+  background-color: hsl(var(--warning) / 0.1);
+  color: hsl(var(--warning));
+}
+
 /* responsive design */
 @media (max-width: 1200px) {
   .xzzdpro-main {

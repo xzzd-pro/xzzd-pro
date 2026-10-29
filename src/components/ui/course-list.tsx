@@ -3,6 +3,7 @@ import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatClassTimes } from "@/lib/class-times"
 import { cn } from "@/lib/utils"
 
 export interface TodayCourse {
@@ -30,6 +31,16 @@ export interface AllCourse {
   } | null
   /** Display name of the course's semester, if it has one. */
   semesterName?: string
+  /** Course status, once the status lookup has finished. */
+  status?: CourseStatus
+}
+
+export type CourseStatus = "ongoing" | "notStarted" | "closed"
+
+const STATUS_LABELS: Record<CourseStatus, string> = {
+  ongoing: "进行中",
+  notStarted: "未开始",
+  closed: "已结束"
 }
 
 interface CourseListProps {
@@ -61,14 +72,16 @@ function CourseCardSkeleton({ variant }: { variant: "today" | "all" }) {
   }
 
   return (
-    <Card className="h-[100px]">
-      <CardHeader className="p-3 pb-1">
-        <Skeleton className="h-5 w-4/5" />
-      </CardHeader>
-      <CardContent className="p-3 pt-0 space-y-1">
-        <Skeleton className="h-4 w-3/5" />
-        <Skeleton className="h-4 w-2/5" />
-      </CardContent>
+    <Card className="course-card">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-5 w-3/5" />
+        <Skeleton className="h-5 w-24 rounded-full" />
+      </div>
+      <Skeleton className="mt-2 h-4 w-2/5" />
+      <div className="mt-3 flex gap-1.5">
+        <Skeleton className="h-6 w-16 rounded-full" />
+        <Skeleton className="h-6 w-24 rounded-full" />
+      </div>
     </Card>
   )
 }
@@ -119,7 +132,9 @@ function generateCourseUrl(courseId: number): string {
 function AllCourseCard({ course }: { course: AllCourse }) {
   const courseName = course.display_name || course.name
   const instructors = course.instructors.map((i) => i.name).join("、")
-  const teachingClass = course.course_attributes?.teaching_class_name || ""
+  const classTimes = formatClassTimes(
+    course.course_attributes?.teaching_class_name
+  )
   const courseUrl = generateCourseUrl(course.id)
 
   return (
@@ -127,32 +142,37 @@ function AllCourseCard({ course }: { course: AllCourse }) {
       href={courseUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block no-underline">
-      <Card className="h-[100px] transition-all duration-200 hover:shadow-md hover:border-primary/50 group">
-        <CardHeader className="p-3 pb-1">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-lg font-semibold truncate group-hover:text-primary transition-colors">
-              {courseName}
-            </CardTitle>
-            {course.semesterName && (
-              <Badge variant="secondary" className="shrink-0 text-xs">
-                {course.semesterName}
-              </Badge>
+      className="group block h-full no-underline">
+      <Card className="course-card h-full">
+        <div className="flex items-start justify-between gap-3">
+          <h3
+            className="course-card-title truncate font-semibold"
+            title={courseName}>
+            {courseName}
+          </h3>
+          {course.semesterName && (
+            <Badge variant="secondary" className="shrink-0 text-xs font-normal">
+              {course.semesterName}
+            </Badge>
+          )}
+        </div>
+        <p className="course-card-teacher truncate" title={instructors}>
+          {instructors || "暂无授课教师信息"}
+        </p>
+        {(course.status || classTimes.length > 0) && (
+          <div className="course-card-tags">
+            {course.status && (
+              <span className="course-status-tag" data-status={course.status}>
+                {STATUS_LABELS[course.status]}
+              </span>
             )}
+            {classTimes.map((time) => (
+              <span key={time} className="course-time-tag">
+                {time}
+              </span>
+            ))}
           </div>
-        </CardHeader>
-        <CardContent className="p-3 pt-0">
-          <div className="space-y-0">
-            <p className="text-sm text-muted-foreground truncate leading-none mb-0">
-              授课老师： {instructors}
-            </p>
-            {teachingClass && (
-              <p className="text-sm text-muted-foreground truncate leading-none mt-0">
-                上课时间： {teachingClass}
-              </p>
-            )}
-          </div>
-        </CardContent>
+        )}
       </Card>
     </a>
   )

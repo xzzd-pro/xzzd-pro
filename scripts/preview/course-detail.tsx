@@ -24,7 +24,7 @@ const PREVIEW_COURSES = [
     semester: { id: 21, name: "2025-2026秋冬学期" },
     status: "closed",
     instructors: [{ id: 1, name: "示例教师" }],
-    course_attributes: { teaching_class_name: "教学班一" }
+    course_attributes: { teaching_class_name: "周二第3,4,5节;周四第3,4节" }
   },
   {
     id: 702,
@@ -33,7 +33,7 @@ const PREVIEW_COURSES = [
     semester: { id: 22, name: "2025-2026春夏学期" },
     status: "ongoing",
     instructors: [{ id: 1, name: "示例教师" }],
-    course_attributes: { teaching_class_name: "教学班二" }
+    course_attributes: { teaching_class_name: "周一第9,10节;周三第9,10节" }
   },
   {
     id: 703,
@@ -42,7 +42,7 @@ const PREVIEW_COURSES = [
     semester: { id: 22, name: "2025-2026春夏学期" },
     status: "notStarted",
     instructors: [{ id: 2, name: "测试教师" }],
-    course_attributes: { teaching_class_name: "教学班三" }
+    course_attributes: { teaching_class_name: "周五第11,12,13节" }
   }
 ]
 function CourseFilterPreview() {

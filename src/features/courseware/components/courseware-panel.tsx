@@ -484,14 +484,11 @@ export function CoursewarePanel({ courseId }: CoursewarePanelProps) {
                       <Badge
                         variant="outline"
                         className={cn(
-                          section.isClosed &&
-                            "border-success/25 bg-success/10 text-success",
-                          !section.isClosed &&
-                            section.isStarted &&
-                            "border-red-500/25 bg-red-100 text-red-700 dark:border-red-400/25 dark:bg-red-950 dark:text-red-300",
-                          !section.isStarted &&
-                            !section.isClosed &&
-                            "bg-muted text-muted-foreground border-border"
+                          section.isClosed
+                            ? "border-primary/20 bg-primary/10 text-primary"
+                            : section.isStarted
+                              ? "border-success/25 bg-success/10 text-success"
+                              : "border-warning/25 bg-warning/10 text-warning"
                         )}>
                         {statusText}
                       </Badge>

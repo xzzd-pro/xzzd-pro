@@ -369,13 +369,14 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                     </div>
                     <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                       <Badge
-                        variant={homework.isClosed ? "secondary" : "outline"}
+                        variant="outline"
                         className={cn(
-                          "border-transparent text-xs",
-                          homework.canSubmit &&
-                            "border-primary/20 bg-primary/10 text-primary",
-                          homework.isNotStarted &&
-                            "border-warning/25 bg-warning/10 text-warning"
+                          "text-xs",
+                          homework.isNotStarted
+                            ? "border-warning/25 bg-warning/10 text-warning"
+                            : homework.isClosed
+                              ? "border-primary/20 bg-primary/10 text-primary"
+                              : "border-success/25 bg-success/10 text-success"
                         )}>
                         {statusText}
                       </Badge>

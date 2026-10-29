@@ -1,8 +1,9 @@
+import { Check } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { AllCourse } from "@/components/ui/course-list"
+import type { AllCourse, CourseStatus } from "@/components/ui/course-list"
 
 import {
   collectCourseSemesters,
@@ -13,6 +14,13 @@ import {
 import { collectCourseStatuses } from "../course-status-catalog"
 import { CourseGrid } from "./course-grid"
 import { CourseSearchForm } from "./course-search-form"
+
+/** The status shown on a card; a course listed under several shows the first in filter order. */
+function statusOf(statuses: Set<string> | undefined): CourseStatus | undefined {
+  return COURSE_STATUSES.find((status) => statuses?.has(status)) as
+    | CourseStatus
+    | undefined
+}
 
 interface CoursePageProps {
   courses: AllCourse[]
@@ -104,7 +112,8 @@ export function CoursePage({
     courseStatuses || new Map()
   ).map((course) => ({
     ...course,
-    semesterName: courseSemesterNames.get(course.id)
+    semesterName: courseSemesterNames.get(course.id),
+    status: statusOf(courseStatuses?.get(course.id))
   }))
   const totalCount = catalogCourses?.length ?? 0
   const countLabel =
@@ -119,6 +128,21 @@ export function CoursePage({
     { value: "notStarted", label: "未开始" },
     { value: "closed", label: "已结束" }
   ]
+  const allStatuses = filters.status.length === COURSE_STATUSES.length
+  const statusDisabled = !ready || !courseStatuses
+  // With every status shown, picking one narrows to it; otherwise picks add
+  // and remove, and clearing the last one shows every status again.
+  const toggleStatus = (value: string) => {
+    const selected = allStatuses
+      ? [value]
+      : filters.status.includes(value)
+        ? filters.status.filter((item) => item !== value)
+        : [...filters.status, value]
+    apply({
+      ...filters,
+      status: selected.length ? selected : [...COURSE_STATUSES]
+    })
+  }
   return (
     <div className="course-catalog h-full flex flex-col space-y-6">
       <Card className="flex-shrink-0 border-transparent">
@@ -167,34 +191,34 @@ export function CoursePage({
               <span className="mr-1 shrink-0 whitespace-nowrap text-sm text-muted-foreground">
                 状态
               </span>
-              {statusOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  size="sm"
-                  disabled={!ready || !courseStatuses}
-                  variant={
-                    filters.status.includes(option.value)
-                      ? "default"
-                      : "outline"
-                  }
-                  className={
-                    filters.status.includes(option.value)
-                      ? "h-10"
-                      : "h-10 text-foreground"
-                  }
-                  aria-pressed={filters.status.includes(option.value)}
-                  onClick={() => {
-                    const selected = filters.status.includes(option.value)
-                      ? filters.status.filter((value) => value !== option.value)
-                      : [...filters.status, option.value]
-                    apply({
-                      ...filters,
-                      status: selected.length ? selected : [...COURSE_STATUSES]
-                    })
-                  }}>
-                  {option.label}
-                </Button>
-              ))}
+              <button
+                type="button"
+                className="course-status-chip"
+                disabled={statusDisabled}
+                aria-pressed={allStatuses}
+                onClick={() =>
+                  apply({ ...filters, status: [...COURSE_STATUSES] })
+                }>
+                {allStatuses && <Check aria-hidden="true" />}
+                全部
+              </button>
+              {statusOptions.map((option) => {
+                const pressed =
+                  !allStatuses && filters.status.includes(option.value)
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className="course-status-chip"
+                    data-status={option.value}
+                    disabled={statusDisabled}
+                    aria-pressed={pressed}
+                    onClick={() => toggleStatus(option.value)}>
+                    {pressed && <Check aria-hidden="true" />}
+                    {option.label}
+                  </button>
+                )
+              })}
             </div>
             <Button
               variant="ghost"
@@ -228,7 +252,8 @@ export function CoursePage({
           )}
         </CardContent>
       </Card>
-      <Card className="flex-1 flex flex-col min-h-0 overflow-hidden border-transparent">
+      {/* Sized to its content; scrolls inside only when the list is taller than the page. */}
+      <Card className="course-results flex flex-col min-h-0 overflow-hidden border-transparent">
         <CardHeader className="flex-shrink-0">
           <CardTitle>
             我的课程
