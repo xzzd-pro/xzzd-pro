@@ -51,7 +51,7 @@ XZZD-Pro 的目标是把这些高频痛点收敛到一个更顺手的使用体�
 感谢以下同学为项目做出的贡献：
 
 [@NoughtQ](https://github.com/NoughtQ)
-[@lxgswrz](https://github.com/lxgswrz)
+[@Ch3ngJY](https://github.com/Ch3ngJY)
 [@RanderDouble](https://github.com/RanderDouble)
 
 ## TODO
