@@ -18,7 +18,9 @@
     "package:firefox": "plasmo package --target=firefox-mv3 --tag=prod && pnpm run fix:firefox:addon-id",
     "fix:firefox:addon-id": "node scripts/inject-firefox-addon-id.mjs",
     "test": "node --test \"scripts/tests/*.cjs\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@langchain/anthropic": "^1.2.3",

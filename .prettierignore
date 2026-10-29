@@ -1,0 +1,7 @@
+build/
+.plasmo/
+node_modules/
+pnpm-lock.yaml
+src/assets/
+assets/
+scripts/tests/fixtures/
