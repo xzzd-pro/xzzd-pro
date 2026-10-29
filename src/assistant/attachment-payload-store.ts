@@ -35,6 +35,11 @@ const recordKey = (id: string) => `${RECORD_KEY_PREFIX}${id}`
 // Serialize index read-modify-write cycles within this context.
 let indexQueue: Promise<unknown> = Promise.resolve()
 
+/**
+ * Applies a change to the payload index. Changes run one after another so concurrent writes in this page do not overwrite each other.
+ * @param fn Mutates the index and may return a value.
+ * @returns The value returned by fn.
+ */
 function updateIndex<T>(fn: (index: PayloadIndex) => T): Promise<T> {
   const run = indexQueue.then(async () => {
     const result = await chrome.storage.local.get(INDEX_KEY)
@@ -86,6 +91,9 @@ async function writeRecord(record: AttachmentPayloadRecord): Promise<void> {
 // then drop that database so the page origin no longer holds them.
 let legacyMigration: Promise<void> | null = null
 
+/**
+ * Moves payloads that older versions cached in the page's IndexedDB into extension storage, then deletes that database. Runs once; later calls share the same promise.
+ */
 function migrateLegacyPayloads(): Promise<void> {
   if (legacyMigration) return legacyMigration
   legacyMigration = (async () => {

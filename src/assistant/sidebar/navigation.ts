@@ -191,6 +191,9 @@ export function setupAssistantNavigation(): void {
   )
 }
 
+/**
+ * Loads the user's courses into the assistant's sidebar submenu; picking one opens the assistant for that course. Results of an outdated call are discarded.
+ */
 async function loadAssistantCourses(): Promise<void> {
   const courseListEl = document.getElementById("assistant-course-list")
   if (!courseListEl) return
@@ -283,6 +286,10 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;")
 }
 
+/**
+ * Loads a course's materials and previously uploaded files into the sidebar, with selection and history management controls. Switching courses clears the selection; results of an outdated call are discarded.
+ * @param courseId Course to load; defaults to the courseId in the URL.
+ */
 async function loadAssistantMaterials(courseId?: string): Promise<void> {
   const materialListEl = document.getElementById("assistant-material-list")
   if (!materialListEl) return

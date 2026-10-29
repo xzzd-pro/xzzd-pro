@@ -260,6 +260,12 @@ export async function preloadCourseContext(
   }
 }
 
+/**
+ * Turns course materials into prompt text, including the extracted content of readable files (cached where possible).
+ * @param context Course context.
+ * @param onProgress Receives status text while files are read.
+ * @returns Context text, trimmed to the maximum context length.
+ */
 async function formatContextToText(
   context: CourseContext,
   onProgress?: (msg: string) => void

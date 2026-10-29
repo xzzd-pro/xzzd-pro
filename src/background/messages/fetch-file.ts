@@ -27,6 +27,11 @@ function isAllowedFileUrl(raw: unknown): raw is string {
   }
 }
 
+/**
+ * Downloads a school-hosted file for a content script that cannot fetch it directly.
+ * Request body: `{ url }`; only course-site URLs are allowed.
+ * Responds with `{ dataUri, contentType }`, or `{ error }` if the URL is rejected or the download fails.
+ */
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const { url } = req.body || {}
 

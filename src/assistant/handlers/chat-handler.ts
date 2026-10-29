@@ -326,6 +326,10 @@ function getSelectedMaterialCount(): number {
   return getSelectedCourseMaterials().size + selectedHistoryUploads.size
 }
 
+/**
+ * Loads the stored content of the history files selected for this message.
+ * @returns Attachments that could be loaded; a status message lists any that could not.
+ */
 async function getSelectedHistoryAttachments(): Promise<Attachment[]> {
   const attachments: Attachment[] = []
   const missingNames: string[] = []
@@ -466,6 +470,11 @@ function sanitizeModelOutput(raw: string): string {
   return cleaned.trim()
 }
 
+/**
+ * Parses the model's flashcard JSON, tolerating code fences and invalid backslash escapes (common in LaTeX).
+ * @param raw Model output.
+ * @returns The flashcards, or null if no valid flashcard JSON is found.
+ */
 function parseFlashcardResponse(raw: string): FlashcardData | null {
   const sanitizeInvalidJsonBackslashes = (input: string): string => {
     let output = ""
@@ -818,6 +827,12 @@ function buildToolRetryContext(context: CourseContext): CourseContext {
   }
 }
 
+/**
+ * Streams a flashcard or mindmap response, failing if it takes longer than the timeout.
+ * @param options Chat input, provider config, timeout, abort signal and streaming callbacks.
+ * @returns The full response text.
+ * @throws `TOOL_TIMEOUT:<ms>` on timeout, or an abort error if the signal fires.
+ */
 async function streamToolResponseWithTimeout(options: {
   messages: ChatMessage[]
   context: CourseContext
@@ -973,6 +988,9 @@ function startSelectedMaterialPreload(
   })
 }
 
+/**
+ * Waits (up to a time limit) for selected materials that are still being parsed, then reports any that failed.
+ */
 async function waitForSelectedMaterialsReady(): Promise<void> {
   const selected = getSelectedCourseMaterials()
   if (selected.size === 0) return

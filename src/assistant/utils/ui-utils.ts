@@ -248,7 +248,6 @@ export function showStatus(
     }
   }
 
-  // Icon handling
   let icon = ""
   if (type === "success") {
     icon =

@@ -15,7 +15,7 @@ import {
 import courseware from "./courseware-fixture.json"
 import scores from "./score-fixture.json"
 
-const previewCourses = [
+const PREVIEW_COURSES = [
   {
     id: 701,
     name: "信号与系统",
@@ -45,7 +45,7 @@ const previewCourses = [
   }
 ]
 function CourseFilterPreview() {
-  return <CoursePage courses={previewCourses} />
+  return <CoursePage courses={PREVIEW_COURSES} />
 }
 
 const params = new URLSearchParams(location.search)
@@ -63,7 +63,7 @@ localStorage.setItem("theme", JSON.stringify(dark ? "dark" : "light"))
 document.body.className = "xzzdpro-body xzzdpro"
 document.body.innerHTML = '<div class="xzzdpro-root xzzdpro"></div>'
 const root = document.querySelector<HTMLDivElement>(".xzzdpro-root")!
-const names: Record<string, string> = {
+const PAGE_NAMES: Record<string, string> = {
   materials: "课件下载",
   homework: "作业提交",
   grades: "成绩",
@@ -73,7 +73,7 @@ root.innerHTML = renderCourseDetailPage(
   "123",
   "信号与系统",
   page,
-  names[page],
+  PAGE_NAMES[page],
   '<div id="preview-panel" class="' +
     (page === "homework" ? "homework-list" : "") +
     '"></div>'
@@ -91,7 +91,7 @@ window.fetch = async (input, options) => {
   )
   let data: unknown = fixture?.body
   if (page === "courses" && url.pathname.startsWith("/api/courses/"))
-    data = previewCourses.find(
+    data = PREVIEW_COURSES.find(
       (course) => url.pathname === `/api/courses/${course.id}`
     )
   if (url.pathname === "/api/my-courses") {
@@ -101,7 +101,7 @@ window.fetch = async (input, options) => {
     data = {
       courses:
         page === "courses"
-          ? previewCourses.filter(
+          ? PREVIEW_COURSES.filter(
               (course) => !status.length || status.includes(course.status)
             )
           : [{ id: 123 }]

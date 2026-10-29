@@ -24,6 +24,12 @@ export class ThemeToggle {
     this.iconClass = iconClass
   }
 
+  /**
+   * Renders the toggle button.
+   * @param className Button class.
+   * @param title Button tooltip.
+   * @returns HTML string.
+   */
   renderHTML(
     className: string = "icon-btn",
     title: string = "切换主题"
@@ -50,6 +56,9 @@ export class ThemeToggle {
     this.updateThemeIcon(theme)
   }
 
+  /**
+   * Binds the rendered button: applies the saved theme, follows theme changes from other tabs, and toggles and saves the theme on click.
+   */
   setup(): void {
     const themeToggleBtn = document.getElementById(this.buttonId)
     const themeIcon = document.querySelector(
@@ -107,6 +116,12 @@ export class ThemeToggle {
     )
   }
 
+  /**
+   * Appends the button to a container and binds it.
+   * @param container Element to append to.
+   * @param className Button class.
+   * @param title Button tooltip.
+   */
   mount(
     container: HTMLElement,
     className: string = "icon-btn",

@@ -78,6 +78,13 @@ function normalizeFileData(
   throw new Error("Unsupported upload payload")
 }
 
+/**
+ * Sends file content to the upload URL, trying multipart POST, raw PUT and raw POST in turn, because the storage backend accepts different methods.
+ * @param uploadUrl URL returned when the upload was registered.
+ * @param fileData File content.
+ * @param fileName File name, used for the content type.
+ * @returns success, or the errors of every attempt.
+ */
 async function uploadFileContent(
   uploadUrl: string,
   fileData: UploadFileRequest["fileData"],

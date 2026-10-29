@@ -80,6 +80,13 @@ function hasValidDate(date: Date): boolean {
   return Number.isFinite(date.getTime())
 }
 
+/**
+ * Combines homework with its scores and review status.
+ * @param homeworks Homework of the course.
+ * @param scoreItems Scores and teacher comments.
+ * @param courseId Course id for links.
+ * @returns Homework for display: open ones first by nearest deadline, then closed ones newest first.
+ */
 function processHomeworks(
   homeworks: HomeworkActivity[],
   scoreItems: HomeworkScoreItem[],

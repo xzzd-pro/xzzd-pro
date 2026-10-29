@@ -2,10 +2,7 @@
 module.exports = {
   darkMode: ["class", '[data-theme="dark"]'],
   important: ".xzzdpro",
-  content: [
-    // 关键点：扫描 src 目录下所有的 ts, tsx 文件
-    "./src/**/*.{ts,tsx}"
-  ],
+  content: ["./src/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,

@@ -228,6 +228,11 @@ function loadAndRenderCourses(studentId: string): Promise<void> {
   return pendingCourseLoad
 }
 
+/**
+ * Fetches the timetable (through the background script) and the course list in parallel, matches today's classes to courses, and renders them. On failure, shows the reason in the panel.
+ * @param studentId Student id for the timetable.
+ * @param generation Load counter; results of an older load are ignored.
+ */
 async function loadAndRenderCoursesOnce(studentId: string, generation: number) {
   console.log("XZZDPRO: Starting course data fetch...")
 

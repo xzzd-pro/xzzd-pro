@@ -39,6 +39,12 @@ function getActivityModuleId(activity: CoursewareActivity): number | null {
   )
 }
 
+/**
+ * Orders courseware the way the course is organized: by module order, then by activity order, then by original position.
+ * @param activities Courseware activities.
+ * @param modules Course modules with their sort values.
+ * @returns The sorted activities.
+ */
 function sortCoursewaresByModule(
   activities: CoursewareActivity[],
   modules: CourseModule[]

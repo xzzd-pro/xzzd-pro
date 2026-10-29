@@ -101,6 +101,11 @@ export function createSubmissionUpload(
   }
 }
 
+/**
+ * Collects the files of a submission from every field the API may use for them.
+ * @param submission Submission from the API.
+ * @returns Valid, de-duplicated files.
+ */
 function getSubmissionUploads(
   submission: HomeworkSubmission
 ): SubmissionUpload[] {

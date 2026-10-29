@@ -67,6 +67,11 @@ export function buildUploadHistoryKey(
   ].join("::")
 }
 
+/**
+ * Merges history entries for the same file (same course, name, size and content hash). The merged entry keeps the earliest creation time, any stored payload, and the best status (ready > session_only > missing).
+ * @param items History entries, possibly with duplicates.
+ * @returns Unique entries, most recently updated first.
+ */
 function dedupeUploadHistoryItems(
   items: AssistantUploadHistoryItem[]
 ): AssistantUploadHistoryItem[] {
@@ -282,6 +287,11 @@ async function fingerprintFromAttachment(att: Attachment): Promise<string> {
   return hashString(JSON.stringify(att))
 }
 
+/**
+ * Converts an old history entry that embedded the file content into the current format, moving the content to the payload store.
+ * @param raw Entry in the old format.
+ * @returns The converted entry (status "missing" if the content is too large or could not be stored), or null if it has no attachment or course.
+ */
 async function migrateLegacyHistoryItem(
   raw: any
 ): Promise<AssistantUploadHistoryItem | null> {

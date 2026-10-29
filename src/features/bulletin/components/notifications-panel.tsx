@@ -180,6 +180,12 @@ function generateNotificationLink(notification: ApiNotificationData): string {
   return "#"
 }
 
+/**
+ * Converts an API notification into a display item and works out whether it is read, using the read timestamp of its type.
+ * @param notification Notification from the API.
+ * @param readTimestamps Time each type was last marked read.
+ * @returns The display item, or null for unsupported types.
+ */
 function processNotification(
   notification: ApiNotificationData,
   readTimestamps: ReadTimestamps

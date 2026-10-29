@@ -163,6 +163,12 @@ function collectContextCandidates(target: Record<string, any>) {
   return { yearCandidates, termCandidates }
 }
 
+/**
+ * Checks whether the year and term reported by a timetable response match the term that was requested.
+ * @param payload Raw timetable response.
+ * @param context Requested academic year and term.
+ * @returns The response's year/term candidates, whether it has any, and whether they match. Missing metadata counts as a match.
+ */
 function getPayloadContextMatchStatus(payload: any, context: QueryContext) {
   const expectedYear = normalizeText(context.xnm)
   const expectedStartYear = expectedYear.split("-")[0] || expectedYear
@@ -207,6 +213,12 @@ function getPayloadContextMatchStatus(payload: any, context: QueryContext) {
   }
 }
 
+/**
+ * Drops timetable rows that belong to another year or term, since the academic system sometimes returns stale data.
+ * @param payload Raw timetable response.
+ * @param context Requested academic year and term.
+ * @returns The response with only matching rows. Rows without year/term metadata are kept only if the response itself confirms the requested term.
+ */
 function filterKbListByContext(payload: any, context: QueryContext) {
   const kbList = toArrayIfPossible(payload?.kbList)
   if (kbList.length === 0) return payload
@@ -604,6 +616,11 @@ async function applyTermContext(su: string, context: QueryContext) {
   checkTimetableResponse(setContextRes)
 }
 
+/**
+ * Fetches the timetable for the current term: sets the term on the academic system, requests the timetable, and retries with alternate year/term formats if the result is empty.
+ * @param studentId Student id; falls back to a default when invalid.
+ * @returns The timetable response filtered to the requested term.
+ */
 async function fetchTimetable(studentId: string) {
   console.log("XZZDPRO: Starting fetchTimetable...")
   const su = sanitizeStudentId(studentId) || DEFAULT_STUDENT_ID
@@ -703,6 +720,10 @@ const pendingRequests = new Map<
   string,
   Promise<Awaited<ReturnType<typeof getTimetableResponse>>>
 >()
+/**
+ * Returns the student's timetable from the academic system.
+ * Request body: `{ studentId }`. Concurrent requests for the same student share one fetch.
+ */
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const studentId = sanitizeStudentId(req.body?.studentId)
   let pending = pendingRequests.get(studentId)

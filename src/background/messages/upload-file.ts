@@ -6,6 +6,11 @@ import {
   type UploadResponse
 } from "../upload"
 
+/**
+ * Uploads a homework file on behalf of a content script.
+ * Request body: file name, size and content (base64 by default).
+ * Responds with the upload id on success, or `{ success: false, error }`.
+ */
 const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   const body = (req.body || {}) as Partial<UploadFileRequest>
 

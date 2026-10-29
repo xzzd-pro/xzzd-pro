@@ -100,8 +100,6 @@
   }
 }
 
-/* 强制应用字体到所有元素 */
-/* 特别针对常见的文本元素 */
 .xzzdpro-root {
   --xzzd-sidebar-width: 280px;
   display: grid;

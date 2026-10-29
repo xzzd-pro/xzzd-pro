@@ -308,6 +308,14 @@ function truncateAttachmentText(text: string, maxChars: number): string {
   return `${text.slice(0, maxChars)}...`
 }
 
+/**
+ * Converts the chat into LangChain messages: system prompt, course images, then each message with its attachments.
+ * @param systemPrompt System prompt with course context.
+ * @param messages Chat history.
+ * @param visualContext Course pages rendered as images.
+ * @param options "full" sends images; "text_only" replaces them with text placeholders (or extracted PDF text) for models without image input.
+ * @returns The messages and whether any image is included.
+ */
 async function buildLangChainMessages(
   systemPrompt: string,
   messages: ChatMessage[],

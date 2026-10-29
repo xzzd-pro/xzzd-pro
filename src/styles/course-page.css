@@ -47,13 +47,12 @@
   padding-top: 0 !important;
 }
 
-/* 确保标题和内容左对齐 */
+/* Remove the card's inner offsets so the title and search form line up with the page content. */
 .course-page-container .rounded-lg.border.bg-card .text-2xl.font-semibold {
   margin-left: 0 !important;
   padding-left: 0 !important;
 }
 
-/* 确保搜索表单内容与标题左对齐 */
 .course-page-container .space-y-6 {
   margin-left: 0 !important;
   padding-left: 0 !important;

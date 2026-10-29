@@ -652,6 +652,12 @@ function saveCurrentSessionToPacks(state: FlashcardSessionState) {
   persistState(state)
 }
 
+/**
+ * Draws a round of cards from a pack: a shuffled sample when the pack is large enough, otherwise random picks with repeats. Each drawn card gets a fresh id so repeats can be tracked separately.
+ * @param state Session state holding the packs.
+ * @param pack Pack to draw from.
+ * @returns The drawn cards; empty if the pack is empty.
+ */
 function drawRandomCardsFromPack(
   state: FlashcardSessionState,
   pack: PackType

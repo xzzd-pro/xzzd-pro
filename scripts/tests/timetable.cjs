@@ -33,8 +33,8 @@ function response(status, url, body) {
     json: async () => body
   }
 }
-const timetableUrl = "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"
-const ssoUrl = "https://zjuam.zju.edu.cn/cas/login?service=zdbk"
+const TIMETABLE_URL = "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"
+const SSO_URL = "https://zjuam.zju.edu.cn/cas/login?service=zdbk"
 function harness(finalResponse) {
   const calls = [],
     errors = []
@@ -42,7 +42,7 @@ function harness(finalResponse) {
     fetch: async (url, options) => {
       calls.push({ url, options })
       if (calls.length === 1)
-        return response(200, timetableUrl, { ssologinurl: ssoUrl })
+        return response(200, TIMETABLE_URL, { ssologinurl: SSO_URL })
       return finalResponse
     }
   })
@@ -59,9 +59,9 @@ function harness(finalResponse) {
 }
 
 test("901 is a recoverable access failure, without an unsupported VPN diagnosis", async () => {
-  const h = harness(response(901, timetableUrl, ""))
+  const h = harness(response(901, TIMETABLE_URL, ""))
   await assert.rejects(
-    h.backend.requestTimetable(new URLSearchParams(), timetableUrl),
+    h.backend.requestTimetable(new URLSearchParams(), TIMETABLE_URL),
     (error) =>
       error.code === "unavailable" &&
       error.status === 901 &&
@@ -70,7 +70,7 @@ test("901 is a recoverable access failure, without an unsupported VPN diagnosis"
   assert.equal(h.errors.length, 0)
 })
 test("SSO login page and a successful 200 response at ZDBK are distinct states", async () => {
-  const login = harness(response(200, ssoUrl, "login"))
+  const login = harness(response(200, SSO_URL, "login"))
   assert.equal(await login.access.performBackgroundLogin(), "login_required")
   const success = harness(
     response(
@@ -84,25 +84,27 @@ test("SSO login page and a successful 200 response at ZDBK are distinct states",
   assert.equal(success.calls[1].options.redirect, "follow")
 })
 test("SSO service error is unavailable, not login required or success", async () => {
-  const h = harness(response(503, timetableUrl, "unavailable"))
+  const h = harness(response(503, TIMETABLE_URL, "unavailable"))
   assert.equal(await h.access.performBackgroundLogin(), "unavailable")
 })
 test("HTML login pages are distinguished from malformed timetable data", async () => {
   const login = harness(
-    response(200, timetableUrl, '<form><input type="password"></form>')
+    response(200, TIMETABLE_URL, '<form><input type="password"></form>')
   )
   await assert.rejects(
-    login.backend.requestTimetable(new URLSearchParams(), timetableUrl),
+    login.backend.requestTimetable(new URLSearchParams(), TIMETABLE_URL),
     (e) => e.code === "login_required"
   )
-  const bad = harness(response(200, timetableUrl, { message: "gateway error" }))
+  const bad = harness(
+    response(200, TIMETABLE_URL, { message: "gateway error" })
+  )
   await assert.rejects(
-    bad.backend.requestTimetable(new URLSearchParams(), timetableUrl),
+    bad.backend.requestTimetable(new URLSearchParams(), TIMETABLE_URL),
     (e) => e.code === "invalid_response"
   )
-  const empty = harness(response(200, timetableUrl, { kbList: [] }))
+  const empty = harness(response(200, TIMETABLE_URL, { kbList: [] }))
   assert.equal(
-    (await empty.backend.requestTimetable(new URLSearchParams(), timetableUrl))
+    (await empty.backend.requestTimetable(new URLSearchParams(), TIMETABLE_URL))
       .kbList.length,
     0
   )
@@ -117,7 +119,7 @@ test("network failures never trigger login; access recovery retries only once", 
     "error"
   )
   assert.equal(offline.calls.length, 0)
-  const h = harness(response(200, timetableUrl, "home"))
+  const h = harness(response(200, TIMETABLE_URL, "home"))
   let attempts = 0
   h.backend.setFetch(async () => {
     attempts++
