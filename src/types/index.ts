@@ -218,7 +218,7 @@ export interface ProcessedCoursewareFile {
   sizeText: string
   canDownload: boolean
   downloadUrl: string
-  nativePreviewUrl?: string
+  nativePreviewUrl: string
 }
 
 // Homework types

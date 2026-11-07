@@ -1,8 +1,15 @@
-import { Download, Eye, FileDown, FileText, Upload, X } from "lucide-react"
+import {
+  Download,
+  FileDown,
+  FileText,
+  Upload,
+  X,
+  type LucideIcon
+} from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
-import { FilePreviewModal } from "@/components/ui/file-preview-modal"
+import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import {
   createSubmissionUpload,
   fetchHomeworkSubmissions,
@@ -12,9 +19,9 @@ import {
   uploadHomeworkFile
 } from "@/features/homework/homework-submission"
 import { formatFileSize } from "@/lib/file-format"
+import { nativeActivityUrl } from "@/lib/native-preview"
 import type {
   HomeworkDetailResponse,
-  HomeworkDetailUpload,
   HomeworkSubmission,
   ProcessedHomework,
   SubmissionUpload
@@ -56,112 +63,63 @@ async function fetchHomeworkDetail(
   }
 }
 
-function SubmittedFileItem({ upload }: { upload: SubmissionUpload }) {
-  const [showPreview, setShowPreview] = React.useState(false)
+/**
+ * One homework file, previewed in the school's reader in the context of its activity.
+ * @param props The file, the icon to show and the activity page URL.
+ */
+export function HomeworkFileItem({
+  upload,
+  icon: Icon,
+  activityUrl
+}: {
+  upload: Pick<SubmissionUpload, "id" | "name" | "size">
+  icon: LucideIcon
+  activityUrl: string
+}) {
   const downloadUrl = `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`
 
   return (
-    <>
-      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/80 p-3 shadow-sm">
-        <FileText className="h-7 w-7 flex-shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{upload.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {formatFileSize(upload.size)}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => setShowPreview(true)}>
-            <Eye className="h-4 w-4" />
-            <span>{"\u9884\u89c8"}</span>
-          </Button>
-          <Button asChild size="sm" className="gap-1.5">
-            <a
-              href={downloadUrl}
-              download={upload.name}
-              target="_blank"
-              rel="noopener noreferrer">
-              <Download className="h-4 w-4" />
-              <span>{"\u4e0b\u8f7d"}</span>
-            </a>
-          </Button>
+    <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/80 p-3 shadow-sm">
+      <Icon className="h-7 w-7 flex-shrink-0 text-primary" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium">{upload.name}</div>
+        <div className="text-xs text-muted-foreground">
+          {formatFileSize(upload.size)}
         </div>
       </div>
-
-      <FilePreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        fileName={upload.name}
-        fileUrl={downloadUrl}
-        fileSize={formatFileSize(upload.size)}
-        canDownload={true}
-      />
-    </>
-  )
-}
-
-function TeacherFileItem({ upload }: { upload: HomeworkDetailUpload }) {
-  const [showPreview, setShowPreview] = React.useState(false)
-  const downloadUrl = `https://courses.zju.edu.cn/api/uploads/${upload.id}/blob`
-
-  return (
-    <>
-      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/80 p-3 shadow-sm">
-        <FileDown className="h-7 w-7 flex-shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{upload.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {formatFileSize(upload.size)}
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => setShowPreview(true)}>
-            <Eye className="h-4 w-4" />
-            <span>{"\u9884\u89c8"}</span>
-          </Button>
-          <Button asChild size="sm" className="gap-1.5">
-            <a
-              href={downloadUrl}
-              download={upload.name}
-              target="_blank"
-              rel="noopener noreferrer">
-              <Download className="h-4 w-4" />
-              <span>{"\u4e0b\u8f7d"}</span>
-            </a>
-          </Button>
-        </div>
+      <div className="flex items-center gap-2">
+        <NativePreviewButton fileUrl={downloadUrl} activityUrl={activityUrl} />
+        <Button asChild size="sm" className="gap-1.5">
+          <a
+            href={downloadUrl}
+            download={upload.name}
+            target="_blank"
+            rel="noopener noreferrer">
+            <Download className="h-4 w-4" />
+            <span>{"\u4e0b\u8f7d"}</span>
+          </a>
+        </Button>
       </div>
-
-      <FilePreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        fileName={upload.name}
-        fileUrl={downloadUrl}
-        fileSize={formatFileSize(upload.size)}
-        canDownload={true}
-      />
-    </>
+    </div>
   )
 }
 
 interface HomeworkContentProps {
+  courseId: string
   homework: ProcessedHomework
   userId: string
 }
 
 /**
  * Details of one homework: description, attachments, submitted files and the upload form.
- * @param props The homework and the current user's id.
+ * @param props The course id, the homework and the current user's id.
  */
-export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
+export function HomeworkContent({
+  courseId,
+  homework,
+  userId
+}: HomeworkContentProps) {
+  const activityUrl = nativeActivityUrl(courseId, homework.id)
   const [submissions, setSubmissions] = React.useState<
     HomeworkSubmission[] | null
   >(null)
@@ -299,7 +257,12 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
               </h4>
               <div className="space-y-2">
                 {homeworkDetail.uploads.map((upload) => (
-                  <TeacherFileItem key={upload.id} upload={upload} />
+                  <HomeworkFileItem
+                    key={upload.id}
+                    upload={upload}
+                    icon={FileDown}
+                    activityUrl={activityUrl}
+                  />
                 ))}
               </div>
             </div>
@@ -324,7 +287,12 @@ export function HomeworkContent({ homework, userId }: HomeworkContentProps) {
             )}
             <div className="space-y-2">
               {latestSubmittedFiles.uploads.map((upload) => (
-                <SubmittedFileItem key={upload.id} upload={upload} />
+                <HomeworkFileItem
+                  key={upload.id}
+                  upload={upload}
+                  icon={FileText}
+                  activityUrl={activityUrl}
+                />
               ))}
             </div>
           </div>

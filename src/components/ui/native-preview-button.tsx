@@ -58,7 +58,7 @@ export function NativePreviewButton({
         ) : (
           <Eye className="h-4 w-4" />
         )}
-        <span>{pending ? "正在打开…" : "原生预览"}</span>
+        <span>{pending ? "正在打开…" : "预览"}</span>
       </Button>
       {error && (
         <div role="alert" className="text-xs text-muted-foreground">

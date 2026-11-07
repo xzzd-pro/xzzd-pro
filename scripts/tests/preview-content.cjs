@@ -145,6 +145,7 @@ test("preview reserves one tab, closes on failure and allows retry", async () =>
     fileUrl: "file",
     activityUrl: "activity"
   })
+  assert.equal(tree.children[0].children[1].children[0], "预览")
   const click = tree.children[0].props.onClick
   const first = click()
   await click()
@@ -184,6 +185,77 @@ test("native links retain activity routes and existing query parameters", () => 
   assert.equal(new URL(current).searchParams.get("foo"), "bar")
   assert.equal(new URL(current).hash, "#/34")
   assert.equal(api.isNativePreviewPage("https://courses.zju.edu.cn/"), false)
+})
+
+test("homework files preview in the school reader under their own activity", async () => {
+  const exports = {}
+  const requests = []
+  const native = load("src/lib/native-preview.ts", {
+    fetch: async (url) => {
+      requests.push(new URL(url))
+      return {
+        ok: true,
+        json: async () => ({
+          preview_url: "https://course-wps.zju.edu.cn/weboffice/office/f/7"
+        })
+      }
+    }
+  })
+  const previewButton = () => null
+  vm.runInNewContext(
+    ts.transpileModule(
+      fs.readFileSync(
+        "src/features/homework/components/homework-content.tsx",
+        "utf8"
+      ),
+      {
+        compilerOptions: {
+          module: ts.ModuleKind.CommonJS,
+          jsx: ts.JsxEmit.React
+        }
+      }
+    ).outputText,
+    {
+      exports,
+      require(name) {
+        if (name === "react")
+          return {
+            createElement: (type, props, ...children) => ({
+              type,
+              props,
+              children
+            })
+          }
+        if (name.endsWith("/native-preview-button"))
+          return { NativePreviewButton: previewButton }
+        if (name.endsWith("/file-format"))
+          return { formatFileSize: () => "1 MB" }
+        return {}
+      }
+    }
+  )
+  const findPreview = (node) => {
+    if (!node || typeof node !== "object") return null
+    if (node.type === previewButton) return node
+    for (const child of node.children || []) {
+      const found = findPreview(child)
+      if (found) return found
+    }
+    return null
+  }
+  const preview = findPreview(
+    exports.HomeworkFileItem({
+      upload: { id: 7, name: "控制理论4.pdf", size: 1 },
+      activityUrl: native.nativeActivityUrl("99990", 456)
+    })
+  )
+  assert.ok(preview)
+  await native.fetchNativePreviewUrl(
+    preview.props.fileUrl,
+    preview.props.activityUrl
+  )
+  assert.equal(requests[0].pathname, "/api/uploads/7/preview/private-wps")
+  assert.equal(requests[0].searchParams.get("refer_id"), "456")
 })
 
 test("every preview goes to the school reader and never fetches file bytes", async () => {

@@ -437,9 +437,13 @@ export function HomeworkPanel({ courseId }: HomeworkPanelProps) {
                 />
               </CollapsibleTrigger>
               <CollapsibleContent unmountOnExit>
-                <div className="px-4">
+                <div className="px-4 pb-4">
                   <div className="border-t border-border/70 pt-4">
-                    <HomeworkContent homework={homework} userId={userId!} />
+                    <HomeworkContent
+                      courseId={courseId}
+                      homework={homework}
+                      userId={userId!}
+                    />
                   </div>
                 </div>
               </CollapsibleContent>

@@ -1,8 +1,7 @@
-import { Download, Eye } from "lucide-react"
+import { Download } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
-import { FilePreviewModal } from "@/components/ui/file-preview-modal"
 import { NativePreviewButton } from "@/components/ui/native-preview-button"
 import { cn } from "@/lib/utils"
 import type { ProcessedCoursewareFile } from "@/types"
@@ -111,94 +110,66 @@ export function CoursewareFileItem({
   isSelected = false,
   onSelectedChange
 }: CoursewareFileItemProps) {
-  const [showPreview, setShowPreview] = React.useState(false)
   const selectionId = React.useId()
   const isSelectable = file.canDownload && Boolean(onSelectedChange)
-  // Every file with a learning-activity link opens in the school's own reader.
-  const useNativePreview = Boolean(file.nativePreviewUrl)
 
   return (
-    <>
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-3 py-3 text-foreground transition-colors hover:bg-muted/30 sm:flex-nowrap",
-          isSelected && "bg-primary/5",
-          className
-        )}>
-        {onSelectedChange && (
-          <div className="flex h-9 w-5 flex-shrink-0 items-center justify-center">
-            <input
-              id={selectionId}
-              type="checkbox"
-              checked={isSelected}
-              disabled={!isSelectable}
-              aria-label={`选择 ${file.name}`}
-              className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-              onChange={(event) =>
-                onSelectedChange(file.id, event.currentTarget.checked)
-              }
-            />
-          </div>
-        )}
-        <div className="w-8 h-8 flex-shrink-0 rounded-md bg-primary/5 p-1.5 text-primary">
-          {getFileIcon(file.name)}
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-3 py-3 text-foreground transition-colors hover:bg-muted/30 sm:flex-nowrap",
+        isSelected && "bg-primary/5",
+        className
+      )}>
+      {onSelectedChange && (
+        <div className="flex h-9 w-5 flex-shrink-0 items-center justify-center">
+          <input
+            id={selectionId}
+            type="checkbox"
+            checked={isSelected}
+            disabled={!isSelectable}
+            aria-label={`选择 ${file.name}`}
+            className="h-4 w-4 rounded border-border accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+            onChange={(event) =>
+              onSelectedChange(file.id, event.currentTarget.checked)
+            }
+          />
         </div>
-        <div className="flex-1 min-w-[120px]">
-          <div className="text-sm font-medium text-foreground mb-1 break-all leading-relaxed">
-            {file.name}
-          </div>
-          <div className="text-[13px] text-muted-foreground">
-            {file.sizeText}
-          </div>
-        </div>
-        <div className="ml-auto flex-shrink-0 flex items-center gap-1">
-          {useNativePreview && file.nativePreviewUrl ? (
-            <NativePreviewButton
-              fileUrl={file.downloadUrl}
-              activityUrl={file.nativePreviewUrl}
-            />
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1.5 bg-transparent"
-              onClick={() => setShowPreview(true)}>
-              <Eye className="w-4 h-4" />
-              <span>预览</span>
-            </Button>
-          )}
-          {file.canDownload ? (
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 bg-transparent no-underline">
-              <a
-                href={file.downloadUrl}
-                download={file.name}
-                target="_blank"
-                rel="noopener noreferrer">
-                <Download className="w-4 h-4" />
-                <span>下载</span>
-              </a>
-            </Button>
-          ) : (
-            <span className="px-3 py-2 text-muted-foreground text-xs">
-              不可下载
-            </span>
-          )}
-        </div>
+      )}
+      <div className="w-8 h-8 flex-shrink-0 rounded-md bg-primary/5 p-1.5 text-primary">
+        {getFileIcon(file.name)}
       </div>
-
-      <FilePreviewModal
-        isOpen={showPreview}
-        onClose={() => setShowPreview(false)}
-        fileName={file.name}
-        fileUrl={file.downloadUrl}
-        fileSize={file.sizeText}
-        canDownload={file.canDownload}
-        nativePreviewUrl={file.nativePreviewUrl}
-      />
-    </>
+      <div className="flex-1 min-w-[120px]">
+        <div className="text-sm font-medium text-foreground mb-1 break-all leading-relaxed">
+          {file.name}
+        </div>
+        <div className="text-[13px] text-muted-foreground">{file.sizeText}</div>
+      </div>
+      <div className="ml-auto flex-shrink-0 flex items-center gap-1">
+        <NativePreviewButton
+          fileUrl={file.downloadUrl}
+          activityUrl={file.nativePreviewUrl}
+        />
+        {file.canDownload ? (
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 bg-transparent no-underline">
+            <a
+              href={file.downloadUrl}
+              download={file.name}
+              target="_blank"
+              rel="noopener noreferrer">
+              <Download className="w-4 h-4" />
+              <span>下载</span>
+            </a>
+          </Button>
+        ) : (
+          <span className="px-3 py-2 text-muted-foreground text-xs">
+            不可下载
+          </span>
+        )}
+      </div>
+    </div>
   )
 }
